@@ -45,7 +45,8 @@ test_app_menu_on_linux_includes_ptyxis() {
   run_setup "2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
-  assert_contains "3) Ptyxis (Ubuntu terminal)"
+  assert_contains "3) Obsidian"
+  assert_contains "4) Ptyxis (Ubuntu terminal)"
 }
 
 test_app_menu_on_macos_hides_ptyxis() {
@@ -53,6 +54,7 @@ test_app_menu_on_macos_hides_ptyxis() {
   run_setup "2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
+  assert_contains "3) Obsidian"
   assert_not_contains "Ptyxis"
 }
 
@@ -197,7 +199,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "3\n1\n"
+  run_setup "4\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
@@ -206,11 +208,159 @@ test_ptyxis_links_the_palette() {
 
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "3\n1\n"
-  run_setup "3\n1\n"
+  run_setup "4\n1\n"
+  run_setup "4\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
+}
+
+# --- Tests: Obsidian --------------------------------------------------------
+
+# make_vault path -> creates an Obsidian vault folder (with .obsidian inside).
+make_vault() {
+  mkdir -p "$1/.obsidian"
+}
+
+# know_vaults config vault... -> writes an Obsidian vault list (obsidian.json)
+# at $SANDBOX/home/<config> listing the vaults.
+know_vaults() {
+  local config="$SANDBOX/home/$1" entries="" i=0
+  shift
+  for vault in "$@"; do
+    i=$((i + 1))
+    entries="$entries${entries:+,}\"id$i\":{\"path\":\"$vault\",\"ts\":1,\"open\":true}"
+  done
+  mkdir -p "$(dirname "$config")"
+  printf '{"vaults":{%s}}' "$entries" >"$config"
+}
+
+LINUX_CONFIG=".config/obsidian/obsidian.json"
+
+obsidian_theme() {
+  printf '%s' "$1/.obsidian/themes/Jenerated $2"
+}
+
+test_obsidian_links_the_theme_into_a_known_vault() {
+  make_vault "$SANDBOX/Notes"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
+  run_setup "3\n1\n1\n"
+  assert_status 0
+  assert_contains "1) $SANDBOX/Notes"
+  assert_contains "2) Another folder (type its path)"
+  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_contains 'choose "Jenerated Blue Purple"'
+}
+
+test_obsidian_theme_folder_matches_its_manifest() {
+  make_vault "$SANDBOX/Notes"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
+  run_setup "3\n2\n1\n"
+  assert_status 0
+  assert_file_contains "$(obsidian_theme "$SANDBOX/Notes" "Sunset")/manifest.json" \
+    '"name": "Jenerated Sunset"'
+  assert_exists "$(obsidian_theme "$SANDBOX/Notes" "Sunset")/theme.css"
+}
+
+test_obsidian_lists_every_known_vault_that_exists() {
+  make_vault "$SANDBOX/Notes"
+  make_vault "$SANDBOX/My Work"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes" "$SANDBOX/Gone" "$SANDBOX/My Work"
+  run_setup "3\n1\n1\n"
+  assert_contains ") $SANDBOX/Notes"
+  assert_contains ") $SANDBOX/My Work"
+  assert_not_contains "$SANDBOX/Gone"
+  assert_contains "3) Another folder (type its path)"
+}
+
+test_obsidian_vault_with_spaces_in_its_path() {
+  make_vault "$SANDBOX/My Work"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/My Work"
+  run_setup "3\n1\n1\n"
+  assert_status 0
+  assert_link "$(obsidian_theme "$SANDBOX/My Work" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+}
+
+test_obsidian_finds_vaults_on_macos() {
+  fake_os Darwin
+  make_vault "$SANDBOX/Notes"
+  know_vaults "Library/Application Support/obsidian/obsidian.json" "$SANDBOX/Notes"
+  run_setup "3\n1\n1\n"
+  assert_status 0
+  assert_contains "1) $SANDBOX/Notes"
+}
+
+test_obsidian_finds_vaults_from_flatpak() {
+  make_vault "$SANDBOX/Notes"
+  know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
+  run_setup "3\n1\n1\n"
+  assert_contains "1) $SANDBOX/Notes"
+}
+
+test_obsidian_lists_a_vault_known_twice_once() {
+  make_vault "$SANDBOX/Notes"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
+  know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
+  run_setup "3\n1\n1\n"
+  assert_contains "2) Another folder"
+}
+
+test_obsidian_asks_for_a_path_when_no_vaults_are_known() {
+  make_vault "$SANDBOX/Notes"
+  run_setup "3\n1\n$SANDBOX/Notes/\n"
+  assert_status 0
+  assert_contains "Path to your vault folder:"
+  assert_not_contains "Another folder"
+  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+}
+
+test_obsidian_another_folder_expands_the_home_folder() {
+  make_vault "$SANDBOX/Notes"
+  make_vault "$SANDBOX/home/Vault"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
+  run_setup "3\n1\n2\n~/Vault\n"
+  assert_status 0
+  assert_link "$(obsidian_theme "$SANDBOX/home/Vault" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+}
+
+test_obsidian_missing_folder_is_an_error() {
+  run_setup "3\n1\n$SANDBOX/Nowhere\n"
+  assert_status 1
+  assert_contains "there's no folder at $SANDBOX/Nowhere"
+}
+
+test_obsidian_asks_before_using_a_folder_that_isnt_a_vault() {
+  mkdir -p "$SANDBOX/Plain"
+  run_setup "3\n1\n$SANDBOX/Plain\nn\n"
+  assert_status 1
+  assert_contains "has no .obsidian folder"
+  assert_missing "$SANDBOX/Plain/.obsidian"
+}
+
+test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
+  mkdir -p "$SANDBOX/Plain"
+  run_setup "3\n1\n$SANDBOX/Plain\ny\n"
+  assert_status 0
+  assert_link "$(obsidian_theme "$SANDBOX/Plain" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+}
+
+test_obsidian_already_linked_is_left_alone() {
+  make_vault "$SANDBOX/Notes"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
+  run_setup "3\n1\n1\n"
+  run_setup "3\n1\n1\n"
+  assert_status 0
+  assert_contains "Already installed"
+}
+
+test_obsidian_replaces_an_old_copy_when_asked() {
+  make_vault "$SANDBOX/Notes"
+  mkdir -p "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")"
+  know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
+  run_setup "3\n1\n1\ny\n"
+  assert_status 0
+  assert_contains "An older install exists"
+  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
 }
 
 # --- Tests: Slack ------------------------------------------------------------

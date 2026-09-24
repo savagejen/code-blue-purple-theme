@@ -13,6 +13,7 @@ install it in any app without running anything.
 
 Each app has its own folder with a template and install instructions:
 
+- [Obsidian](obsidian-theme/)
 - [Ptyxis (Ubuntu terminal)](ptyxis-theme/)
 - [Slack](slack-theme/)
 - [VS Code](vs-code-theme/)
@@ -68,7 +69,10 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
   another color in the same file.
 - **Templates** (the `.tmpl` files in each app's folder) are the app's theme
   file with `{{color_name}}` placeholders where the colors go. A template can
-  add transparency after a placeholder, for example `{{accent}}33`.
+  add transparency after a placeholder, for example `{{accent}}33`. For apps
+  that need them, each color is also available as RGB and HSL numbers:
+  `{{accent_rgb}}` gives `88, 101, 242`, and `{{accent_h}}`, `{{accent_s}}`
+  and `{{accent_l}}` give `235`, `86` and `65`.
 - **`jenerate.py`** fills in every template for each palette you name and
   writes the results next to the templates, named after the palette's slug.
   Themes you generated earlier are kept. For VS Code it also rebuilds
@@ -85,8 +89,8 @@ Don't edit generated files by hand; change the palette or template and run
 `jenerate.py` again.
 
 The templates currently assume a dark palette: the VS Code theme template
-sets `"type": "dark"` (`package.json` follows each theme's type), and Ptyxis
-palettes only have a dark variant.
+sets `"type": "dark"` (`package.json` follows each theme's type), and the
+Ptyxis and Obsidian themes only have a dark variant.
 
 ## Changing colors
 
@@ -115,7 +119,8 @@ explains any that a palette breaks:
   single dashes, like `deep-blue-sea`.
 - A palette in `palettes/` must be named `<slug>-palette.toml`. (A palette
   kept elsewhere and passed by path can be named anything.)
-- The `name` can't contain double quotes, backslashes or line breaks.
+- The `name` can't contain double quotes, slashes, backslashes or line
+  breaks. (It also names the Obsidian theme's folder.)
 - Every color is a quoted string: `"#rrggbb"` or another color's name.
 
 ## Adding an app
@@ -123,8 +128,12 @@ explains any that a palette breaks:
 1. Create a folder for the app with a template (`<something>.tmpl`) that uses
    the palette's color names.
 2. Add a `(template, output)` pair to `TARGETS` in `jenerate.py`. Use
-   `{slug}` in the output path so each palette gets its own file.
-3. Add the output pattern to `.gitignore`, and a README with install steps.
+   `{slug}` in the output path so each palette gets its own file. An app
+   that needs several files per theme can use `{slug}` as a folder, like
+   Obsidian's `obsidian-theme/{slug}/theme.css`.
+3. Add the output pattern to `.gitignore` (keeping Blue Purple's files), and
+   a README with install steps.
+4. Add the app to `setup.sh`, and tests for it in `tests/setup/`.
 
 ## Running the tests
 

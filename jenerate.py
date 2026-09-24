@@ -12,10 +12,13 @@ A palette is named by its slug (palettes/<slug>-palette.toml) or given as a
 path to a .toml file. Each run adds to, or updates, the themes already
 generated; nothing else is touched. Each template's {{name}} placeholders are
 replaced with the palette's colors (plus its `name` and `slug`), and the result
-is written next to the template.
+is written next to the template. Each color is also available as RGB and HSL
+numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 242",
+and {{accent_h}}, {{accent_s}} and {{accent_l}} are "235", "86" and "65".
 """
 
 import argparse
+import colorsys
 import json
 import re
 import sys
@@ -29,11 +32,14 @@ PALETTES = ROOT / "palettes"
 VSCODE_THEME = "vs-code-theme/themes/jenerated-{slug}-color-theme.json"
 
 # (template, output) pairs, relative to the repository root. {slug} in the
-# output path is replaced with the palette's slug.
+# output path is replaced with the palette's slug; it may name a folder, which
+# is created as needed and deleted with the palette's last file.
 TARGETS = [
     ("vs-code-theme/themes/color-theme.json.tmpl", VSCODE_THEME),
     ("ptyxis-theme/palette.tmpl", "ptyxis-theme/{slug}.palette"),
     ("slack-theme/slack-theme.txt.tmpl", "slack-theme/{slug}.txt"),
+    ("obsidian-theme/theme.css.tmpl", "obsidian-theme/{slug}/theme.css"),
+    ("obsidian-theme/manifest.json.tmpl", "obsidian-theme/{slug}/manifest.json"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
@@ -92,10 +98,11 @@ def read_palette_file(path):
         if not isinstance(data.get(key), str):
             sys.exit(f"{path}: missing top-level `{key}` string")
     # The name is written into the themes as is, so it mustn't be able to
-    # break out of a JSON string or an INI line.
-    if any(c in '"\\' or not c.isprintable() for c in data["name"]):
-        sys.exit(f"{path}: `name` can't contain quotes, backslashes or "
-                 f"line breaks")
+    # break out of a JSON string or an INI line. It also names the Obsidian
+    # theme's folder, so no slashes.
+    if any(c in '"\\/' or not c.isprintable() for c in data["name"]):
+        sys.exit(f"{path}: `name` can't contain quotes, slashes, "
+                 f"backslashes or line breaks")
     slug = check_slug(data["slug"], path)
     if path.resolve().parent == PALETTES and path.name != f"{slug}-palette.toml":
         sys.exit(f"{path}: palettes in palettes/ must be named after their "
@@ -111,10 +118,22 @@ def read_palette_file(path):
     return data
 
 
+def color_formats(key, value):
+    """The other forms of a #rrggbb color that templates can use."""
+    r, g, b = (int(value[i:i + 2], 16) for i in (1, 3, 5))
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    return {
+        f"{key}_rgb": f"{r}, {g}, {b}",
+        f"{key}_h": str(round(h * 360) % 360),
+        f"{key}_s": str(round(s * 100)),
+        f"{key}_l": str(round(l * 100)),
+    }
+
+
 def load_palette(path):
     """Read a palette and return its template values: every color as
-    #rrggbb (with references to other colors followed), plus `name` and
-    `slug`."""
+    #rrggbb (with references to other colors followed) and in its other
+    forms (see color_formats), plus `name` and `slug`."""
     data = read_palette_file(path)
     colors = data["colors"]
 
@@ -130,7 +149,11 @@ def load_palette(path):
                      f"value or the name of another color")
         return resolve(value, chain)
 
-    values = {key: resolve(key) for key in colors}
+    values = {}
+    for key in colors:
+        values.update(color_formats(key, resolve(key)))
+    # A color the palette defines outright wins over another's derived form.
+    values.update((key, resolve(key)) for key in colors)
     values["name"] = data["name"]
     values["slug"] = data["slug"]
     return values
@@ -157,6 +180,12 @@ def render(template_path, values):
 
 def output_path(output, slug):
     return ROOT / output.format(slug=slug)
+
+
+def slug_folders(slug):
+    """The folders made just for this palette's files, like obsidian-theme/sunset."""
+    return {output_path(output, slug).parent for _, output in TARGETS
+            if "{slug}" in str(Path(output).parent)}
 
 
 def read_vscode_theme(path):
@@ -203,6 +232,7 @@ def add(names):
                      render(ROOT / template, values))
                     for template, output in TARGETS]
         for path, content in rendered:
+            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content)
         print(f"Generated {values['name']} ({values['slug']})")
 
@@ -222,6 +252,9 @@ def remove(names):
         for path in existing:
             path.unlink()
             print(f"Removed {path.relative_to(ROOT)}")
+        for folder in slug_folders(slug):
+            if folder.is_dir() and not any(folder.iterdir()):
+                folder.rmdir()
 
 
 def list_palettes():

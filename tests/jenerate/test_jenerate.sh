@@ -30,7 +30,7 @@ run_jenerate() {
 write_palette() {
   local path="$1" name="$2" slug="$3"
   shift 3
-  sed -e "s/^name = .*/name = \"$name\"/" -e "s/^slug = .*/slug = \"$slug\"/" \
+  sed -e "s|^name = .*|name = \"$name\"|" -e "s|^slug = .*|slug = \"$slug\"|" \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$path"
   for line in "$@"; do
     printf '%s\n' "$line" >>"$path"
@@ -41,6 +41,7 @@ write_palette() {
 vscode_theme() { printf '%s' "$SANDBOX/repo/vs-code-theme/themes/jenerated-$1-color-theme.json"; }
 ptyxis_palette() { printf '%s' "$SANDBOX/repo/ptyxis-theme/$1.palette"; }
 slack_theme() { printf '%s' "$SANDBOX/repo/slack-theme/$1.txt"; }
+obsidian_theme() { printf '%s' "$SANDBOX/repo/obsidian-theme/$1"; }
 PACKAGE_JSON_REL="vs-code-theme/package.json"
 
 # Prints package.json's theme labels, one per line, in order.
@@ -106,11 +107,14 @@ test_generates_every_app_theme() {
   assert_exists "$(vscode_theme sunset)"
   assert_exists "$(ptyxis_palette sunset)"
   assert_exists "$(slack_theme sunset)"
+  assert_exists "$(obsidian_theme sunset)/theme.css"
+  assert_exists "$(obsidian_theme sunset)/manifest.json"
 }
 
 test_fills_in_every_placeholder() {
   run_jenerate sunset
-  for file in "$(vscode_theme sunset)" "$(ptyxis_palette sunset)" "$(slack_theme sunset)"; do
+  for file in "$(vscode_theme sunset)" "$(ptyxis_palette sunset)" "$(slack_theme sunset)" \
+    "$(obsidian_theme sunset)/theme.css" "$(obsidian_theme sunset)/manifest.json"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -167,7 +171,8 @@ test_blue_purple_matches_the_committed_files() {
   run_jenerate blue-purple
   assert_status 0
   for rel in vs-code-theme/themes/jenerated-blue-purple-color-theme.json \
-    ptyxis-theme/blue-purple.palette slack-theme/blue-purple.txt; do
+    ptyxis-theme/blue-purple.palette slack-theme/blue-purple.txt \
+    obsidian-theme/blue-purple/theme.css obsidian-theme/blue-purple/manifest.json; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -213,6 +218,101 @@ test_slug_comes_from_the_file_not_its_name() {
   assert_status 0
   assert_exists "$(slack_theme different-slug)"
   assert_missing "$(slack_theme odd)"
+}
+
+# --- Tests: color formats --------------------------------------------------
+
+# render_colors placeholders... -> generates Sunset with a Slack template of
+# just those placeholders, separated by |, and sets RENDERED.
+render_colors() {
+  local template="" key
+  for key in "$@"; do
+    template="$template${template:+|}{{$key}}"
+  done
+  printf '%s\n' "$template" >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  run_jenerate sunset
+  RENDERED="$(cat "$(slack_theme sunset)")"
+}
+
+test_colors_are_available_as_rgb() {
+  # Sunset's accent is #e4572e.
+  render_colors accent_rgb
+  assert_status 0
+  [ "$RENDERED" = "228, 87, 46" ] || fail "expected accent_rgb '228, 87, 46', got '$RENDERED'"
+}
+
+test_colors_are_available_as_hsl() {
+  render_colors accent_h accent_s accent_l
+  [ "$RENDERED" = "14|77|54" ] || fail "expected accent h|s|l '14|77|54', got '$RENDERED'"
+}
+
+test_referenced_colors_get_formats_too() {
+  # term_red = "red", and red = "#ff4d5e".
+  render_colors term_red_rgb
+  [ "$RENDERED" = "255, 77, 94" ] || fail "expected term_red_rgb '255, 77, 94', got '$RENDERED'"
+}
+
+test_color_format_edge_cases() {
+  write_palette "$SANDBOX/repo/palettes/edges-palette.toml" "Edges" "edges" \
+    'grey = "#808080"' 'white = "#FFFFFF"' 'black = "#000000"' 'almost_red = "#ff0001"'
+  printf '%s\n' '{{grey_h}},{{grey_s}},{{grey_l}}|{{white_rgb}}|{{white_l}}|{{black_rgb}}|{{black_l}}|{{almost_red_h}}' \
+    >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  run_jenerate edges
+  assert_status 0
+  # A hue just under 360 degrees rounds to 0, not 360.
+  assert_file_equals "$(slack_theme edges)" "0,0,50|255, 255, 255|100|0, 0, 0|0|0"
+}
+
+test_a_defined_color_wins_over_a_derived_one() {
+  write_palette "$SANDBOX/repo/palettes/clash-palette.toml" "Clash" "clash" 'accent_rgb = "#010203"'
+  printf '%s\n' '{{accent_rgb}}' >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  run_jenerate clash
+  assert_status 0
+  assert_file_equals "$(slack_theme clash)" "#010203"
+}
+
+# --- Tests: Obsidian ---------------------------------------------------------
+
+test_obsidian_manifest_names_the_theme() {
+  run_jenerate sunset
+  assert_valid_json "$(obsidian_theme sunset)/manifest.json"
+  assert_file_contains "$(obsidian_theme sunset)/manifest.json" '"name": "Jenerated Sunset"'
+}
+
+test_obsidian_css_uses_the_palette() {
+  run_jenerate sunset
+  css="$(obsidian_theme sunset)/theme.css"
+  assert_file_contains "$css" "--color-accent: #e4572e;"
+  assert_file_contains "$css" "--accent-h: 14;"
+  assert_file_contains "$css" "--accent-s: 77%;"
+  assert_file_contains "$css" "--accent-l: 54%;"
+  assert_file_contains "$css" "--color-red-rgb: 255, 77, 94;"
+  assert_file_contains "$css" "--background-primary: #1b1117;"
+}
+
+test_obsidian_css_braces_balance() {
+  run_jenerate sunset
+  css="$(obsidian_theme sunset)/theme.css"
+  open="$(tr -cd '{' <"$css" | wc -c | tr -d ' ')"
+  close="$(tr -cd '}' <"$css" | wc -c | tr -d ' ')"
+  [ "$open" = "$close" ] || fail "expected balanced braces, got $open { and $close }"
+}
+
+test_remove_deletes_the_obsidian_folder() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_status 0
+  assert_missing "$(obsidian_theme sunset)"
+  assert_exists "$SANDBOX/repo/obsidian-theme/theme.css.tmpl"
+}
+
+test_remove_keeps_a_folder_with_other_files() {
+  run_jenerate sunset
+  echo mine >"$(obsidian_theme sunset)/notes.txt"
+  run_jenerate --remove sunset
+  assert_status 0
+  assert_missing "$(obsidian_theme sunset)/theme.css"
+  assert_exists "$(obsidian_theme sunset)/notes.txt"
 }
 
 # --- Tests: package.json -----------------------------------------------------
@@ -501,7 +601,7 @@ test_name_cannot_contain_a_quote() {
   } >"$SANDBOX/repo/palettes/evil-palette.toml"
   run_jenerate evil
   assert_status 1
-  assert_contains "\`name\` can't contain quotes, backslashes or line breaks"
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
   assert_missing "$(vscode_theme evil)"
 }
 
@@ -509,7 +609,7 @@ test_name_cannot_contain_a_line_break() {
   write_palette "$SANDBOX/repo/palettes/evil-palette.toml" 'Evil\\nBackground=#ff0000' "evil"
   run_jenerate evil
   assert_status 1
-  assert_contains "\`name\` can't contain quotes, backslashes or line breaks"
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
   assert_missing "$(ptyxis_palette evil)"
 }
 
@@ -517,7 +617,15 @@ test_name_cannot_contain_a_backslash() {
   write_palette "$SANDBOX/repo/palettes/evil-palette.toml" 'Evil\\\\' "evil"
   run_jenerate evil
   assert_status 1
-  assert_contains "\`name\` can't contain quotes, backslashes or line breaks"
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
+}
+
+test_name_cannot_contain_a_slash() {
+  # The name also names the Obsidian theme's folder.
+  write_palette "$SANDBOX/repo/palettes/evil-palette.toml" 'Night/Day' "evil"
+  run_jenerate evil
+  assert_status 1
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
 }
 
 test_name_may_use_other_characters() {

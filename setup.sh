@@ -75,8 +75,8 @@ find_python() {
 
 # --- Pick an app -------------------------------------------------------------
 
-APPS=("VS Code" "Slack")
-APP_IDS=("vscode" "slack")
+APPS=("VS Code" "Slack" "Obsidian")
+APP_IDS=("vscode" "slack" "obsidian")
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)")
   APP_IDS+=("ptyxis")
@@ -119,6 +119,23 @@ fi
 
 # --- Install it --------------------------------------------------------------
 
+# install_link target source -> links target to source, offering to replace
+# anything already at target.
+install_link() {
+  local target="$1" source="$2"
+  if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
+    say "Already installed (linked to this folder)."
+    return
+  fi
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    say "An older install exists at $target."
+    ask_yes "Replace it with a link to this folder?" || die "left the existing install alone"
+    rm -rf "$target"
+  fi
+  ln -s "$source" "$target"
+  say "Linked $target -> $source"
+}
+
 install_vscode() {
   local extensions="$HOME/.vscode/extensions"
   local target="$extensions/jenerated-themes"
@@ -126,18 +143,7 @@ install_vscode() {
 
   step "Installing the VS Code extension"
   mkdir -p "$extensions"
-
-  if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
-    say "Already installed (linked to this folder)."
-  else
-    if [ -e "$target" ] || [ -L "$target" ]; then
-      say "An older install exists at $target."
-      ask_yes "Replace it with a link to this folder?" || die "left the existing install alone"
-      rm -rf "$target"
-    fi
-    ln -s "$source" "$target"
-    say "Linked $target -> $source"
-  fi
+  install_link "$target" "$source"
 
   # A .vsix install of the same extension would clash with the link.
   for other in "$extensions"/local.jenerated-themes-*; do
@@ -186,6 +192,69 @@ install_ptyxis() {
   say "   It applies to the current profile; repeat for other profiles."
 }
 
+# Prints the vaults Obsidian knows about, one per line, from its vault list
+# (obsidian.json), wherever this system's Obsidian keeps it.
+known_obsidian_vaults() {
+  local config
+  for config in \
+    "$HOME/.config/obsidian/obsidian.json" \
+    "$HOME/.var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" \
+    "$HOME/snap/obsidian/current/.config/obsidian/obsidian.json" \
+    "$HOME/Library/Application Support/obsidian/obsidian.json"; do
+    [ -f "$config" ] || continue
+    grep -o '"path":"[^"]*"' "$config" | sed -e 's/^"path":"//' -e 's/"$//'
+  done | sort -u | while IFS= read -r vault; do
+    [ -d "$vault" ] && printf '%s\n' "$vault"
+  done
+}
+
+# Asks which vault to theme and sets VAULT.
+choose_obsidian_vault() {
+  local vaults=() vault
+  while IFS= read -r vault; do
+    vaults+=("$vault")
+  done < <(known_obsidian_vaults)
+
+  VAULT=""
+  if [ "${#vaults[@]}" -gt 0 ]; then
+    choose "Which Obsidian vault? (themes are set per vault)" \
+      "${vaults[@]}" "Another folder (type its path)"
+    [ "$CHOICE" -lt "${#vaults[@]}" ] && VAULT="${vaults[$CHOICE]}"
+  fi
+  if [ -z "$VAULT" ]; then
+    say ""
+    printf 'Path to your vault folder: '
+    read -r VAULT || die "no vault given"
+    case "$VAULT" in
+      "~" | "~/"*) VAULT="$HOME${VAULT#\~}" ;;
+    esac
+    VAULT="${VAULT%/}"
+  fi
+
+  [ -d "$VAULT" ] || die "there's no folder at $VAULT"
+  if [ ! -d "$VAULT/.obsidian" ]; then
+    say "$VAULT has no .obsidian folder, so it may not be an Obsidian vault."
+    ask_yes "Use it anyway?" || die "no vault chosen"
+  fi
+}
+
+install_obsidian() {
+  choose_obsidian_vault
+  local themes="$VAULT/.obsidian/themes"
+
+  step "Installing the Obsidian theme"
+  mkdir -p "$themes"
+  # Obsidian names a theme after its folder, which must match the name in
+  # its manifest.json.
+  install_link "$themes/Jenerated $NAME" "$ROOT/obsidian-theme/$SLUG"
+
+  step "Done! To turn the theme on:"
+  say "1. In Obsidian, open Settings -> Appearance."
+  say "2. Under Themes, choose \"Jenerated $NAME\". If it isn't listed, click"
+  say "   the reload button next to Themes, or restart Obsidian."
+  say "Themes are per vault; run ./setup.sh again for your other vaults."
+}
+
 copy_to_clipboard() {
   if [ "$OS" = "Darwin" ] && command -v pbcopy >/dev/null 2>&1; then
     pbcopy
@@ -223,6 +292,7 @@ case "$APP" in
   vscode) install_vscode ;;
   ptyxis) install_ptyxis ;;
   slack) install_slack ;;
+  obsidian) install_obsidian ;;
 esac
 
 say ""
