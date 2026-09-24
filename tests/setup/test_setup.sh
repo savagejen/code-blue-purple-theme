@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+# Tests for setup.sh.
+#
+# Usage: tests/setup/test_setup.sh
+#
+# Each test runs setup.sh from a throwaway copy of the repository, with HOME
+# pointed at an empty folder, so nothing outside the sandbox is touched. Fake
+# clipboard commands (and, where a test needs one, a fake `uname` or
+# `python3`) are put first on PATH.
+
+source "$(dirname "$0")/../lib.sh"
+
+# Every clipboard tool writes to a file, so tests never touch the real one.
+after_sandbox() {
+  for tool in pbcopy wl-copy xclip xsel; do
+    fake_command "$tool" "cat > \"$SANDBOX/clipboard\""
+  done
+}
+
+# fake_os Linux|Darwin -> makes `uname -s` report that OS.
+fake_os() {
+  fake_command uname "echo $1"
+}
+
+# Makes every python look too old to run jenerate.py.
+fake_no_python() {
+  for py in python3 python3.13 python3.12 python3.11; do
+    fake_command "$py" "exit 1"
+  done
+}
+
+# run_setup "answers" -> runs setup.sh, feeding it the answers (use \n between
+# them), and sets OUTPUT and STATUS.
+run_setup() {
+  OUTPUT="$(printf '%b' "$1" |
+    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= \
+      bash "$SANDBOX/repo/setup.sh" 2>&1)"
+  STATUS=$?
+}
+
+# --- Tests: menus ------------------------------------------------------------
+
+test_app_menu_on_linux_includes_ptyxis() {
+  fake_os Linux
+  run_setup "2\n1\n"
+  assert_contains "1) VS Code"
+  assert_contains "2) Slack"
+  assert_contains "3) Ptyxis (Ubuntu terminal)"
+}
+
+test_app_menu_on_macos_hides_ptyxis() {
+  fake_os Darwin
+  run_setup "2\n1\n"
+  assert_contains "1) VS Code"
+  assert_contains "2) Slack"
+  assert_not_contains "Ptyxis"
+}
+
+test_theme_menu_lists_every_palette() {
+  run_setup "2\n1\n"
+  for file in "$SANDBOX"/repo/palettes/*-palette.toml; do
+    name="$(sed -n 's/^name *= *"\(.*\)".*/\1/p' "$file" | head -n 1)"
+    assert_contains ") $name"
+  done
+}
+
+test_theme_menu_lists_a_new_palette() {
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+    "$SANDBOX/repo/palettes/sunset-palette.toml" \
+    >"$SANDBOX/repo/palettes/forest-palette.toml"
+  run_setup "2\n1\n"
+  assert_contains ") Forest"
+}
+
+test_invalid_choices_ask_again() {
+  run_setup "\nabc\n0\n9\n-1\n2\n1\n"
+  assert_status 0
+  count="$(printf '%s\n' "$OUTPUT" | grep -c 'Please enter a number between 1 and')"
+  [ "$count" -eq 5 ] || fail "expected 5 re-prompts, got $count"
+  assert_contains "Your Slack theme string"
+}
+
+test_no_answer_exits_with_error() {
+  run_setup ""
+  assert_status 1
+  assert_contains "no choice made"
+}
+
+# --- Tests: generating -------------------------------------------------------
+
+test_generates_the_chosen_palette() {
+  run_setup "2\n2\n"
+  assert_status 0
+  assert_contains "Generated Sunset (sunset)"
+  assert_exists "$SANDBOX/repo/slack-theme/sunset.txt"
+  assert_exists "$SANDBOX/repo/ptyxis-theme/sunset.palette"
+  assert_exists "$SANDBOX/repo/vs-code-theme/themes/jenerated-sunset-color-theme.json"
+  grep -q '"Jenerated Sunset"' "$SANDBOX/repo/vs-code-theme/package.json" ||
+    fail "expected package.json to list Jenerated Sunset"
+}
+
+test_blue_purple_works_without_python() {
+  fake_no_python
+  run_setup "2\n1\n"
+  assert_status 0
+  assert_contains "Python 3.11+ not found"
+  assert_contains "$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
+}
+
+test_other_palettes_need_python() {
+  fake_no_python
+  run_setup "2\n2\n"
+  assert_status 1
+  assert_contains "generating Sunset needs Python 3.11 or later"
+}
+
+# --- Tests: VS Code ----------------------------------------------------------
+
+test_vscode_links_the_extension() {
+  run_setup "1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
+  assert_contains 'Choose "Jenerated Blue Purple"'
+}
+
+test_vscode_already_linked_is_left_alone() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions"
+  ln -s "$SANDBOX/repo/vs-code-theme" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
+  run_setup "1\n1\n"
+  assert_status 0
+  assert_contains "Already installed"
+  assert_not_contains "Replace it"
+}
+
+test_vscode_replaces_an_old_copy_when_asked() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
+  run_setup "1\n1\ny\n"
+  assert_status 0
+  assert_contains "An older install exists"
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
+}
+
+test_vscode_replaces_a_link_to_another_folder() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions" "$SANDBOX/elsewhere"
+  ln -s "$SANDBOX/elsewhere" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
+  run_setup "1\n1\n\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
+  assert_exists "$SANDBOX/elsewhere"
+}
+
+test_vscode_keeps_an_old_copy_when_declined() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
+  touch "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
+  run_setup "1\n1\nn\n"
+  assert_status 1
+  assert_contains "left the existing install alone"
+  assert_exists "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
+}
+
+test_vscode_warns_about_a_packaged_copy() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions/local.jenerated-themes-1.0.0"
+  run_setup "1\n1\n"
+  assert_status 0
+  assert_contains "you also have a packaged copy installed (local.jenerated-themes-1.0.0)"
+}
+
+test_vscode_removes_obsolete_file_with_only_this_extension() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions"
+  printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
+  run_setup "1\n1\n\n"
+  assert_status 0
+  assert_contains "marked as uninstalled"
+  assert_missing "$SANDBOX/home/.vscode/extensions/.obsolete"
+}
+
+test_vscode_keeps_other_obsolete_entries() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions"
+  printf '{"a.first-1.0.0":true,"local.jenerated-themes-1.0.0":true,"b.second-2.0.0":true}' \
+    >"$SANDBOX/home/.vscode/extensions/.obsolete"
+  run_setup "1\n1\n\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" \
+    '{"a.first-1.0.0":true,"b.second-2.0.0":true}'
+}
+
+test_vscode_ignores_obsolete_file_without_this_extension() {
+  mkdir -p "$SANDBOX/home/.vscode/extensions"
+  printf '{"a.first-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
+  run_setup "1\n1\n"
+  assert_status 0
+  assert_not_contains "marked as uninstalled"
+  assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"a.first-1.0.0":true}'
+}
+
+# --- Tests: Ptyxis -----------------------------------------------------------
+
+test_ptyxis_links_the_palette() {
+  fake_os Linux
+  run_setup "3\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
+    "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
+  assert_contains 'choose "Blue Purple"'
+}
+
+test_ptyxis_running_twice_is_fine() {
+  fake_os Linux
+  run_setup "3\n1\n"
+  run_setup "3\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
+    "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
+}
+
+# --- Tests: Slack ------------------------------------------------------------
+
+test_slack_prints_and_copies_the_theme_string() {
+  fake_os Linux
+  theme="$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
+  run_setup "2\n1\n"
+  assert_status 0
+  assert_contains "    $theme"
+  assert_contains "(Copied to your clipboard.)"
+  assert_file_equals "$SANDBOX/clipboard" "$theme"
+}
+
+test_slack_uses_pbcopy_on_macos() {
+  fake_os Darwin
+  fake_command pbcopy "cat > \"$SANDBOX/pbcopy-used\""
+  run_setup "2\n1\n"
+  assert_status 0
+  assert_exists "$SANDBOX/pbcopy-used"
+}
+
+test_slack_without_a_clipboard_tool_still_prints_the_string() {
+  fake_os Linux
+  rm -f "$SANDBOX"/bin/pbcopy "$SANDBOX"/bin/wl-copy "$SANDBOX"/bin/xclip "$SANDBOX"/bin/xsel
+  # Hide any real clipboard tools by giving setup.sh a PATH without them.
+  mkdir -p "$SANDBOX/minbin"
+  for tool in bash sh sed head tr grep readlink rm ln mkdir mv cat dirname basename uname; do
+    [ -e "$SANDBOX/bin/$tool" ] && continue
+    ln -s "$(command -v "$tool")" "$SANDBOX/minbin/$tool"
+  done
+  fake_no_python
+  OUTPUT="$(printf '2\n1\n' |
+    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$SANDBOX/minbin" WAYLAND_DISPLAY= \
+      "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" 2>&1)"
+  STATUS=$?
+  assert_status 0
+  assert_contains "$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
+  assert_not_contains "Copied to your clipboard"
+}
+
+run_tests

@@ -25,68 +25,119 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 PALETTES = ROOT / "palettes"
 
+# Generated VS Code theme files, relative to the repository root.
+VSCODE_THEME = "vs-code-theme/themes/jenerated-{slug}-color-theme.json"
+
 # (template, output) pairs, relative to the repository root. {slug} in the
 # output path is replaced with the palette's slug.
 TARGETS = [
-    ("vs-code-theme/themes/color-theme.json.tmpl",
-     "vs-code-theme/themes/jenerated-{slug}-color-theme.json"),
+    ("vs-code-theme/themes/color-theme.json.tmpl", VSCODE_THEME),
     ("ptyxis-theme/palette.tmpl", "ptyxis-theme/{slug}.palette"),
     ("slack-theme/slack-theme.txt.tmpl", "slack-theme/{slug}.txt"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
 # theme file that exists.
-VSCODE_PACKAGE_BASE = "vs-code-theme/package.json.tmpl"
-VSCODE_PACKAGE = "vs-code-theme/package.json"
-VSCODE_THEME_GLOB = "themes/jenerated-*-color-theme.json"
+VSCODE_PACKAGE_BASE = ROOT / "vs-code-theme/package.json.tmpl"
+VSCODE_PACKAGE = ROOT / "vs-code-theme/package.json"
+
+# A theme file's "type" -> the "uiTheme" VS Code expects in package.json.
+VSCODE_UI_THEMES = {
+    "dark": "vs-dark",
+    "light": "vs",
+    "hcDark": "hc-black",
+    "hcLight": "hc-light",
+}
 
 HEX = re.compile(r"#[0-9a-fA-F]{6}")
 PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
+# Slugs become file names, so they're kept to lowercase words and dashes.
+SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+
+
+def is_path(arg):
+    """Whether a command-line palette is a file path rather than a slug."""
+    return arg.endswith(".toml") or "/" in arg
+
+
+def check_slug(slug, source):
+    """Exit unless `slug` is safe to use in a file name."""
+    if not SLUG.fullmatch(slug):
+        sys.exit(f"{source}: {slug!r} is not a valid slug (use lowercase "
+                 f"letters, numbers and single dashes, e.g. blue-purple)")
+    return slug
 
 
 def palette_path(arg):
     """Turn a slug or a path into the palette file's path."""
-    if arg.endswith(".toml") or "/" in arg:
+    if is_path(arg):
         path = Path(arg)
     else:
-        path = PALETTES / f"{arg}-palette.toml"
+        path = PALETTES / f"{check_slug(arg, 'palette')}-palette.toml"
     if not path.is_file():
         sys.exit(f"No palette named {arg!r} (looked for {path}). "
                  f"Run ./jenerate.py --list to see the available palettes.")
     return path
 
 
-def read_toml(path):
-    with open(path, "rb") as f:
-        data = tomllib.load(f)
+def read_palette_file(path):
+    """Parse a palette file and check its `name`, `slug` and `colors`."""
+    try:
+        with open(path, "rb") as f:
+            data = tomllib.load(f)
+    except tomllib.TOMLDecodeError as error:
+        sys.exit(f"{path}: not a valid palette file: {error}")
+
     for key in ("name", "slug"):
         if not isinstance(data.get(key), str):
             sys.exit(f"{path}: missing top-level `{key}` string")
+    # The name is written into the themes as is, so it mustn't be able to
+    # break out of a JSON string or an INI line.
+    if any(c in '"\\' or not c.isprintable() for c in data["name"]):
+        sys.exit(f"{path}: `name` can't contain quotes, backslashes or "
+                 f"line breaks")
+    slug = check_slug(data["slug"], path)
+    if path.resolve().parent == PALETTES and path.name != f"{slug}-palette.toml":
+        sys.exit(f"{path}: palettes in palettes/ must be named after their "
+                 f"slug; rename it to {slug}-palette.toml")
+
+    colors = data.setdefault("colors", {})
+    if not isinstance(colors, dict):
+        sys.exit(f"{path}: `colors` must be a [colors] table")
+    for key, value in colors.items():
+        if not isinstance(value, str):
+            sys.exit(f"{path}: color `{key}` must be a quoted string, like "
+                     f'"#rrggbb" or "red"')
     return data
 
 
 def load_palette(path):
-    data = read_toml(path)
-    raw = data.get("colors", {})
+    """Read a palette and return its template values: every color as
+    #rrggbb (with references to other colors followed), plus `name` and
+    `slug`."""
+    data = read_palette_file(path)
+    colors = data["colors"]
 
-    def resolve(key, seen=()):
-        value = raw[key]
+    def resolve(key, chain=()):
+        value = colors[key]
+        chain += (key,)
         if HEX.fullmatch(value):
             return value
-        if value in seen or value == key:
+        if value in chain:
             sys.exit(f"{path}: color `{key}` refers to itself in a loop")
-        if value not in raw:
+        if value not in colors:
             sys.exit(f"{path}: color `{key}` = {value!r} is not a #rrggbb "
                      f"value or the name of another color")
-        return resolve(value, seen + (key,))
+        return resolve(value, chain)
 
-    values = {key: resolve(key) for key in raw}
+    values = {key: resolve(key) for key in colors}
     values["name"] = data["name"]
     values["slug"] = data["slug"]
     return values
 
 
 def render(template_path, values):
+    """Fill in a template's placeholders, or exit naming any missing ones."""
     text = template_path.read_text()
     missing = set()
 
@@ -104,8 +155,20 @@ def render(template_path, values):
     return result
 
 
-def outputs_for(slug):
-    return [ROOT / output.format(slug=slug) for _, output in TARGETS]
+def output_path(output, slug):
+    return ROOT / output.format(slug=slug)
+
+
+def read_vscode_theme(path):
+    """Return a generated VS Code theme's name and type, or exit if the file
+    is broken."""
+    try:
+        theme = json.loads(path.read_text())
+        name, kind = theme["name"], theme.get("type", "dark")
+    except (json.JSONDecodeError, KeyError, TypeError) as error:
+        sys.exit(f"{path.relative_to(ROOT)}: not a valid theme file ({error}). "
+                 f"Regenerate it with ./jenerate.py, or delete it.")
+    return name, kind
 
 
 def write_vscode_package():
@@ -113,38 +176,47 @@ def write_vscode_package():
 
     Each theme's label in the picker is the `name` inside its theme file.
     """
-    package = json.loads((ROOT / VSCODE_PACKAGE_BASE).read_text())
-    package_path = ROOT / VSCODE_PACKAGE
-    package["contributes"]["themes"] = [
-        {
-            "label": json.loads(path.read_text())["name"],
-            "uiTheme": "vs-dark",
-            "path": f"./themes/{path.name}",
-        }
-        for path in sorted(package_path.parent.glob(VSCODE_THEME_GLOB))
-    ]
+    package = json.loads(VSCODE_PACKAGE_BASE.read_text())
+    themes = []
+    for path in sorted(ROOT.glob(VSCODE_THEME.format(slug="*"))):
+        name, kind = read_vscode_theme(path)
+        themes.append({
+            "label": name,
+            "uiTheme": VSCODE_UI_THEMES.get(kind, "vs-dark"),
+            "path": f"./{path.relative_to(VSCODE_PACKAGE.parent).as_posix()}",
+        })
+    package["contributes"]["themes"] = themes
+
     content = json.dumps(package, indent=2) + "\n"
-    if not package_path.exists() or package_path.read_text() != content:
-        package_path.write_text(content)
-        print(f"Updated {package_path.relative_to(ROOT)}")
+    if not VSCODE_PACKAGE.exists() or VSCODE_PACKAGE.read_text() != content:
+        VSCODE_PACKAGE.write_text(content)
+        print(f"Updated {VSCODE_PACKAGE.relative_to(ROOT)}")
 
 
-def add(args):
-    for arg in args:
-        values = load_palette(palette_path(arg))
-        rendered = [(out, render(ROOT / template, values))
-                    for (template, _), out
-                    in zip(TARGETS, outputs_for(values["slug"]))]
-        for out, content in rendered:
-            out.write_text(content)
+def add(names):
+    """Generate every app's theme for each palette."""
+    for name in names:
+        values = load_palette(palette_path(name))
+        # Render everything before writing anything, so a bad template
+        # leaves no half-generated palette behind.
+        rendered = [(output_path(output, values["slug"]),
+                     render(ROOT / template, values))
+                    for template, output in TARGETS]
+        for path, content in rendered:
+            path.write_text(content)
         print(f"Generated {values['name']} ({values['slug']})")
 
 
-def remove(args):
-    for arg in args:
-        is_path = arg.endswith(".toml") or "/" in arg
-        slug = read_toml(palette_path(arg))["slug"] if is_path else arg
-        existing = [p for p in outputs_for(slug) if p.exists()]
+def remove(names):
+    """Delete each palette's generated themes (the palette itself is kept)."""
+    for name in names:
+        if is_path(name):
+            slug = read_palette_file(palette_path(name))["slug"]
+        else:
+            slug = check_slug(name, "palette")
+        existing = [path for path in
+                    (output_path(output, slug) for _, output in TARGETS)
+                    if path.exists()]
         if not existing:
             print(f"{slug}: nothing to remove")
         for path in existing:
@@ -153,9 +225,11 @@ def remove(args):
 
 
 def list_palettes():
+    """Print each palette in palettes/, starring those already generated."""
     for path in sorted(PALETTES.glob("*-palette.toml")):
-        data = read_toml(path)
-        generated = any(p.exists() for p in outputs_for(data["slug"]))
+        data = read_palette_file(path)
+        generated = any(output_path(output, data["slug"]).exists()
+                        for _, output in TARGETS)
         mark = "*" if generated else " "
         print(f"{mark} {data['slug']:<24} {data['name']}")
     print("\n* = generated")
@@ -180,8 +254,8 @@ def main():
         list_palettes()
         return
 
-    names = [n for arg in args.palettes for n in arg.split(",") if n.strip()]
-    names = [n.strip() for n in names]
+    names = [name.strip() for arg in args.palettes
+             for name in arg.split(",") if name.strip()]
     if not names:
         parser.error("name at least one palette, e.g. ./jenerate.py "
                      "blue-purple (see ./jenerate.py --list)")

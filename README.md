@@ -19,6 +19,18 @@ Each app has its own folder with a template and install instructions:
 
 ## Getting started
 
+The quickest way is the setup script. Clone the repository and run it; it
+asks which app and which theme you want, then does the rest (on Linux or
+macOS):
+
+```bash
+git clone https://github.com/savagejen/jenerated-themes jenerated-themes
+cd jenerated-themes
+./setup.sh
+```
+
+### Setting up by hand
+
 To use the default Blue Purple theme, clone the repository and follow the
 install steps in each app's folder. To add other palettes (needs Python 3.11
 or later):
@@ -72,8 +84,9 @@ committed as the default. Generating or removing other palettes changes that
 Don't edit generated files by hand; change the palette or template and run
 `jenerate.py` again.
 
-The templates currently assume a dark palette: VS Code themes are marked as
-dark, and Ptyxis palettes only have a dark variant.
+The templates currently assume a dark palette: the VS Code theme template
+sets `"type": "dark"` (`package.json` follows each theme's type), and Ptyxis
+palettes only have a dark variant.
 
 ## Changing colors
 
@@ -95,6 +108,16 @@ Copy an existing palette to `palettes/<slug>-palette.toml`, change its `name`,
 use must be defined; if one is missing, `jenerate.py` stops and names it. Add
 the palette to [Themes](#themes) below.
 
+A few rules keep generated files safe and valid; `jenerate.py` checks them and
+explains any that a palette breaks:
+
+- The `slug` is used in file names, so it's lowercase letters, numbers and
+  single dashes, like `deep-blue-sea`.
+- A palette in `palettes/` must be named `<slug>-palette.toml`. (A palette
+  kept elsewhere and passed by path can be named anything.)
+- The `name` can't contain double quotes, backslashes or line breaks.
+- Every color is a quoted string: `"#rrggbb"` or another color's name.
+
 ## Adding an app
 
 1. Create a folder for the app with a template (`<something>.tmpl`) that uses
@@ -102,6 +125,20 @@ the palette to [Themes](#themes) below.
 2. Add a `(template, output)` pair to `TARGETS` in `jenerate.py`. Use
    `{slug}` in the output path so each palette gets its own file.
 3. Add the output pattern to `.gitignore`, and a README with install steps.
+
+## Running the tests
+
+Tests live in [tests/](tests/), with one folder per script (`tests/setup/`
+for `setup.sh`, `tests/jenerate/` for `jenerate.py`). Run them all with:
+
+```bash
+tests/run.sh
+```
+
+Each test runs against a temporary copy of the repository (and, for
+`setup.sh`, a temporary home folder), so the tests don't touch your generated
+or installed themes. The `jenerate.py` tests need Python 3.11 or later and are
+skipped without it. Shared helpers are in `tests/lib.sh`.
 
 ## Themes
 
