@@ -1,0 +1,66 @@
+# Dark blue/purple with high contrast text and a near-black 'midnight'
+# background.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Blue Purple"
+slug = "blue-purple"
+
+[colors]
+# Backgrounds, darkest to lightest
+bg_chrome = "#0a0b13"          # activity bar, title bar, status bar
+bg_minimap = "#0f1019"
+bg = "#12131c"                 # editor and terminal
+bg_sidebar = "#161825"
+bg_widget = "#191b28"          # popups, hovers, notifications
+bg_line_highlight = "#1a1c2a"
+bg_hover = "#1e2032"           # hovered items, inputs
+bg_selected = "#22243d"        # inactive selection in lists
+bg_secondary_hover = "#363a52" # hovered secondary buttons
+selection = "#3c4270"          # selected text in the editor
+
+# Lines
+guide = "#222433"              # indent guides, rulers
+whitespace = "#2a2c3c"         # rendered whitespace
+border = "#2a2d40"
+
+# Text, dimmest to brightest
+text_faint = "#4b4d63"         # line numbers, ignored files
+text_muted = "#6b6f8a"         # comments, inactive tabs
+text_subtle = "#B5BAC1"        # sidebar text, punctuation
+text = "#DBDEE1"
+text_bright = "#ffffff"        # text on the accent color
+
+# Accent
+accent = "#5865F2"             # cursor, focus, buttons, badges
+accent_hover = "#4752c4"       # hovered buttons
+accent_soft = "#7289DA"        # keywords, links
+accent_light = "#8593f5"       # functions
+accent_pale = "#9cb2fa"        # properties
+
+# Syntax and status colors
+red = "#ED4245"                # errors, deleted
+orange = "#f2a65a"             # numbers, parameters, attributes
+yellow = "#FEE75C"             # warnings, regex
+green = "#57F287"              # strings, added
+cyan = "#4fd1c5"               # classes, types
+magenta = "#EB459E"            # constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#1e1f2e"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "text"
+term_bright_black = "text_faint"
+term_bright_red = "#f47a7d"
+term_bright_green = "#8bf6ac"
+term_bright_yellow = "#fdf08a"
+term_bright_blue = "accent_light"
+term_bright_magenta = "#f18cbf"
+term_bright_cyan = "#8be3da"
+term_bright_white = "text_bright"

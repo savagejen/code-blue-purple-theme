@@ -1,0 +1,65 @@
+# Dark dusky plum with a warm coral-orange accent and high contrast text.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Sunset"
+slug = "sunset"
+
+[colors]
+# Backgrounds, darkest to lightest
+bg_chrome = "#110a0e"          # activity bar, title bar, status bar
+bg_minimap = "#160d12"
+bg = "#1b1117"                 # editor and terminal
+bg_sidebar = "#21141b"
+bg_widget = "#26171f"          # popups, hovers, notifications
+bg_line_highlight = "#281920"
+bg_hover = "#301d26"           # hovered items, inputs
+bg_selected = "#39222c"        # inactive selection in lists
+bg_secondary_hover = "#52303d" # hovered secondary buttons
+selection = "#6a3342"          # selected text in the editor
+
+# Lines
+guide = "#33202a"              # indent guides, rulers
+whitespace = "#3b2530"         # rendered whitespace
+border = "#43293a"
+
+# Text, dimmest to brightest
+text_faint = "#6a4d58"         # line numbers, ignored files
+text_muted = "#937079"         # comments, inactive tabs
+text_subtle = "#cdb8b3"        # sidebar text, punctuation
+text = "#f2e4dc"
+text_bright = "#ffffff"        # text on the accent color
+
+# Accent
+accent = "#e4572e"             # cursor, focus, buttons, badges
+accent_hover = "#c2451f"       # hovered buttons
+accent_soft = "#f08a5d"        # keywords, links
+accent_light = "#f7a072"       # functions
+accent_pale = "#fbc49c"        # properties
+
+# Syntax and status colors
+red = "#ff4d5e"                # errors, deleted
+orange = "#ffb347"             # numbers, parameters, attributes
+yellow = "#ffd166"             # warnings, regex
+green = "#9ad96b"              # strings, added
+cyan = "#5cc8c0"               # classes, types
+magenta = "#e05ba0"            # constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#2a1a21"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "#7a8bd6"          # dusk blue; the palette has no other blue
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "text"
+term_bright_black = "text_faint"
+term_bright_red = "#ff8a94"
+term_bright_green = "#bdeb9a"
+term_bright_yellow = "#ffe199"
+term_bright_blue = "#a6b2ea"
+term_bright_magenta = "#ee93c2"
+term_bright_cyan = "#93e0da"
+term_bright_white = "text_bright"
