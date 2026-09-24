@@ -120,8 +120,9 @@ explains any that a palette breaks:
   single dashes, like `deep-blue-sea`.
 - A palette in `palettes/` must be named `<slug>-palette.toml`. (A palette
   kept elsewhere and passed by path can be named anything.)
-- The `name` can't contain double quotes, slashes, backslashes or line
-  breaks. (It also names the Obsidian theme's folder.)
+- The `name` can't be empty, start or end with spaces, or contain double
+  quotes, slashes, backslashes or line breaks. (It also names the Obsidian
+  theme's folder.)
 - Every color is a quoted string: `"#rrggbb"` or another color's name.
 
 ## Adding an app

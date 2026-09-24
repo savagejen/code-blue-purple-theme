@@ -8,6 +8,8 @@
 
 set -eu
 
+# Where setup.sh was run from, for paths the user types.
+START_DIR="$(pwd)"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
@@ -57,9 +59,12 @@ choose() {
   done
 }
 
-# toml_value file key -> prints the top-level string value of `key = "..."`.
+# toml_value file key -> prints the top-level string value of `key = "..."`
+# or `key = '...'`. Only used without Python; jenerate.py reads palettes
+# properly otherwise.
 toml_value() {
-  sed -n "s/^$2[[:space:]]*=[[:space:]]*\"\(.*\)\".*/\1/p" "$1" | head -n 1
+  sed -n -e "s/^$2[[:space:]]*=[[:space:]]*\"\([^\"]*\)\".*/\1/p" \
+    -e "s/^$2[[:space:]]*=[[:space:]]*'\([^']*\)'.*/\1/p" "$1" | head -n 1
 }
 
 # Finds a Python new enough (3.11+) to run jenerate.py, or prints nothing.
@@ -72,6 +77,47 @@ find_python() {
     fi
   done
 }
+
+# --- Prepare for a commit (for maintainers) --------------------------------
+# ./setup.sh --prep-commit puts the generated files git tracks back to the
+# committed defaults, so local palettes don't end up in a commit:
+# Blue Purple's files are regenerated (restored if removed, updated if a
+# template changed), and package.json is rebuilt listing only Blue Purple
+# (keeping any change to package.json.tmpl). Other generated themes stay on
+# disk; they're ignored by git. Deliberately left out of the usage and README.
+
+PYTHON="$(find_python)"
+
+prep_commit() {
+  [ -n "$PYTHON" ] || die "--prep-commit needs Python 3.11 or later"
+  local others
+  others="$("$PYTHON" jenerate.py --list |
+    sed -n 's/^\* \([a-z0-9-][a-z0-9-]*\) .*/\1/p' | grep -vx 'blue-purple' |
+    paste -sd, - || true)"
+
+  step "Preparing the repository for a commit"
+  "$PYTHON" -c '
+import jenerate
+jenerate.add(["blue-purple"])
+jenerate.write_vscode_package(["blue-purple"])
+'
+  say "The generated files git tracks now match the Blue Purple defaults."
+  if [ -n "$others" ]; then
+    say ""
+    say "Your other themes ($others) are still generated, but VS Code won't"
+    say "list them until you run, after committing:"
+    say "    ./jenerate.py $others"
+  fi
+}
+
+case "${1:-}" in
+  "") ;;
+  --prep-commit)
+    prep_commit
+    exit 0
+    ;;
+  *) die "unknown option: $1 (run ./setup.sh with no options)" ;;
+esac
 
 # --- Pick an app -------------------------------------------------------------
 
@@ -92,11 +138,24 @@ APP="${APP_IDS[$CHOICE]}"
 
 NAMES=()
 SLUGS=()
-for file in palettes/*-palette.toml; do
-  [ -f "$file" ] || continue
-  NAMES+=("$(toml_value "$file" name)")
-  SLUGS+=("$(toml_value "$file" slug)")
-done
+if [ -n "$PYTHON" ]; then
+  # jenerate.py --list prints "* slug   Name" per palette (the * marks
+  # generated ones), and stops with a message if a palette is broken.
+  LIST="$("$PYTHON" jenerate.py --list)" ||
+    die "fix the palette named above, then run ./setup.sh again"
+  TAB="$(printf '\t')"
+  while IFS="$TAB" read -r slug name; do
+    SLUGS+=("$slug")
+    NAMES+=("$name")
+  done < <(printf '%s\n' "$LIST" |
+    sed -n "s/^[* ] \([a-z0-9-][a-z0-9-]*\)  *\(.*\)$/\1$TAB\2/p")
+else
+  for file in palettes/*-palette.toml; do
+    [ -f "$file" ] || continue
+    NAMES+=("$(toml_value "$file" name)")
+    SLUGS+=("$(toml_value "$file" slug)")
+  done
+fi
 [ "${#SLUGS[@]}" -gt 0 ] || die "no palettes found in palettes/"
 
 choose "Which theme do you want?" "${NAMES[@]}"
@@ -106,7 +165,6 @@ SLUG="${SLUGS[$CHOICE]}"
 # --- Generate the theme ------------------------------------------------------
 
 step "Generating the $NAME theme"
-PYTHON="$(find_python)"
 if [ -n "$PYTHON" ]; then
   "$PYTHON" jenerate.py "$SLUG"
 elif [ "$SLUG" = "blue-purple" ]; then
@@ -161,7 +219,7 @@ install_vscode() {
     say ""
     say "VS Code has this extension marked as uninstalled, which hides the theme."
     say "Quit VS Code completely (all windows), then press Enter to fix it."
-    read -r _ || true
+    read -r _ || die "stopped before changing VS Code's files; run ./setup.sh again"
     sed -e 's/"local\.jenerated-themes[^"]*":[a-z]*//g' \
       -e 's/,,*/,/g' -e 's/{,/{/' -e 's/,}/}/' "$obsolete" >"$obsolete.tmp"
     if grep -q '^{}$' "$obsolete.tmp"; then
@@ -225,8 +283,12 @@ choose_obsidian_vault() {
     say ""
     printf 'Path to your vault folder: '
     read -r VAULT || die "no vault given"
+    [ -n "$VAULT" ] || die "no vault given"
     case "$VAULT" in
       "~" | "~/"*) VAULT="$HOME${VAULT#\~}" ;;
+      /*) ;;
+      # A relative path is relative to where setup.sh was run, not the repo.
+      *) VAULT="$START_DIR/$VAULT" ;;
     esac
     VAULT="${VAULT%/}"
   fi

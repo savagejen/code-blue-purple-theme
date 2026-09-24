@@ -101,9 +101,12 @@ def read_palette_file(path):
     # The name is written into the themes as is, so it mustn't be able to
     # break out of a JSON string or an INI line. It also names the Obsidian
     # theme's folder, so no slashes.
-    if any(c in '"\\/' or not c.isprintable() for c in data["name"]):
+    name = data["name"]
+    if any(c in '"\\/' or not c.isprintable() for c in name):
         sys.exit(f"{path}: `name` can't contain quotes, slashes, "
                  f"backslashes or line breaks")
+    if not name.strip() or name != name.strip():
+        sys.exit(f"{path}: `name` can't be empty or start or end with spaces")
     slug = check_slug(data["slug"], path)
     if path.resolve().parent == PALETTES and path.name != f"{slug}-palette.toml":
         sys.exit(f"{path}: palettes in palettes/ must be named after their "
@@ -160,9 +163,19 @@ def load_palette(path):
     return values
 
 
+def read_template(path):
+    """Read a template, or exit naming it if it's missing."""
+    try:
+        return path.read_text()
+    except FileNotFoundError:
+        sys.exit(f"{path.relative_to(ROOT)}: template not found. Restore it "
+                 f"(git checkout -- {path.relative_to(ROOT)}), or remove it "
+                 f"from TARGETS in jenerate.py.")
+
+
 def render(template_path, values):
     """Fill in a template's placeholders, or exit naming any missing ones."""
-    text = template_path.read_text()
+    text = read_template(template_path)
     missing = set()
 
     def substitute(match):
@@ -201,14 +214,19 @@ def read_vscode_theme(path):
     return name, kind
 
 
-def write_vscode_package():
-    """Rebuild package.json with one entry per VS Code theme file on disk.
+def write_vscode_package(slugs=None):
+    """Rebuild package.json with one entry per VS Code theme file on disk, or
+    only for the palettes in `slugs` (for the committed default).
 
     Each theme's label in the picker is the `name` inside its theme file.
     """
-    package = json.loads(VSCODE_PACKAGE_BASE.read_text())
+    package = json.loads(read_template(VSCODE_PACKAGE_BASE))
+    if slugs is None:
+        paths = sorted(ROOT.glob(VSCODE_THEME.format(slug="*")))
+    else:
+        paths = [ROOT / VSCODE_THEME.format(slug=slug) for slug in slugs]
     themes = []
-    for path in sorted(ROOT.glob(VSCODE_THEME.format(slug="*"))):
+    for path in paths:
         name, kind = read_vscode_theme(path)
         themes.append({
             "label": name,
