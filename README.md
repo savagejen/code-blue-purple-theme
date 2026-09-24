@@ -7,6 +7,8 @@ get the palettes you ask for, so your apps' theme lists stay short.
 The default palette, **Blue Purple**, comes already generated, so you can
 install it in any app without running anything.
 
+![VS Code with the Jenerated Blue Purple theme: the Explorer sidebar and a Python file in the editor](Screenshot.png)
+
 ## Supported apps
 
 Each app has its own folder with a template and install instructions:
