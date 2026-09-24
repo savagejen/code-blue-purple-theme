@@ -4,6 +4,7 @@
   "description": "Dark themes with high contrast text, generated from shared color palettes.",
   "version": "1.0.0",
   "publisher": "local",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.70.0"
   },
