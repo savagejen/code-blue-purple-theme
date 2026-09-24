@@ -3,6 +3,7 @@ vs-code-theme/package.json
 vs-code-theme/themes/jenerated-*-color-theme.json
 ptyxis-theme/*.palette
 slack-theme/*.txt
+tilix-theme/*.json
 obsidian-theme/*/
 *.vsix
 
@@ -12,4 +13,5 @@ obsidian-theme/*/
 !vs-code-theme/themes/jenerated-blue-purple-color-theme.json
 !ptyxis-theme/blue-purple.palette
 !slack-theme/blue-purple.txt
+!tilix-theme/blue-purple.json
 !obsidian-theme/blue-purple/

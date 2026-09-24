@@ -38,6 +38,7 @@ TARGETS = [
     ("vs-code-theme/themes/color-theme.json.tmpl", VSCODE_THEME),
     ("ptyxis-theme/palette.tmpl", "ptyxis-theme/{slug}.palette"),
     ("slack-theme/slack-theme.txt.tmpl", "slack-theme/{slug}.txt"),
+    ("tilix-theme/scheme.json.tmpl", "tilix-theme/{slug}.json"),
     ("obsidian-theme/theme.css.tmpl", "obsidian-theme/{slug}/theme.css"),
     ("obsidian-theme/manifest.json.tmpl", "obsidian-theme/{slug}/manifest.json"),
 ]

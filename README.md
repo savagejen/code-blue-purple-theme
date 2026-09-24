@@ -16,6 +16,7 @@ Each app has its own folder with a template and install instructions:
 - [Obsidian](obsidian-theme/)
 - [Ptyxis (Ubuntu terminal)](ptyxis-theme/)
 - [Slack](slack-theme/)
+- [Tilix (terminal)](tilix-theme/)
 - [VS Code](vs-code-theme/)
 
 ## Getting started
@@ -90,7 +91,7 @@ Don't edit generated files by hand; change the palette or template and run
 
 The templates currently assume a dark palette: the VS Code theme template
 sets `"type": "dark"` (`package.json` follows each theme's type), and the
-Ptyxis and Obsidian themes only have a dark variant.
+Ptyxis, Tilix and Obsidian themes only have a dark variant.
 
 ## Changing colors
 

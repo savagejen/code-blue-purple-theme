@@ -40,22 +40,24 @@ run_setup() {
 
 # --- Tests: menus ------------------------------------------------------------
 
-test_app_menu_on_linux_includes_ptyxis() {
+test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
   assert_contains "4) Ptyxis (Ubuntu terminal)"
+  assert_contains "5) Tilix (terminal)"
 }
 
-test_app_menu_on_macos_hides_ptyxis() {
+test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
   assert_not_contains "Ptyxis"
+  assert_not_contains "Tilix"
 }
 
 test_theme_menu_lists_every_palette() {
@@ -213,6 +215,54 @@ test_ptyxis_running_twice_is_fine() {
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
+}
+
+# --- Tests: Tilix -----------------------------------------------------------
+
+TILIX_SCHEMES=".config/tilix/schemes"
+
+test_tilix_links_the_scheme() {
+  fake_os Linux
+  run_setup "5\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
+    "$SANDBOX/repo/tilix-theme/blue-purple.json"
+  assert_contains 'choose "Jenerated Blue Purple"'
+}
+
+test_tilix_links_a_generated_palette() {
+  fake_os Linux
+  run_setup "5\n2\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
+    "$SANDBOX/repo/tilix-theme/sunset.json"
+  assert_exists "$SANDBOX/repo/tilix-theme/sunset.json"
+}
+
+test_tilix_leaves_other_schemes_alone() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
+  echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
+  run_setup "5\n1\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
+}
+
+test_tilix_already_linked_is_left_alone() {
+  fake_os Linux
+  run_setup "5\n1\n"
+  run_setup "5\n1\n"
+  assert_status 0
+  assert_contains "Already installed"
+}
+
+test_tilix_asks_before_replacing_a_file() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
+  echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
+  run_setup "5\n1\nn\n"
+  assert_status 1
+  assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

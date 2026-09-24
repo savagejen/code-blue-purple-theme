@@ -78,8 +78,8 @@ find_python() {
 APPS=("VS Code" "Slack" "Obsidian")
 APP_IDS=("vscode" "slack" "obsidian")
 if [ "$OS" = "Linux" ]; then
-  APPS+=("Ptyxis (Ubuntu terminal)")
-  APP_IDS+=("ptyxis")
+  APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)")
+  APP_IDS+=("ptyxis" "tilix")
 fi
 
 say "Jenerated Themes setup"
@@ -255,6 +255,21 @@ install_obsidian() {
   say "Themes are per vault; run ./setup.sh again for your other vaults."
 }
 
+install_tilix() {
+  local schemes="$HOME/.config/tilix/schemes"
+
+  step "Installing the Tilix color scheme"
+  mkdir -p "$schemes"
+  # The jenerated- prefix keeps it from replacing a scheme of your own.
+  install_link "$schemes/jenerated-$SLUG.json" "$ROOT/tilix-theme/$SLUG.json"
+
+  step "Done! To turn the color scheme on:"
+  say "1. Close every Tilix window, then open Tilix again."
+  say "2. Open Preferences, choose your profile under Profiles, and on the"
+  say "   Color tab choose \"Jenerated $NAME\" as the color scheme."
+  say "   Repeat for other profiles."
+}
+
 copy_to_clipboard() {
   if [ "$OS" = "Darwin" ] && command -v pbcopy >/dev/null 2>&1; then
     pbcopy
@@ -293,6 +308,7 @@ case "$APP" in
   ptyxis) install_ptyxis ;;
   slack) install_slack ;;
   obsidian) install_obsidian ;;
+  tilix) install_tilix ;;
 esac
 
 say ""

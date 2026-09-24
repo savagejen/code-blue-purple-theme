@@ -42,6 +42,7 @@ vscode_theme() { printf '%s' "$SANDBOX/repo/vs-code-theme/themes/jenerated-$1-co
 ptyxis_palette() { printf '%s' "$SANDBOX/repo/ptyxis-theme/$1.palette"; }
 slack_theme() { printf '%s' "$SANDBOX/repo/slack-theme/$1.txt"; }
 obsidian_theme() { printf '%s' "$SANDBOX/repo/obsidian-theme/$1"; }
+tilix_scheme() { printf '%s' "$SANDBOX/repo/tilix-theme/$1.json"; }
 PACKAGE_JSON_REL="vs-code-theme/package.json"
 
 # Prints package.json's theme labels, one per line, in order.
@@ -109,12 +110,14 @@ test_generates_every_app_theme() {
   assert_exists "$(slack_theme sunset)"
   assert_exists "$(obsidian_theme sunset)/theme.css"
   assert_exists "$(obsidian_theme sunset)/manifest.json"
+  assert_exists "$(tilix_scheme sunset)"
 }
 
 test_fills_in_every_placeholder() {
   run_jenerate sunset
   for file in "$(vscode_theme sunset)" "$(ptyxis_palette sunset)" "$(slack_theme sunset)" \
-    "$(obsidian_theme sunset)/theme.css" "$(obsidian_theme sunset)/manifest.json"; do
+    "$(obsidian_theme sunset)/theme.css" "$(obsidian_theme sunset)/manifest.json" \
+    "$(tilix_scheme sunset)"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -172,7 +175,8 @@ test_blue_purple_matches_the_committed_files() {
   assert_status 0
   for rel in vs-code-theme/themes/jenerated-blue-purple-color-theme.json \
     ptyxis-theme/blue-purple.palette slack-theme/blue-purple.txt \
-    obsidian-theme/blue-purple/theme.css obsidian-theme/blue-purple/manifest.json; do
+    obsidian-theme/blue-purple/theme.css obsidian-theme/blue-purple/manifest.json \
+    tilix-theme/blue-purple.json; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -269,6 +273,34 @@ test_a_defined_color_wins_over_a_derived_one() {
   run_jenerate clash
   assert_status 0
   assert_file_equals "$(slack_theme clash)" "#010203"
+}
+
+# --- Tests: Tilix -----------------------------------------------------------
+
+test_tilix_scheme_is_valid_json() {
+  run_jenerate sunset
+  assert_valid_json "$(tilix_scheme sunset)"
+}
+
+test_tilix_scheme_uses_the_palette() {
+  run_jenerate sunset
+  result="$("$PYTHON" -c '
+import json, sys
+s = json.load(open(sys.argv[1]))
+print(s["name"], s["background-color"], s["foreground-color"],
+      len(s["palette"]), s["palette"][1], s["palette"][15], s["cursor-background-color"])
+' "$(tilix_scheme sunset)")"
+  # term_red = "red" = #ff4d5e, and term_bright_white = "text_bright" = #ffffff.
+  [ "$result" = "Jenerated Sunset #1b1117 #f2e4dc 16 #ff4d5e #ffffff #e4572e" ] ||
+    fail "unexpected Tilix scheme values: $result"
+}
+
+test_remove_deletes_the_tilix_scheme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed tilix-theme/sunset.json"
+  assert_missing "$(tilix_scheme sunset)"
+  assert_exists "$SANDBOX/repo/tilix-theme/scheme.json.tmpl"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------
