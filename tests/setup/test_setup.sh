@@ -62,7 +62,7 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # GIVEN a Linux system
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      JetBrains apps, Ptyxis, Tilix and GTK3 apps
+#      JetBrains apps, Chromium browsers, Ptyxis, Tilix and GTK3 apps
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
@@ -73,15 +73,17 @@ test_app_menu_on_linux_includes_the_terminals() {
   assert_contains "5) Firefox"
   assert_contains "6) Vivaldi"
   assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
-  assert_contains "8) Ptyxis (Ubuntu terminal)"
-  assert_contains "9) Tilix (terminal)"
-  assert_contains "10) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
+  assert_contains "8) Chromium browsers (Chrome, Brave, Edge, Opera and more)"
+  assert_contains "9) Ptyxis (Ubuntu terminal)"
+  assert_contains "10) Tilix (terminal)"
+  assert_contains "11) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi and
-#      JetBrains apps, but not Ptyxis, Tilix or GTK3 apps
+#      JetBrains apps and Chromium browsers, but not Ptyxis, Tilix or GTK3
+#      apps
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
@@ -92,6 +94,7 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
   assert_contains "5) Firefox"
   assert_contains "6) Vivaldi"
   assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
+  assert_contains "8) Chromium browsers (Chrome, Brave, Edge, Opera and more)"
   assert_not_contains "Ptyxis"
   assert_not_contains "Tilix"
   assert_not_contains "GTK3"
@@ -283,7 +286,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blurple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "1\n9\n1\n"
+  run_setup "1\n10\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blurple' is not a #rrggbb value"
@@ -301,7 +304,7 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "1\n9\n2\n"
+  run_setup "1\n10\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
   assert_exists "$repo/app-themes/tilix-theme/sunset.json"
@@ -440,7 +443,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "1\n8\n1\n"
+  run_setup "1\n9\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -452,8 +455,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "1\n8\n1\n"
-  run_setup "1\n8\n1\n"
+  run_setup "1\n9\n1\n"
+  run_setup "1\n9\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -469,7 +472,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "1\n9\n1\n"
+  run_setup "1\n10\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
@@ -481,7 +484,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "1\n9\n2\n"
+  run_setup "1\n10\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
@@ -495,7 +498,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "1\n9\n1\n"
+  run_setup "1\n10\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -505,8 +508,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "1\n9\n1\n"
-  run_setup "1\n9\n1\n"
+  run_setup "1\n10\n1\n"
+  run_setup "1\n10\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -518,7 +521,7 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "1\n9\n1\nn\n"
+  run_setup "1\n10\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
 }
@@ -797,7 +800,7 @@ esac"
 #      and it explains how to turn it on
 test_gtk3_links_the_theme() {
   fake_os Linux
-  run_setup "1\n10\n1\n"
+  run_setup "1\n11\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
   assert_exists "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple/gtk-3.0/gtk.css"
@@ -812,7 +815,7 @@ test_gtk3_links_the_theme() {
 test_gtk3_switches_the_theme_when_asked() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\n10\n2\ny\n"
+  run_setup "1\n11\n2\ny\n"
   assert_status 0
   assert_contains "Your GTK3 theme is 'Yaru-dark'."
   assert_file_equals "$SANDBOX/gsettings-set" "set org.gnome.desktop.interface gtk-theme Jenerated-sunset"
@@ -826,11 +829,40 @@ test_gtk3_switches_the_theme_when_asked() {
 test_gtk3_leaves_the_theme_setting_when_declined() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\n10\n1\nn\n"
+  run_setup "1\n11\n1\nn\n"
   assert_status 0
   assert_missing "$SANDBOX/gsettings-set"
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
   assert_contains "Legacy Applications"
+}
+
+# --- Tests: Chromium browsers ------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN choosing Chromium browsers and Sunset
+# THEN Sunset's theme is generated, and it explains loading its folder as an
+#      unpacked extension in each browser
+test_chromium_explains_loading_the_theme() {
+  run_setup "1\n8\n2\n"
+  assert_status 0
+  folder="$SANDBOX/repo/app-themes/chromium-theme/sunset"
+  assert_exists "$folder/manifest.json"
+  assert_contains "The theme is ready in $folder"
+  assert_contains "chrome://extensions"
+  assert_contains "brave://extensions"
+  assert_contains "edge://extensions"
+  assert_contains '"Load unpacked"'
+}
+
+# GIVEN a browser's old cache of Blue Purple's theme in its folder
+# WHEN choosing Chromium browsers and Blue Purple
+# THEN the cache is deleted, so the browser uses the current colors
+test_chromium_clears_an_old_theme_cache() {
+  touch "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/Cached Theme.pak"
+  run_setup "1\n8\n1\n"
+  assert_status 0
+  assert_missing "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/Cached Theme.pak"
+  assert_exists "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/manifest.json"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

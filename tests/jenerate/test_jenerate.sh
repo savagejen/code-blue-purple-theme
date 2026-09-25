@@ -50,6 +50,7 @@ firefox_theme() { printf '%s' "$SANDBOX/repo/app-themes/firefox-theme/$1"; }
 vivaldi_theme() { printf '%s' "$SANDBOX/repo/app-themes/vivaldi-theme/$1"; }
 jetbrains_theme() { printf '%s' "$SANDBOX/repo/app-themes/jetbrains-theme/$1"; }
 gtk3_theme() { printf '%s' "$SANDBOX/repo/app-themes/gtk3-theme/$1"; }
+chromium_theme() { printf '%s' "$SANDBOX/repo/app-themes/chromium-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -180,6 +181,7 @@ test_generates_every_app_theme() {
   assert_exists "$(jetbrains_theme sunset)/jenerated-sunset.xml"
   assert_exists "$(gtk3_theme sunset)/gtk-3.0/gtk.css"
   assert_exists "$(gtk3_theme sunset)/index.theme"
+  assert_exists "$(chromium_theme sunset)/manifest.json"
 }
 
 # GIVEN the Sunset palette
@@ -192,7 +194,8 @@ test_fills_in_every_placeholder() {
     "$(tilix_scheme sunset)" "$(vim_scheme sunset)" "$(firefox_theme sunset)/manifest.json" \
     "$(vivaldi_theme sunset)/settings.json" "$(jetbrains_theme sunset)/META-INF/plugin.xml" \
     "$(jetbrains_theme sunset)/jenerated-sunset.theme.json" "$(jetbrains_theme sunset)/jenerated-sunset.xml" \
-    "$(gtk3_theme sunset)/gtk-3.0/gtk.css" "$(gtk3_theme sunset)/index.theme"; do
+    "$(gtk3_theme sunset)/gtk-3.0/gtk.css" "$(gtk3_theme sunset)/index.theme" \
+    "$(chromium_theme sunset)/manifest.json"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -284,7 +287,8 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/jetbrains-theme/blue-purple/META-INF/plugin.xml \
     app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.theme.json \
     app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.xml \
-    app-themes/gtk3-theme/blue-purple/gtk-3.0/gtk.css app-themes/gtk3-theme/blue-purple/index.theme; do
+    app-themes/gtk3-theme/blue-purple/gtk-3.0/gtk.css app-themes/gtk3-theme/blue-purple/index.theme \
+    app-themes/chromium-theme/blue-purple/manifest.json; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -726,6 +730,44 @@ test_remove_deletes_the_gtk3_theme() {
   assert_contains "Removed app-themes/gtk3-theme/sunset/gtk-3.0/gtk.css"
   assert_missing "$(gtk3_theme sunset)"
   assert_exists "$SANDBOX/repo/app-themes/gtk3-theme/gtk.css.tmpl"
+}
+
+# --- Tests: Chromium browsers ------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the Chromium theme is a valid Manifest V3 theme named after the palette,
+#      with every color an [r, g, b] list, using Sunset's colors
+test_chromium_theme_uses_the_palette() {
+  run_jenerate sunset
+  manifest="$(chromium_theme sunset)/manifest.json"
+  assert_valid_json "$manifest"
+  result="$("$PYTHON" -c '
+import json, sys
+m = json.load(open(sys.argv[1]))
+c = m["theme"]["colors"]
+ok = all(isinstance(v, list) and len(v) == 3 and all(isinstance(x, int) and 0 <= x <= 255 for x in v) for v in c.values())
+rgb = lambda k: ", ".join(map(str, c[k]))
+print(m["manifest_version"], m["name"], ok)
+print(rgb("frame"), "|", rgb("toolbar"), "|", rgb("tab_text"), "|", rgb("ntp_link"))
+' "$manifest")"
+  expected="3 Jenerated Sunset True
+$(color_rgb bg_chrome) | $(color_rgb bg) | $(color_rgb text_bright) | $(color_rgb accent_soft)"
+  [ "$result" = "$expected" ] || fail "expected Chromium theme values:
+$expected
+got:
+$result"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Chromium theme folder is deleted, and the template is kept
+test_remove_deletes_the_chromium_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/chromium-theme/sunset/manifest.json"
+  assert_missing "$(chromium_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/chromium-theme/manifest.json.tmpl"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------

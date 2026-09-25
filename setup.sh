@@ -198,8 +198,9 @@ choose "What would you like to do?" \
 # --- Pick an app -------------------------------------------------------------
 
 APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim" "Firefox" "Vivaldi"
-  "JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)")
-APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains")
+  "JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
+  "Chromium browsers (Chrome, Brave, Edge, Opera and more)")
+APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains" "chromium")
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)"
     "GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)")
@@ -577,6 +578,30 @@ install_gtk3() {
   say "- To try it in one app: GTK_THEME=$theme gimp (or any GTK3 app)."
 }
 
+install_chromium() {
+  local folder="$ROOT/app-themes/chromium-theme/$SLUG"
+
+  # Browsers cache a theme in its folder when they load it; clear any old
+  # cache so the new colors are used.
+  rm -f "$folder/Cached Theme.pak"
+
+  step "Done! The theme is ready in $folder"
+  say "To turn it on, in Chrome, Brave, Edge, Opera, Chromium or another"
+  say "Chromium-based browser:"
+  say "1. Open the browser's extensions page:"
+  say "     chrome://extensions  (Chrome, Chromium)"
+  say "     brave://extensions   (Brave)"
+  say "     edge://extensions    (Edge)"
+  say "     opera://extensions   (Opera)"
+  say "2. Turn on Developer mode."
+  say "3. Click \"Load unpacked\" and choose the folder above. The theme applies"
+  say "   right away."
+  say "The browser keeps loading the theme from that folder, so leave it there."
+  say "After changing the palette, run ./setup.sh again and load it again."
+  say "To go back to the browser's own look: Settings -> Appearance -> Theme ->"
+  say "Reset to default."
+}
+
 install_tilix() {
   local schemes="$HOME/.config/tilix/schemes"
 
@@ -634,6 +659,7 @@ case "$APP" in
   firefox) install_firefox ;;
   vivaldi) install_vivaldi ;;
   jetbrains) install_jetbrains ;;
+  chromium) install_chromium ;;
   tilix) install_tilix ;;
   gtk3) install_gtk3 ;;
 esac

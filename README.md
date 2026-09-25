@@ -13,6 +13,7 @@ install it in any app without running anything.
 
 Each app has its own folder with a template and install instructions:
 
+- [Chromium browsers (Chrome, Brave, Edge, Opera and more)](app-themes/chromium-theme/)
 - [Firefox](app-themes/firefox-theme/)
 - [GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)](app-themes/gtk3-theme/)
 - [JetBrains apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)](app-themes/jetbrains-theme/)
@@ -99,8 +100,8 @@ Don't edit generated files by hand; change the palette or template and run
 
 The templates currently assume a dark palette: the VS Code theme template
 sets `"type": "dark"` (`package.json` follows each theme's type), and the
-Ptyxis, Tilix, Obsidian, Vim, Firefox, Vivaldi, JetBrains and GTK3 themes only
-have a dark variant.
+Ptyxis, Tilix, Obsidian, Vim, Firefox, Vivaldi, Chromium, JetBrains and GTK3
+themes only have a dark variant.
 
 ## Changing colors
 
