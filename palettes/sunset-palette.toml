@@ -1,4 +1,6 @@
-# Dark dusky plum with a warm coral-orange accent and high contrast text.
+# A sunset sky, top to horizon: backgrounds run from blue-black through warm
+# aubergine to plum-rose, with accents in sunset orange, rose, gold and
+# orchid, and warm peach-cream text.
 #
 # Every color is a #rrggbb hex value, or the name of another color in this
 # file. Templates add transparency themselves (e.g. {{accent}}33).
@@ -7,59 +9,59 @@ name = "Sunset"
 slug = "sunset"
 
 [colors]
-# Backgrounds, darkest to lightest
-bg_chrome = "#110a0e"          # activity bar, title bar, status bar
-bg_minimap = "#160d12"
-bg = "#1b1117"                 # editor and terminal
-bg_sidebar = "#21141b"
-bg_widget = "#26171f"          # popups, hovers, notifications
-bg_line_highlight = "#281920"
-bg_hover = "#301d26"           # hovered items, inputs
-bg_selected = "#39222c"        # inactive selection in lists
-bg_secondary_hover = "#52303d" # hovered secondary buttons
-selection = "#6a3342"          # selected text in the editor
+# Backgrounds, darkest to lightest (the sky, from its top to the horizon)
+bg_chrome = "#0b0a15"          # activity bar, title bar, status bar
+bg_minimap = "#130c19"
+bg = "#171523"                 # editor and terminal
+bg_sidebar = "#1F2A51"
+bg_widget = "#2a1823"          # popups, hovers, notifications
+bg_line_highlight = "#25151f"
+bg_hover = "#361d2b"           # hovered items, inputs
+bg_selected = "#422235"        # inactive selection in lists
+bg_secondary_hover = "#5a3048" # hovered secondary buttons
+selection = "#72304f"          # selected text in the editor
 
 # Lines
-guide = "#33202a"              # indent guides, rulers
-whitespace = "#3b2530"         # rendered whitespace
-border = "#43293a"
+guide = "#2e1a27"              # indent guides, rulers
+whitespace = "#3c2433"         # rendered whitespace
+border = "#40263a"
 
 # Text, dimmest to brightest
-text_faint = "#6a4d58"         # line numbers, ignored files
-text_muted = "#937079"         # comments, inactive tabs
-text_subtle = "#cdb8b3"        # sidebar text, punctuation
-text = "#f2e4dc"
+text_faint = "#e0c6c8"         # line numbers, ignored files
+text_muted = "#a07f95"         # comments, inactive tabs
+text_subtle = "#e0c6c8"        # sidebar text, punctuation
+text = "#fbe9df"
 text_bright = "#ffffff"        # text on the accent color
 
 # Accent
-accent = "#e4572e"             # cursor, focus, buttons, badges
-accent_hover = "#c2451f"       # hovered buttons
-accent_soft = "#f08a5d"        # keywords, links
-accent_light = "#f7a072"       # functions
-accent_pale = "#fbc49c"        # properties
+accent = "#d1751f"             # cursor, focus, buttons, badges
+accent_hover = "#d04a1d"       # hovered buttons
+accent_soft = "#ff85a8"        # keywords, links
+accent_light = "#ffab6e"       # functions
+accent_pale = "#ffd08a"        # properties
 
 # Syntax and status colors
-red = "#ff4d5e"                # errors, deleted
-orange = "#ffb347"             # numbers, parameters, attributes
-yellow = "#ffd166"             # warnings, regex
-green = "#9ad96b"              # strings, added
-cyan = "#5cc8c0"               # classes, types
-magenta = "#e05ba0"            # constants, search matches
+red = "#ff5468"                # errors, deleted
+orange = "#ffa04d"             # numbers, parameters, attributes
+yellow = "#ffd66b"             # warnings, regex
+green = "#a8dc8a"              # strings, added
+cyan = "#7fcfd6"               # classes, types
+magenta = "#e87ade"            # constants, search matches
 
 # Terminal (ANSI) colors
-term_black = "#2a1a21"
+term_black = "#2a1a26"
 term_red = "red"
 term_green = "green"
 term_yellow = "yellow"
-term_blue = "#7a8bd6"          # dusk blue; the palette has no other blue
+term_blue = "#9a8cf0"          # dusk violet
 term_magenta = "magenta"
 term_cyan = "cyan"
 term_white = "text"
 term_bright_black = "text_faint"
-term_bright_red = "#ff8a94"
-term_bright_green = "#bdeb9a"
-term_bright_yellow = "#ffe199"
-term_bright_blue = "#a6b2ea"
-term_bright_magenta = "#ee93c2"
-term_bright_cyan = "#93e0da"
+term_bright_red = "#ff8c99"
+term_bright_green = "#c6ebb2"
+term_bright_yellow = "#ffe39e"
+term_bright_blue = "#bdb3ff"
+term_bright_magenta = "#f3a8ec"
+term_bright_cyan = "#aee3e8"
 term_bright_white = "text_bright"

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Palette Creator</title>
+<!--
+  Served by serve.py, which loads and saves the palette. Every palette color
+  is a CSS variable, --c-<name>, set on #preview; missing colors show as hot
+  pink. Elements list the colors they use in data-c, which drives the
+  highlighting between the color list and the preview.
+-->
+<style>
+  :root {
+    --ui-bg: #1f2023;
+    --ui-panel: #292a2e;
+    --ui-field: #333439;
+    --ui-line: #3d3f45;
+    --ui-text: #e6e6e9;
+    --ui-muted: #a0a2aa;
+    --ui-ok: #6fcf97;
+    --ui-bad: #ff7b7b;
+    --ui-focus: #8ab4f8;
+    --missing: #ff2bd6;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  button, input, select { font: inherit; color: inherit; }
+
+  /* --- Tool UI ------------------------------------------------------------ */
+  header {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end;
+    padding: 12px 16px;
+    background: var(--ui-panel);
+    border-bottom: 1px solid var(--ui-line);
+  }
+  header h1 { margin: 0 8px 0 0; font-size: 18px; align-self: center; }
+  label.field { display: grid; gap: 2px; font-size: 12px; color: var(--ui-muted); }
+  .field input, .field select, .row input[type=text] {
+    background: var(--ui-field);
+    border: 1px solid var(--ui-line);
+    border-radius: 6px;
+    padding: 5px 8px;
+  }
+  .field input:focus, .row input[type=text]:focus, select:focus, button:focus-visible {
+    outline: 2px solid var(--ui-focus); outline-offset: 1px;
+  }
+  .actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  button {
+    background: var(--ui-field);
+    border: 1px solid var(--ui-line);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--ui-muted); }
+  button.primary { background: #3b5bdb; border-color: #3b5bdb; color: #fff; }
+  button.primary:hover { background: #4c6ef5; }
+  #status {
+    flex-basis: 100%;
+    font-size: 13px; color: var(--ui-muted);
+    min-height: 1.4em;
+  }
+  #status.ok { color: var(--ui-ok); }
+  #status.bad { color: var(--ui-bad); }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    gap: 16px;
+    padding: 16px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  #colors { display: grid; gap: 18px; }
+  #colors h2 {
+    margin: 0 0 6px; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .04em; color: var(--ui-muted);
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 34px 1fr 118px;
+    grid-template-areas: "swatch key value" "swatch note note";
+    gap: 0 8px; align-items: center;
+    padding: 5px 6px;
+    border-radius: 6px;
+  }
+  .row:hover, .row.flash { background: var(--ui-panel); }
+  .row.flash { outline: 1px solid var(--ui-focus); }
+  .row input[type=color] {
+    grid-area: swatch;
+    width: 34px; height: 34px; padding: 0;
+    border: 1px solid var(--ui-line); border-radius: 6px;
+    background: none; cursor: pointer;
+  }
+  .row .key { grid-area: key; font-family: ui-monospace, monospace; font-size: 13px; }
+  .row input[type=text] { grid-area: value; width: 100%; font-family: ui-monospace, monospace; font-size: 13px; }
+  .row .note { grid-area: note; font-size: 12px; color: var(--ui-muted); }
+  .row .ref { color: var(--ui-focus); }
+  .row.invalid input[type=text] { border-color: var(--ui-bad); }
+  .row.invalid .note { color: var(--ui-bad); }
+
+  .preview-column { position: sticky; top: 110px; display: grid; gap: 12px; }
+  .hint { margin: 0; font-size: 12px; color: var(--ui-muted); }
+
+  /* Highlight the preview parts that use the hovered color. */
+  #preview.spotlight [data-c] { opacity: .35; transition: opacity .1s; }
+  #preview.spotlight .lit { opacity: 1; outline: 2px dashed var(--ui-focus); outline-offset: -2px; }
+  #preview [data-c] { cursor: pointer; }
+
+  /* --- Preview: a generic app built only from palette colors --------------- */
+  #preview {
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--ui-line);
+    font-size: 13px;
+  }
+  .app { background: var(--c-bg, var(--missing)); color: var(--c-text, var(--missing)); }
+  .titlebar {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+    background: var(--c-bg_chrome, var(--missing)); color: var(--c-text_muted, var(--missing));
+    font-size: 12px;
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .titlebar .title { flex: 1; text-align: center; }
+  .body { display: grid; grid-template-columns: 44px 190px 1fr; min-height: 420px; }
+  .activity {
+    background: var(--c-bg_chrome, var(--missing));
+    display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 10px;
+  }
+  .activity .icon { width: 20px; height: 20px; border-radius: 4px; border: 2px solid var(--c-text_faint, var(--missing)); position: relative; }
+  .activity .icon.on { border-color: var(--c-text, var(--missing)); }
+  .activity .badge {
+    position: absolute; right: -9px; bottom: -8px;
+    background: var(--c-accent, var(--missing)); color: var(--c-text_bright, var(--missing));
+    font-size: 9px; font-weight: 700; border-radius: 8px; padding: 0 4px; line-height: 14px;
+  }
+  .sidebar { background: var(--c-bg_sidebar, var(--missing)); color: var(--c-text_subtle, var(--missing)); padding: 8px 0; }
+  .sidebar h3 { margin: 0 12px 6px; font-size: 11px; letter-spacing: .05em; color: var(--c-text, var(--missing)); }
+  .file { padding: 2px 12px 2px 20px; white-space: nowrap; }
+  .file.nested { padding-left: 34px; border-left: 1px solid var(--c-guide, var(--missing)); margin-left: 24px; padding-left: 10px; }
+  .file.hover { background: var(--c-bg_hover, var(--missing)); }
+  .file.selected { background: var(--c-bg_selected, var(--missing)); color: var(--c-text, var(--missing)); }
+  .file.focus { background: color-mix(in srgb, var(--c-accent, var(--missing)) 20%, transparent); color: var(--c-text_bright, var(--missing)); }
+  .file.added { color: var(--c-green, var(--missing)); }
+  .file.modified { color: var(--c-accent, var(--missing)); }
+  .file.deleted { color: var(--c-red, var(--missing)); text-decoration: line-through; }
+  .file.ignored { color: var(--c-text_faint, var(--missing)); }
+  .file.conflict { color: var(--c-yellow, var(--missing)); }
+  .mainarea { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
+  .tabs { display: flex; background: var(--c-bg_chrome, var(--missing)); }
+  .tab { padding: 7px 14px; font-size: 12px; border-right: 1px solid var(--c-bg_chrome, var(--missing)); }
+  .tab.active { background: var(--c-bg, var(--missing)); color: var(--c-text_bright, var(--missing)); box-shadow: inset 0 2px var(--c-accent, var(--missing)); }
+  .tab.inactive { background: var(--c-bg_sidebar, var(--missing)); color: var(--c-text_muted, var(--missing)); }
+  .editor { position: relative; display: grid; grid-template-columns: 52px 1fr 60px; font-family: var(--mono); line-height: 20px; overflow: hidden; }
+  .gutter { text-align: right; padding: 6px 12px 6px 0; color: var(--c-text_faint, var(--missing)); user-select: none; }
+  .gutter .current { color: var(--c-text_subtle, var(--missing)); }
+  .code { padding: 6px 0; white-space: pre; min-width: 0; }
+  .line { padding-left: 4px; }
+  .line.highlight { background: var(--c-bg_line_highlight, var(--missing)); }
+  .minimap { background: var(--c-bg_minimap, var(--missing)); border-left: 1px solid var(--c-border, var(--missing)); padding: 8px 6px; display: grid; align-content: start; gap: 3px; }
+  .minimap i { display: block; height: 2px; background: var(--c-text_faint, var(--missing)); border-radius: 1px; }
+  .indent { box-shadow: inset 1px 0 var(--c-guide, var(--missing)); }
+  .ws { color: var(--c-whitespace, var(--missing)); }
+  .cursor { border-left: 2px solid var(--c-accent, var(--missing)); margin-left: -1px; }
+  .sel { background: var(--c-selection, var(--missing)); }
+  .match { background: color-mix(in srgb, var(--c-magenta, var(--missing)) 40%, transparent); }
+  .squiggle-error { text-decoration: underline wavy var(--c-red, var(--missing)); text-underline-offset: 3px; }
+  .squiggle-warning { text-decoration: underline wavy var(--c-yellow, var(--missing)); text-underline-offset: 3px; }
+  .t-comment { color: var(--c-text_muted, var(--missing)); font-style: italic; }
+  .t-keyword { color: var(--c-accent_soft, var(--missing)); font-weight: 700; }
+  .t-storage { color: var(--c-accent, var(--missing)); }
+  .t-function { color: var(--c-accent_light, var(--missing)); }
+  .t-property { color: var(--c-accent_pale, var(--missing)); }
+  .t-string { color: var(--c-green, var(--missing)); }
+  .t-number { color: var(--c-orange, var(--missing)); }
+  .t-param { color: var(--c-orange, var(--missing)); }
+  .t-class { color: var(--c-cyan, var(--missing)); }
+  .t-constant { color: var(--c-magenta, var(--missing)); }
+  .t-regex { color: var(--c-yellow, var(--missing)); }
+  .t-punct { color: var(--c-text_subtle, var(--missing)); }
+  .widget {
+    position: absolute; left: 300px; top: 208px; width: 220px;
+    background: var(--c-bg_widget, var(--missing)); border: 1px solid var(--c-border, var(--missing));
+    border-radius: 4px; box-shadow: 0 4px 12px #0006; font-size: 12px; padding: 2px 0;
+  }
+  .widget div { padding: 1px 8px; }
+  .widget .picked { background: color-mix(in srgb, var(--c-accent, var(--missing)) 20%, transparent); }
+  .widget b { color: var(--c-accent_soft, var(--missing)); font-weight: 400; }
+  .panel { border-top: 1px solid var(--c-border, var(--missing)); background: var(--c-bg, var(--missing)); }
+  .panel-tabs { display: flex; gap: 16px; padding: 4px 12px; font-size: 11px; letter-spacing: .04em; color: var(--c-text_muted, var(--missing)); }
+  .panel-tabs .on { color: var(--c-text, var(--missing)); box-shadow: inset 0 -1px var(--c-accent, var(--missing)); }
+  .terminal { font-family: var(--mono); padding: 4px 12px 10px; line-height: 19px; white-space: pre-wrap; }
+  .terminal [data-c] { white-space: nowrap; }
+  .statusbar {
+    display: flex; gap: 14px; padding: 3px 12px; font-size: 12px;
+    background: var(--c-bg_chrome, var(--missing)); color: var(--c-text_subtle, var(--missing));
+  }
+  .statusbar .remote { background: var(--c-accent, var(--missing)); color: var(--c-text_bright, var(--missing)); margin: -3px 0 -3px -12px; padding: 3px 10px; }
+  .statusbar .err { color: var(--c-red, var(--missing)); }
+  .statusbar .warn { color: var(--c-yellow, var(--missing)); }
+  .statusbar .spacer { flex: 1; }
+
+  .controls {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;
+    padding: 14px; background: var(--c-bg_sidebar, var(--missing)); color: var(--c-text, var(--missing));
+    border-top: 1px solid var(--c-border, var(--missing));
+  }
+  .controls section { display: grid; gap: 8px; align-content: start; }
+  .controls h4 { margin: 0; font-size: 11px; letter-spacing: .05em; color: var(--c-text_muted, var(--missing)); font-weight: 600; }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pbtn { border-radius: 4px; padding: 4px 10px; font-size: 12px; border: 0; }
+  .pbtn.primary { background: var(--c-accent, var(--missing)); color: var(--c-text_bright, var(--missing)); }
+  .pbtn.primary-hover { background: var(--c-accent_hover, var(--missing)); color: var(--c-text_bright, var(--missing)); }
+  .pbtn.secondary { background: var(--c-border, var(--missing)); color: var(--c-text, var(--missing)); }
+  .pbtn.secondary-hover { background: var(--c-bg_secondary_hover, var(--missing)); color: var(--c-text, var(--missing)); }
+  .pinput {
+    background: var(--c-bg_hover, var(--missing)); color: var(--c-text, var(--missing));
+    border: 1px solid var(--c-border, var(--missing)); border-radius: 4px; padding: 4px 8px; font-size: 12px;
+  }
+  .pinput.focused { border-color: var(--c-accent, var(--missing)); }
+  .pinput .placeholder { color: var(--c-text_muted, var(--missing)); }
+  .note-box {
+    background: var(--c-bg_widget, var(--missing)); border: 1px solid var(--c-border, var(--missing));
+    border-radius: 4px; padding: 6px 8px; font-size: 12px; display: grid; gap: 3px;
+  }
+  .note-box .e { color: var(--c-red, var(--missing)); }
+  .note-box .w { color: var(--c-yellow, var(--missing)); }
+  .note-box .i { color: var(--c-accent, var(--missing)); }
+  .note-box .s { color: var(--c-green, var(--missing)); }
+  .diff { font-family: var(--mono); font-size: 12px; border-radius: 4px; overflow: hidden; }
+  .diff div { padding: 0 6px; }
+  .diff .add { background: color-mix(in srgb, var(--c-green, var(--missing)) 13%, transparent); }
+  .diff .del { background: color-mix(in srgb, var(--c-red, var(--missing)) 13%, transparent); }
+  .link { color: var(--c-accent_soft, var(--missing)); text-decoration: underline; }
+  .link-hover { color: var(--c-accent_pale, var(--missing)); text-decoration: underline; }
+  .chip {
+    background: var(--c-accent, var(--missing)); color: var(--c-text_bright, var(--missing));
+    border-radius: 9px; padding: 0 7px; font-size: 11px; font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Palette Creator</h1>
+  <label class="field">Name
+    <input id="name" size="18" autocomplete="off" spellcheck="false">
+  </label>
+  <label class="field">Slug (used in file names)
+    <input id="slug" size="16" autocomplete="off" spellcheck="false">
+  </label>
+  <label class="field">Start from
+    <select id="start"></select>
+  </label>
+  <div class="actions">
+    <button id="save" class="primary" title="Save to palette-creator/work-in-progress-palette.toml">Save</button>
+    <button id="publish" title="Choose where to save it, starting in palettes/ as &lt;slug&gt;-palette.toml">Save as palette…</button>
+  </div>
+  <div id="status" role="status" aria-live="polite"></div>
+</header>
+
+<main>
+  <div id="colors" aria-label="Colors"></div>
+
+  <div class="preview-column">
+    <p class="hint">Hover a color to see where it's used; click part of the preview to find its color.
+      Hot pink means a color is missing or invalid.</p>
+
+    <div id="preview">
+      <div class="app" data-c="bg text">
+        <div class="titlebar" data-c="bg_chrome text_muted">
+          <span class="dots"><i style="background:var(--c-red,var(--missing))"></i><i style="background:var(--c-yellow,var(--missing))"></i><i style="background:var(--c-green,var(--missing))"></i></span>
+          <span class="title">preview.py — My Project</span>
+        </div>
+
+        <div class="body">
+          <div class="activity" data-c="bg_chrome">
+            <span class="icon on" data-c="text"></span>
+            <span class="icon" data-c="text_faint"><span class="badge" data-c="accent text_bright">3</span></span>
+            <span class="icon" data-c="text_faint"></span>
+            <span class="icon" data-c="text_faint"></span>
+          </div>
+
+          <div class="sidebar" data-c="bg_sidebar text_subtle">
+            <h3 data-c="text">EXPLORER</h3>
+            <div class="file" data-c="text_subtle">▾ src</div>
+            <div class="file nested" data-c="guide text_subtle">theme.py</div>
+            <div class="file nested focus" data-c="accent text_bright">preview.py</div>
+            <div class="file nested hover" data-c="bg_hover">colors.py</div>
+            <div class="file selected" data-c="bg_selected text">README.md</div>
+            <div class="file added" data-c="green">new_file.py</div>
+            <div class="file modified" data-c="accent">changed.py</div>
+            <div class="file deleted" data-c="red">removed.py</div>
+            <div class="file conflict" data-c="yellow">merge.py</div>
+            <div class="file ignored" data-c="text_faint">build/</div>
+          </div>
+
+          <div class="mainarea">
+            <div class="tabs" data-c="bg_chrome">
+              <span class="tab active" data-c="bg text_bright accent">preview.py</span>
+              <span class="tab inactive" data-c="bg_sidebar text_muted">theme.py</span>
+            </div>
+
+            <div class="editor" data-c="bg text">
+              <div class="gutter" data-c="text_faint">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br><span class="current" data-c="text_subtle">10</span><br>11<br>12</div>
+              <div class="code"><div class="line"><span class="t-comment" data-c="text_muted"># A quick look at every syntax color</span></div><div class="line"><span class="t-keyword" data-c="accent_soft">import</span> re</div><div class="line"> </div><div class="line"><span class="t-storage" data-c="accent">class</span> <span class="t-class" data-c="cyan">Theme</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-class" data-c="cyan">Base</span><span class="t-punct" data-c="text_subtle">):</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="t-string" data-c="green">"""Colors for the preview."""</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="t-storage" data-c="accent">def</span> <span class="t-function" data-c="accent_light">render</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-param" data-c="orange">self</span><span class="t-punct" data-c="text_subtle">,</span> <span class="t-param" data-c="orange">name</span><span class="t-punct" data-c="text_subtle">,</span> <span class="t-param" data-c="orange">size</span><span class="t-punct" data-c="text_subtle">=</span><span class="t-number" data-c="orange">12</span><span class="t-punct" data-c="text_subtle">):</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span>self<span class="t-punct" data-c="text_subtle">.</span><span class="t-property" data-c="accent_pale">bold</span> <span class="t-punct" data-c="text_subtle">=</span> <span class="t-constant" data-c="magenta">True</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span>pattern <span class="t-punct" data-c="text_subtle">=</span> re<span class="t-punct" data-c="text_subtle">.</span><span class="t-function" data-c="accent_light">compile</span><span class="t-punct" data-c="text_subtle">(</span><span class="t-regex" data-c="yellow">r"#[0-9a-f]{6}"</span><span class="t-punct" data-c="text_subtle">)</span></div><div class="line"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span><span class="squiggle-warning" data-c="yellow">unused</span> <span class="t-punct" data-c="text_subtle">=</span> <span class="squiggle-error" data-c="red">undefined_name</span></div><div class="line highlight" data-c="bg_line_highlight"><span class="indent" data-c="guide">    </span><span class="indent" data-c="guide">    </span><span class="t-keyword" data-c="accent_soft">return</span> <span class="t-string" data-c="green">f"{</span><span class="sel" data-c="selection">name</span><span class="t-string" data-c="green">}: {size}"</span><span class="cursor" data-c="accent"></span></div><div class="line"><span class="ws" data-c="whitespace">····</span><span class="t-comment" data-c="text_muted"># search: </span><span class="match" data-c="magenta">render</span></div><div class="line"> </div></div>
+              <div class="minimap" data-c="bg_minimap border"><i style="width:70%"></i><i style="width:40%"></i><i style="width:0"></i><i style="width:60%"></i><i style="width:80%"></i><i style="width:90%"></i><i style="width:55%"></i><i style="width:95%"></i><i style="width:60%"></i><i style="width:75%"></i><i style="width:50%"></i></div>
+              <div class="widget" data-c="bg_widget border">
+                <div class="picked" data-c="accent"><b data-c="accent_soft">ren</b>der</div>
+                <div><b data-c="accent_soft">re</b>place</div>
+                <div><b data-c="accent_soft">re</b>peat</div>
+              </div>
+            </div>
+
+            <div class="panel" data-c="bg border">
+              <div class="panel-tabs" data-c="text_muted"><span>PROBLEMS</span><span class="on" data-c="text accent">TERMINAL</span></div>
+              <div class="terminal" data-c="bg text"><span style="color:var(--c-term_green,var(--missing))" data-c="term_green">you@computer</span>:<span style="color:var(--c-term_blue,var(--missing))" data-c="term_blue">~/project</span>$ ls --color
+<span id="ansi-normal"></span>
+<span id="ansi-bright"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="statusbar" data-c="bg_chrome text_subtle">
+          <span class="remote" data-c="accent text_bright">⌁ local</span>
+          <span>⎇ main</span>
+          <span class="err" data-c="red">⊗ 1</span>
+          <span class="warn" data-c="yellow">⚠ 1</span>
+          <span class="spacer"></span>
+          <span>Ln 10, Col 32</span>
+          <span>Python</span>
+        </div>
+
+        <div class="controls" data-c="bg_sidebar">
+          <section>
+            <h4 data-c="text_muted">BUTTONS</h4>
+            <div class="btns">
+              <span class="pbtn primary" data-c="accent text_bright">Primary</span>
+              <span class="pbtn primary-hover" data-c="accent_hover text_bright">Hovered</span>
+            </div>
+            <div class="btns">
+              <span class="pbtn secondary" data-c="border text">Secondary</span>
+              <span class="pbtn secondary-hover" data-c="bg_secondary_hover text">Hovered</span>
+            </div>
+          </section>
+          <section>
+            <h4 data-c="text_muted">INPUTS AND LINKS</h4>
+            <div class="pinput" data-c="bg_hover border"><span class="placeholder" data-c="text_muted">Search files…</span></div>
+            <div class="pinput focused" data-c="bg_hover accent text">focused input</div>
+            <div><span class="link" data-c="accent_soft">A link</span> · <span class="link-hover" data-c="accent_pale">hovered link</span> · <span class="chip" data-c="accent text_bright">badge</span></div>
+          </section>
+          <section>
+            <h4 data-c="text_muted">NOTIFICATIONS</h4>
+            <div class="note-box" data-c="bg_widget border">
+              <span class="e" data-c="red">⊗ Error: something failed</span>
+              <span class="w" data-c="yellow">⚠ Warning: check this</span>
+              <span class="i" data-c="accent">ⓘ Info: good to know</span>
+              <span class="s" data-c="green">✓ Saved</span>
+            </div>
+          </section>
+          <section>
+            <h4 data-c="text_muted">DIFF</h4>
+            <div class="diff">
+              <div class="del" data-c="red">- old line</div>
+              <div class="add" data-c="green">+ new line</div>
+              <div>  unchanged line</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const ANSI = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"];
+
+// The palette being edited: {header, name, slug, groups: [{title, colors: [{key, value, note}]}]}
+let palette = null;
+let dirty = false;
+let checkTimer = null;
+let checkRun = 0;
+
+const $ = (id) => document.getElementById(id);
+const preview = $("preview");
+
+function allColors() {
+  return palette.groups.flatMap((group) => group.colors);
+}
+
+// Follows references to other colors: returns {hex, chain} or {error}.
+function resolve(key, values) {
+  const chain = [];
+  let current = key;
+  while (true) {
+    chain.push(current);
+    const value = values[current];
+    if (value === undefined) return { error: `no color named ${current}`, chain };
+    if (HEX.test(value)) return { hex: value.toLowerCase(), chain };
+    if (chain.includes(value)) return { error: "refers to itself in a loop", chain };
+    if (!(value in values)) return { error: `"${value}" isn't #rrggbb or another color's name`, chain };
+    current = value;
+  }
+}
+
+function valuesByKey() {
+  return Object.fromEntries(allColors().map((c) => [c.key, c.value.trim()]));
+}
+
+// --- Color list ---------------------------------------------------------------
+
+function buildColorList() {
+  const list = $("colors");
+  list.replaceChildren();
+  for (const group of palette.groups) {
+    const section = document.createElement("section");
+    if (group.title) {
+      const heading = document.createElement("h2");
+      heading.textContent = group.title;
+      section.append(heading);
+    }
+    for (const color of group.colors) section.append(colorRow(color));
+    list.append(section);
+  }
+}
+
+function colorRow(color) {
+  const row = document.createElement("div");
+  row.className = "row";
+  row.dataset.key = color.key;
+
+  const swatch = document.createElement("input");
+  swatch.type = "color";
+  swatch.setAttribute("aria-label", `Pick ${color.key}`);
+
+  const key = document.createElement("label");
+  key.className = "key";
+  key.textContent = color.key;
+
+  const value = document.createElement("input");
+  value.type = "text";
+  value.value = color.value;
+  value.spellcheck = false;
+  value.autocomplete = "off";
+  value.id = `value-${color.key}`;
+  key.htmlFor = value.id;
+  value.title = "#rrggbb, or another color's name";
+
+  const note = document.createElement("div");
+  note.className = "note";
+
+  swatch.addEventListener("input", () => {
+    value.value = swatch.value;
+    color.value = swatch.value;
+    changed();
+  });
+  value.addEventListener("input", () => {
+    color.value = value.value;
+    changed();
+  });
+  row.addEventListener("mouseenter", () => spotlight(color.key));
+  row.addEventListener("mouseleave", () => spotlight(null));
+
+  row.append(swatch, key, value, note);
+  return row;
+}
+
+// --- Applying colors ------------------------------------------------------------
+
+function applyColors() {
+  const values = valuesByKey();
+  const style = preview.style;
+  for (const property of [...style]) {
+    if (property.startsWith("--c-")) style.removeProperty(property);
+  }
+  let invalid = 0;
+  for (const color of allColors()) {
+    const row = document.querySelector(`.row[data-key="${CSS.escape(color.key)}"]`);
+    const result = resolve(color.key, values);
+    const note = row.querySelector(".note");
+    row.classList.toggle("invalid", Boolean(result.error));
+    if (result.error) {
+      invalid++;
+      note.textContent = result.error;
+      continue;
+    }
+    style.setProperty(`--c-${color.key}`, result.hex);
+    row.querySelector("input[type=color]").value = result.hex;
+    note.replaceChildren();
+    if (result.chain.length > 1) {
+      const ref = document.createElement("span");
+      ref.className = "ref";
+      ref.textContent = `→ ${result.chain.slice(1).join(" → ")} (${result.hex})`;
+      note.append(ref, color.note ? ` · ${color.note}` : "");
+    } else {
+      note.textContent = color.note;
+    }
+  }
+  return invalid;
+}
+
+function buildTerminal() {
+  for (const [id, prefix] of [["ansi-normal", "term_"], ["ansi-bright", "term_bright_"]]) {
+    const line = $(id);
+    line.replaceChildren();
+    for (const name of ANSI) {
+      const key = prefix + name;
+      const span = document.createElement("span");
+      span.dataset.c = key;
+      span.style.color = `var(--c-${key}, var(--missing))`;
+      // A solid block too, so colors close to the background still show.
+      span.textContent = `█ ${prefix === "term_" ? name : `bright_${name}`}`;
+      // The space goes between the spans, so the line can wrap there.
+      line.append(span, "  ");
+    }
+  }
+}
+
+// --- Highlighting between the list and the preview ------------------------------
+
+function spotlight(key) {
+  preview.classList.toggle("spotlight", key !== null);
+  for (const element of preview.querySelectorAll(".lit")) element.classList.remove("lit");
+  if (key === null) return;
+  // Also light up colors that refer to this one, like term_red -> red.
+  const values = valuesByKey();
+  const users = allColors()
+    .map((c) => c.key)
+    .filter((k) => resolve(k, values).chain.includes(key));
+  for (const user of users) {
+    for (const element of preview.querySelectorAll(`[data-c~="${CSS.escape(user)}"]`)) {
+      element.classList.add("lit");
+    }
+  }
+}
+
+preview.addEventListener("click", (event) => {
+  const element = event.target.closest("[data-c]");
+  if (!element) return;
+  const key = element.dataset.c.split(" ").find((k) => $(`value-${k}`));
+  if (!key) return;
+  const row = $(`value-${key}`).closest(".row");
+  row.scrollIntoView({ block: "center", behavior: "smooth" });
+  $(`value-${key}`).focus({ preventScroll: true });
+  row.classList.add("flash");
+  setTimeout(() => row.classList.remove("flash"), 900);
+});
+
+// --- Checking and saving ----------------------------------------------------------
+
+function setStatus(message, kind = "") {
+  const status = $("status");
+  status.textContent = message;
+  status.className = kind;
+}
+
+function markDirty(value) {
+  dirty = value;
+  document.title = (dirty ? "• " : "") + "Palette Creator";
+}
+
+function changed() {
+  markDirty(true);
+  const invalid = applyColors();
+  clearTimeout(checkTimer);
+  if (invalid) {
+    setStatus(`${invalid} color${invalid > 1 ? "s" : ""} can't be used yet`, "bad");
+    return;
+  }
+  checkTimer = setTimeout(check, 300);
+}
+
+async function post(path, body) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return response.json();
+}
+
+// Asks serve.py whether jenerate.py would accept the palette.
+async function check() {
+  const run = ++checkRun;
+  try {
+    const result = await post("/api/check", { palette });
+    if (run !== checkRun) return;
+    if (result.ok) setStatus(dirty ? "Looks good. Unsaved changes." : "Looks good.", "ok");
+    else setStatus(result.error, "bad");
+  } catch {
+    setStatus("Can't reach serve.py. Is it still running?", "bad");
+  }
+}
+
+// Saves the palette. For "palette", serve.py opens this computer's save
+// dialog; if it has none, this page asks for a file name in palettes/.
+async function save(target, filename = undefined, overwrite = false) {
+  try {
+    if (target === "palette" && filename === undefined) {
+      setStatus("Choose where to save it in the save dialog (it may open behind this window).");
+    }
+    const result = await post("/api/save", { palette, target, filename, overwrite });
+    if (result.choose_name) {
+      const name = prompt("Save in the palettes folder as:", result.default);
+      if (name === null) return setStatus("Not saved.");
+      return save(target, name.trim());
+    }
+    if (result.exists) {
+      if (confirm(`${result.message}. Replace it?`)) return save(target, filename, true);
+      return setStatus("Not saved.");
+    }
+    if (result.cancelled) return setStatus(result.message);
+    if (!result.ok) {
+      setStatus(result.error, "bad");
+      return;
+    }
+    if (target === "wip") markDirty(false);
+    setStatus(result.message, "ok");
+  } catch {
+    setStatus("Can't reach serve.py. Is it still running?", "bad");
+  }
+}
+
+// --- Loading ------------------------------------------------------------------------
+
+function load(newPalette, message) {
+  palette = newPalette;
+  $("name").value = palette.name;
+  $("slug").value = palette.slug;
+  buildColorList();
+  applyColors();
+  markDirty(false);
+  setStatus(message);
+  check();
+}
+
+async function loadPalette(from) {
+  const response = await fetch(from ? `/api/palette?from=${encodeURIComponent(from)}` : "/api/palette");
+  const result = await response.json();
+  if (!response.ok) {
+    setStatus(`${result.source ? result.source + ": " : ""}${result.error}. Choose a palette under "Start from".`, "bad");
+    return false;
+  }
+  load(result.palette, from ? `Started from ${result.source}. Save writes to the work-in-progress file.`
+                            : `Editing ${result.source}`);
+  if (from) markDirty(true);
+  return true;
+}
+
+async function loadPaletteList() {
+  const { palettes } = await (await fetch("/api/palettes")).json();
+  const select = $("start");
+  select.replaceChildren(new Option("Work in progress", ""));
+  for (const p of palettes) select.append(new Option(p.name, p.slug));
+}
+
+$("start").addEventListener("change", async (event) => {
+  const choice = event.target.value;
+  if (dirty && !confirm("Discard your unsaved changes?")) {
+    event.target.value = "";
+    return;
+  }
+  await loadPalette(choice || null);
+  event.target.value = "";
+});
+
+$("name").addEventListener("input", (event) => {
+  palette.name = event.target.value;
+  changed();
+});
+$("slug").addEventListener("input", (event) => {
+  palette.slug = event.target.value;
+  if (!SLUG.test(palette.slug)) {
+    markDirty(true);
+    setStatus("The slug can only use lowercase letters, numbers and single dashes, like deep-blue-sea", "bad");
+    return;
+  }
+  changed();
+});
+$("save").addEventListener("click", () => save("wip"));
+$("publish").addEventListener("click", () => save("palette"));
+window.addEventListener("beforeunload", (event) => {
+  if (dirty) event.preventDefault();
+});
+
+buildTerminal();
+loadPaletteList();
+loadPalette(null);
+</script>
+</body>
+</html>

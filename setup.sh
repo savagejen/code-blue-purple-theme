@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Walks you through installing a Jenerated theme: pick an app, pick a palette,
-# and this script generates the theme and installs it for you.
+# and this script generates the theme and installs it for you. It can also
+# start the Palette Creator, for designing a new palette.
 #
 # Usage: ./setup.sh
 #
@@ -119,6 +120,40 @@ case "${1:-}" in
   *) die "unknown option: $1 (run ./setup.sh with no options)" ;;
 esac
 
+# --- Install a theme, or design a palette -----------------------------------
+
+# Explains the Palette Creator, then runs its server until Ctrl+C.
+start_palette_creator() {
+  [ -n "$PYTHON" ] ||
+    die "the Palette Creator needs Python 3.11 or later (python3 --version to check)"
+
+  step "Starting the Palette Creator"
+  say "It opens in your browser. If it doesn't, open the address printed below."
+  say ""
+  say "1. The page starts with your work-in-progress palette"
+  say "   (palette-creator/work-in-progress-palette.toml; the first time, a copy"
+  say "   of Blue Purple). To begin from another palette, use \"Start from\"."
+  say "2. Give it a name and a slug (lowercase words and dashes, like deep-blue-sea)."
+  say "3. Change colors with the color pickers, or type #rrggbb or another"
+  say "   color's name. The preview updates as you go; hover a color to see"
+  say "   where it's used, or click the preview to find a color."
+  say "4. \"Save\" keeps your work in progress. \"Save as palette\" opens a save"
+  say "   dialog in palettes/; keep the suggested name, <slug>-palette.toml, so"
+  say "   jenerate.py and ./setup.sh can find it."
+  say "5. When you're done, press Ctrl+C here to stop it, then run ./setup.sh"
+  say "   again and choose \"Install a theme\": your palette will be listed."
+  say ""
+  exec "$PYTHON" palette-creator/serve.py
+}
+
+say "Jenerated Themes setup"
+say "======================"
+
+choose "What would you like to do?" \
+  "Install a theme for an app" \
+  "Design a new palette (opens the Palette Creator)"
+[ "$CHOICE" -eq 1 ] && start_palette_creator
+
 # --- Pick an app -------------------------------------------------------------
 
 APPS=("VS Code" "Slack" "Obsidian")
@@ -127,9 +162,6 @@ if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)")
   APP_IDS+=("ptyxis" "tilix")
 fi
-
-say "Jenerated Themes setup"
-say "======================"
 
 choose "Which app do you want to theme?" "${APPS[@]}"
 APP="${APP_IDS[$CHOICE]}"

@@ -7,6 +7,9 @@ tilix-theme/*.json
 obsidian-theme/*/
 *.vsix
 
+# Your palette draft in the Palette Creator.
+palette-creator/work-in-progress-palette.toml
+
 # Except the default palette, Blue Purple, which is committed so the themes
 # work without running jenerate.py.
 !vs-code-theme/package.json
@@ -15,3 +18,6 @@ obsidian-theme/*/
 !slack-theme/blue-purple.txt
 !tilix-theme/blue-purple.json
 !obsidian-theme/blue-purple/
+
+# Python bytecode (from importing jenerate.py)
+__pycache__/

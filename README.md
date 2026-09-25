@@ -23,7 +23,8 @@ Each app has its own folder with a template and install instructions:
 
 The quickest way is the setup script. Clone the repository and run it; it
 asks which app and which theme you want, then does the rest (on Linux or
-macOS):
+macOS). It can also start the [Palette Creator](palette-creator/), for
+designing a palette of your own:
 
 ```bash
 git clone https://github.com/savagejen/jenerated-themes jenerated-themes
@@ -108,10 +109,15 @@ You can also keep a palette outside this repository and pass its path:
 
 ## Adding a palette
 
-Copy an existing palette to `palettes/<slug>-palette.toml`, change its `name`,
-`slug` and colors, and run `./jenerate.py <slug>`. Every color the templates
-use must be defined; if one is missing, `jenerate.py` stops and names it. Add
-the palette to [Themes](#themes) below.
+The easiest way is the [Palette Creator](palette-creator/): run
+`./palette-creator/serve.py` to design a palette in your browser with a live
+preview, then save it to `palettes/`.
+
+To write one by hand, copy an existing palette to
+`palettes/<slug>-palette.toml`, change its `name`, `slug` and colors, and run
+`./jenerate.py <slug>`. Every color the templates use must be defined; if one
+is missing, `jenerate.py` stops and names it. Add the palette to
+[Themes](#themes) below.
 
 A few rules keep generated files safe and valid; `jenerate.py` checks them and
 explains any that a palette breaks:
@@ -140,7 +146,9 @@ explains any that a palette breaks:
 ## Running the tests
 
 Tests live in [tests/](tests/), with one folder per script (`tests/setup/`
-for `setup.sh`, `tests/jenerate/` for `jenerate.py`). Run them all with:
+for `setup.sh`, `tests/jenerate/` for `jenerate.py`, and
+`tests/palette-creator/` for the Palette Creator's `serve.py`). Run them all
+with:
 
 ```bash
 tests/run.sh
@@ -149,7 +157,8 @@ tests/run.sh
 Each test runs against a temporary copy of the repository (and, for
 `setup.sh`, a temporary home folder), so the tests don't touch your generated
 or installed themes. The `jenerate.py` tests need Python 3.11 or later and are
-skipped without it. Shared helpers are in `tests/lib.sh`.
+skipped without it, as are the Palette Creator tests, which also need
+`curl`. Shared helpers are in `tests/lib.sh`.
 
 ## Themes
 

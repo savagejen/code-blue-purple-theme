@@ -29,7 +29,7 @@ fake_no_python() {
   done
 }
 
-# run_setup "answers" [options...] -> runs setup.sh with the options, feeding
+# run_setup "1\nanswers" [options...] -> runs setup.sh with the options, feeding
 # it the answers (use \n between them), and sets OUTPUT and STATUS. It runs
 # from $RUN_FROM (default $SANDBOX), and runs $SETUP (default the sandbox
 # repository's setup.sh).
@@ -62,7 +62,7 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # THEN the app menu lists VS Code, Slack, Obsidian, Ptyxis and Tilix
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
@@ -75,7 +75,7 @@ test_app_menu_on_linux_includes_the_terminals() {
 # THEN the app menu lists VS Code, Slack and Obsidian, but not Ptyxis or Tilix
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
@@ -87,7 +87,7 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
 # WHEN choosing an app
 # THEN the theme menu lists every palette by name
 test_theme_menu_lists_every_palette() {
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   for file in "$SANDBOX"/repo/palettes/*-palette.toml; do
     assert_contains ") $(palette_name "$file")"
   done
@@ -100,7 +100,7 @@ test_theme_menu_lists_a_new_palette() {
   sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/forest-palette.toml"
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_contains ") Forest"
 }
 
@@ -110,7 +110,7 @@ test_theme_menu_lists_a_new_palette() {
 test_theme_menu_reads_single_quoted_names() {
   sed -e "s/^name = .*/name = 'Forest'/" -e "s/^slug = .*/slug = 'forest'/" \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
-  run_setup "2\n2\n"
+  run_setup "1\n2\n2\n"
   assert_status 0
   assert_contains "2) Forest"
   assert_contains "Generated Forest (forest)"
@@ -123,7 +123,7 @@ test_theme_menu_without_python_reads_single_quoted_names() {
   fake_no_python
   sed -e "s/^name = .*/name = 'Forest'/" -e "s/^slug = .*/slug = 'forest'/" \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_contains "2) Forest"
 }
 
@@ -132,7 +132,7 @@ test_theme_menu_without_python_reads_single_quoted_names() {
 # THEN it stops before the theme menu, naming the broken palette
 test_theme_menu_stops_on_an_unreadable_palette() {
   printf 'name = "Broken\n' >"$SANDBOX/repo/palettes/broken-palette.toml"
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_status 1
   assert_contains "broken-palette.toml: not a valid palette file"
   assert_contains "fix the palette named above"
@@ -143,7 +143,7 @@ test_theme_menu_stops_on_an_unreadable_palette() {
 # WHEN they're typed at the app menu
 # THEN each one asks again, and a valid answer then carries on
 test_invalid_choices_ask_again() {
-  run_setup "\nabc\n0\n9\n-1\n2\n1\n"
+  run_setup "1\n\nabc\n0\n9\n-1\n2\n1\n"
   assert_status 0
   count="$(printf '%s\n' "$OUTPUT" | grep -c 'Please enter a number between 1 and')"
   [ "$count" -eq 5 ] || fail "expected 5 re-prompts, got $count"
@@ -151,12 +151,76 @@ test_invalid_choices_ask_again() {
 }
 
 # GIVEN no input at all
-# WHEN setup.sh asks which app
+# WHEN setup.sh asks what to do
 # THEN it exits with status 1, saying no choice was made
 test_no_answer_exits_with_error() {
   run_setup ""
   assert_status 1
   assert_contains "no choice made"
+}
+
+# --- Tests: the first menu --------------------------------------------------
+
+# Replaces the sandbox's serve.py with a stub that records its folder and
+# arguments in $SANDBOX/serve-ran, then exits.
+stub_palette_creator() {
+  cat >"$SANDBOX/repo/palette-creator/serve.py" <<EOF
+import os, sys
+with open("$SANDBOX/serve-ran", "w") as f:
+    f.write(os.getcwd() + "|" + " ".join(sys.argv[1:]))
+print("stub server running")
+EOF
+}
+
+# GIVEN setup.sh starting
+# WHEN it shows its first menu
+# THEN it offers installing a theme or designing a palette, and choosing to
+#      install goes on to the app menu
+test_first_menu_offers_installing_or_designing() {
+  run_setup "1\n2\n1\n"
+  assert_status 0
+  assert_contains "What would you like to do?"
+  assert_contains "1) Install a theme for an app"
+  assert_contains "2) Design a new palette (opens the Palette Creator)"
+  assert_contains "Which app do you want to theme?"
+}
+
+# GIVEN an answer that isn't one of the first menu's choices
+# WHEN it's typed at the first menu
+# THEN it asks again
+test_first_menu_asks_again_for_an_invalid_choice() {
+  run_setup "3\n1\n2\n1\n"
+  assert_status 0
+  assert_contains "Please enter a number between 1 and 2."
+}
+
+# GIVEN setup.sh run from a folder other than the repository
+# WHEN choosing to design a palette
+# THEN it explains how to use the Palette Creator, then runs serve.py from
+#      the repository, without going on to the app menu
+test_palette_creator_choice_starts_the_server() {
+  stub_palette_creator
+  run_setup "2\n"
+  assert_status 0
+  assert_contains "Starting the Palette Creator"
+  assert_contains '"Save as palette" opens a save'
+  assert_contains "press Ctrl+C here to stop it"
+  assert_contains "stub server running"
+  assert_not_contains "Which app"
+  assert_file_equals "$SANDBOX/serve-ran" "$SANDBOX/repo|"
+}
+
+# GIVEN no Python 3.11 or later
+# WHEN choosing to design a palette
+# THEN it exits with status 1, saying the Palette Creator needs Python, and
+#      doesn't try to start it
+test_palette_creator_needs_python() {
+  stub_palette_creator
+  fake_no_python
+  run_setup "2\n"
+  assert_status 1
+  assert_contains "the Palette Creator needs Python 3.11 or later"
+  assert_missing "$SANDBOX/serve-ran"
 }
 
 # --- Tests: generating -------------------------------------------------------
@@ -165,7 +229,7 @@ test_no_answer_exits_with_error() {
 # WHEN choosing Slack and Sunset
 # THEN Sunset's themes are generated and added to package.json
 test_generates_the_chosen_palette() {
-  run_setup "2\n2\n"
+  run_setup "1\n2\n2\n"
   assert_status 0
   assert_contains "Generated Sunset (sunset)"
   assert_exists "$SANDBOX/repo/slack-theme/sunset.txt"
@@ -180,7 +244,7 @@ test_generates_the_chosen_palette() {
 # THEN it succeeds using the committed Blue Purple files
 test_blue_purple_works_without_python() {
   fake_no_python
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_status 0
   assert_contains "Python 3.11+ not found"
   assert_contains "$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
@@ -191,7 +255,7 @@ test_blue_purple_works_without_python() {
 # THEN it exits with status 1, saying generating Sunset needs Python
 test_other_palettes_need_python() {
   fake_no_python
-  run_setup "2\n2\n"
+  run_setup "1\n2\n2\n"
   assert_status 1
   assert_contains "generating Sunset needs Python 3.11 or later"
 }
@@ -205,7 +269,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blurple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "5\n1\n"
+  run_setup "1\n5\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blurple' is not a #rrggbb value"
@@ -223,14 +287,14 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "5\n2\n"
+  run_setup "1\n5\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/tilix-theme/sunset.json"
   assert_exists "$repo/tilix-theme/sunset.json"
-  run_setup "1\n1\n"
+  run_setup "1\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$repo/vs-code-theme"
-  run_setup "3\n1\n$SANDBOX/Notes\n"
+  run_setup "1\n3\n1\n$SANDBOX/Notes\n"
   assert_status 0
   assert_link "$SANDBOX/Notes/.obsidian/themes/Jenerated Blue Purple" "$repo/obsidian-theme/blue-purple"
 }
@@ -242,7 +306,7 @@ test_repo_in_a_folder_with_spaces() {
 # THEN the extension folder is linked into ~/.vscode/extensions, and it says
 #      which theme to choose
 test_vscode_links_the_extension() {
-  run_setup "1\n1\n"
+  run_setup "1\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
   assert_contains 'Choose "Jenerated Blue Purple"'
@@ -254,7 +318,7 @@ test_vscode_links_the_extension() {
 test_vscode_already_linked_is_left_alone() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   ln -s "$SANDBOX/repo/vs-code-theme" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\n1\n"
+  run_setup "1\n1\n1\n"
   assert_status 0
   assert_contains "Already installed"
   assert_not_contains "Replace it"
@@ -265,7 +329,7 @@ test_vscode_already_linked_is_left_alone() {
 # THEN the copy is replaced with a link
 test_vscode_replaces_an_old_copy_when_asked() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\n1\ny\n"
+  run_setup "1\n1\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
@@ -277,7 +341,7 @@ test_vscode_replaces_an_old_copy_when_asked() {
 test_vscode_replaces_a_link_to_another_folder() {
   mkdir -p "$SANDBOX/home/.vscode/extensions" "$SANDBOX/elsewhere"
   ln -s "$SANDBOX/elsewhere" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\n1\n\n"
+  run_setup "1\n1\n1\n\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
   assert_exists "$SANDBOX/elsewhere"
@@ -289,7 +353,7 @@ test_vscode_replaces_a_link_to_another_folder() {
 test_vscode_keeps_an_old_copy_when_declined() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
   touch "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
-  run_setup "1\n1\nn\n"
+  run_setup "1\n1\n1\nn\n"
   assert_status 1
   assert_contains "left the existing install alone"
   assert_exists "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
@@ -300,7 +364,7 @@ test_vscode_keeps_an_old_copy_when_declined() {
 # THEN it warns about the packaged copy so the two don't clash
 test_vscode_warns_about_a_packaged_copy() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/local.jenerated-themes-1.0.0"
-  run_setup "1\n1\n"
+  run_setup "1\n1\n1\n"
   assert_status 0
   assert_contains "you also have a packaged copy installed (local.jenerated-themes-1.0.0)"
 }
@@ -311,7 +375,7 @@ test_vscode_warns_about_a_packaged_copy() {
 test_vscode_removes_obsolete_file_with_only_this_extension() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n\n"
+  run_setup "1\n1\n1\n\n"
   assert_status 0
   assert_contains "marked as uninstalled"
   assert_missing "$SANDBOX/home/.vscode/extensions/.obsolete"
@@ -324,7 +388,7 @@ test_vscode_keeps_other_obsolete_entries() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"a.first-1.0.0":true,"local.jenerated-themes-1.0.0":true,"b.second-2.0.0":true}' \
     >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n\n"
+  run_setup "1\n1\n1\n\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" \
     '{"a.first-1.0.0":true,"b.second-2.0.0":true}'
@@ -336,7 +400,7 @@ test_vscode_keeps_other_obsolete_entries() {
 test_vscode_stops_if_input_ends_before_enter() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n"
+  run_setup "1\n1\n1\n"
   assert_status 1
   assert_contains "stopped before changing VS Code's files"
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"local.jenerated-themes-1.0.0":true}'
@@ -348,7 +412,7 @@ test_vscode_stops_if_input_ends_before_enter() {
 test_vscode_ignores_obsolete_file_without_this_extension() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"a.first-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n"
+  run_setup "1\n1\n1\n"
   assert_status 0
   assert_not_contains "marked as uninstalled"
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"a.first-1.0.0":true}'
@@ -362,7 +426,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "4\n1\n"
+  run_setup "1\n4\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
@@ -374,8 +438,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "4\n1\n"
-  run_setup "4\n1\n"
+  run_setup "1\n4\n1\n"
+  run_setup "1\n4\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
@@ -391,7 +455,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "5\n1\n"
+  run_setup "1\n5\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/tilix-theme/blue-purple.json"
@@ -403,7 +467,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "5\n2\n"
+  run_setup "1\n5\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/tilix-theme/sunset.json"
@@ -417,7 +481,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "5\n1\n"
+  run_setup "1\n5\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -427,8 +491,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "5\n1\n"
-  run_setup "5\n1\n"
+  run_setup "1\n5\n1\n"
+  run_setup "1\n5\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -440,7 +504,7 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "5\n1\nn\n"
+  run_setup "1\n5\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
 }
@@ -478,7 +542,7 @@ obsidian_theme() {
 test_obsidian_links_the_theme_into_a_known_vault() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
   assert_status 0
   assert_contains "1) $SANDBOX/Notes"
   assert_contains "2) Another folder (type its path)"
@@ -492,7 +556,7 @@ test_obsidian_links_the_theme_into_a_known_vault() {
 test_obsidian_theme_folder_matches_its_manifest() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "3\n2\n1\n"
+  run_setup "1\n3\n2\n1\n"
   assert_status 0
   assert_file_contains "$(obsidian_theme "$SANDBOX/Notes" "Sunset")/manifest.json" \
     '"name": "Jenerated Sunset"'
@@ -506,7 +570,7 @@ test_obsidian_lists_every_known_vault_that_exists() {
   make_vault "$SANDBOX/Notes"
   make_vault "$SANDBOX/My Work"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes" "$SANDBOX/Gone" "$SANDBOX/My Work"
-  run_setup "3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
   assert_contains ") $SANDBOX/Notes"
   assert_contains ") $SANDBOX/My Work"
   assert_not_contains "$SANDBOX/Gone"
@@ -519,7 +583,7 @@ test_obsidian_lists_every_known_vault_that_exists() {
 test_obsidian_vault_with_spaces_in_its_path() {
   make_vault "$SANDBOX/My Work"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/My Work"
-  run_setup "3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/My Work" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
 }
@@ -531,7 +595,7 @@ test_obsidian_finds_vaults_on_macos() {
   fake_os Darwin
   make_vault "$SANDBOX/Notes"
   know_vaults "Library/Application Support/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
   assert_status 0
   assert_contains "1) $SANDBOX/Notes"
 }
@@ -542,7 +606,7 @@ test_obsidian_finds_vaults_on_macos() {
 test_obsidian_finds_vaults_from_flatpak() {
   make_vault "$SANDBOX/Notes"
   know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
   assert_contains "1) $SANDBOX/Notes"
 }
 
@@ -553,7 +617,7 @@ test_obsidian_lists_a_vault_known_twice_once() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
   know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
   assert_contains "2) Another folder"
 }
 
@@ -562,7 +626,7 @@ test_obsidian_lists_a_vault_known_twice_once() {
 # THEN it asks for the path directly and links the theme into that vault
 test_obsidian_asks_for_a_path_when_no_vaults_are_known() {
   make_vault "$SANDBOX/Notes"
-  run_setup "3\n1\n$SANDBOX/Notes/\n"
+  run_setup "1\n3\n1\n$SANDBOX/Notes/\n"
   assert_status 0
   assert_contains "Path to your vault folder:"
   assert_not_contains "Another folder"
@@ -576,7 +640,7 @@ test_obsidian_another_folder_expands_the_home_folder() {
   make_vault "$SANDBOX/Notes"
   make_vault "$SANDBOX/home/Vault"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "3\n1\n2\n~/Vault\n"
+  run_setup "1\n3\n1\n2\n~/Vault\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/home/Vault" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
 }
@@ -587,7 +651,7 @@ test_obsidian_another_folder_expands_the_home_folder() {
 test_obsidian_relative_path_is_relative_to_where_setup_ran() {
   mkdir -p "$SANDBOX/work/Notes/.obsidian"
   RUN_FROM="$SANDBOX/work"
-  run_setup "3\n1\nNotes\n"
+  run_setup "1\n3\n1\nNotes\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/work/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
 }
@@ -596,7 +660,7 @@ test_obsidian_relative_path_is_relative_to_where_setup_ran() {
 # WHEN pressing Enter without typing a path
 # THEN it exits with status 1, saying no vault was given
 test_obsidian_empty_path_is_an_error() {
-  run_setup "3\n1\n\n"
+  run_setup "1\n3\n1\n\n"
   assert_status 1
   assert_contains "no vault given"
 }
@@ -605,7 +669,7 @@ test_obsidian_empty_path_is_an_error() {
 # WHEN typing the path of a folder that doesn't exist
 # THEN it exits with status 1, saying there's no folder there
 test_obsidian_missing_folder_is_an_error() {
-  run_setup "3\n1\n$SANDBOX/Nowhere\n"
+  run_setup "1\n3\n1\n$SANDBOX/Nowhere\n"
   assert_status 1
   assert_contains "there's no folder at $SANDBOX/Nowhere"
 }
@@ -615,7 +679,7 @@ test_obsidian_missing_folder_is_an_error() {
 # THEN it exits with status 1 without creating anything in the folder
 test_obsidian_asks_before_using_a_folder_that_isnt_a_vault() {
   mkdir -p "$SANDBOX/Plain"
-  run_setup "3\n1\n$SANDBOX/Plain\nn\n"
+  run_setup "1\n3\n1\n$SANDBOX/Plain\nn\n"
   assert_status 1
   assert_contains "has no .obsidian folder"
   assert_missing "$SANDBOX/Plain/.obsidian"
@@ -626,7 +690,7 @@ test_obsidian_asks_before_using_a_folder_that_isnt_a_vault() {
 # THEN the theme is linked into it
 test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
   mkdir -p "$SANDBOX/Plain"
-  run_setup "3\n1\n$SANDBOX/Plain\ny\n"
+  run_setup "1\n3\n1\n$SANDBOX/Plain\ny\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/Plain" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
 }
@@ -637,8 +701,8 @@ test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
 test_obsidian_already_linked_is_left_alone() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "3\n1\n1\n"
-  run_setup "3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
+  run_setup "1\n3\n1\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -650,7 +714,7 @@ test_obsidian_replaces_an_old_copy_when_asked() {
   make_vault "$SANDBOX/Notes"
   mkdir -p "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "3\n1\n1\ny\n"
+  run_setup "1\n3\n1\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
   assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
@@ -778,7 +842,7 @@ test_unknown_option_is_an_error() {
 test_slack_prints_and_copies_the_theme_string() {
   fake_os Linux
   theme="$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_status 0
   assert_contains "    $theme"
   assert_contains "(Copied to your clipboard.)"
@@ -791,7 +855,7 @@ test_slack_prints_and_copies_the_theme_string() {
 test_slack_uses_pbcopy_on_macos() {
   fake_os Darwin
   fake_command pbcopy "cat > \"$SANDBOX/pbcopy-used\""
-  run_setup "2\n1\n"
+  run_setup "1\n2\n1\n"
   assert_status 0
   assert_exists "$SANDBOX/pbcopy-used"
 }
@@ -809,7 +873,7 @@ test_slack_without_a_clipboard_tool_still_prints_the_string() {
     ln -s "$(command -v "$tool")" "$SANDBOX/minbin/$tool"
   done
   fake_no_python
-  OUTPUT="$(printf '2\n1\n' |
+  OUTPUT="$(printf '1\n2\n1\n' |
     HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$SANDBOX/minbin" WAYLAND_DISPLAY= \
       "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" 2>&1)"
   STATUS=$?
