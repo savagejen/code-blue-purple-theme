@@ -18,6 +18,11 @@ numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
 are "235", "87" and "65", and {{accent_hex}} is "5865F3" (without the #).
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
+
+Palettes can be dark or light. {{scheme}} is "dark" or "light": the palette's
+optional `scheme` setting, or else worked out from its editor background
+(`bg`). {{scheme: "a" | "b"}} gives "a" for dark palettes and "b" for light
+ones, and {scheme} in a template's path picks a template for each.
 """
 
 import argparse
@@ -37,7 +42,9 @@ VSCODE_THEME = "app-themes/vs-code-theme/themes/jenerated-{slug}-color-theme.jso
 
 # (template, output) pairs, relative to the repository root. {slug} in the
 # output path is replaced with the palette's slug; it may name a folder, which
-# is created as needed and deleted with the palette's last file.
+# is created as needed and deleted with the palette's last file. {scheme} in
+# the template path is replaced with "dark" or "light", for apps whose dark
+# and light themes differ too much for one template.
 TARGETS = [
     ("app-themes/vs-code-theme/themes/color-theme.json.tmpl", VSCODE_THEME),
     ("app-themes/ptyxis-theme/palette.tmpl", "app-themes/ptyxis-theme/{slug}.palette"),
@@ -49,7 +56,7 @@ TARGETS = [
     ("app-themes/firefox-theme/manifest.json.tmpl", "app-themes/firefox-theme/{slug}/manifest.json"),
     ("app-themes/vivaldi-theme/settings.json.tmpl", "app-themes/vivaldi-theme/{slug}/settings.json"),
     ("app-themes/jetbrains-theme/plugin.xml.tmpl", "app-themes/jetbrains-theme/{slug}/META-INF/plugin.xml"),
-    ("app-themes/jetbrains-theme/theme.json.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.theme.json"),
+    ("app-themes/jetbrains-theme/theme-{scheme}.json.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.theme.json"),
     ("app-themes/jetbrains-theme/editor-scheme.xml.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.xml"),
     ("app-themes/chromium-theme/manifest.json.tmpl", "app-themes/chromium-theme/{slug}/manifest.json"),
     ("app-themes/gtk3-theme/gtk.css.tmpl", "app-themes/gtk3-theme/{slug}/gtk-3.0/gtk.css"),
@@ -73,7 +80,10 @@ VSCODE_UI_THEMES = {
 }
 
 HEX = re.compile(r"#[0-9a-fA-F]{6}")
-PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
+# {{name}}, or {{scheme: "text for dark" | "text for light"}}.
+PLACEHOLDER = re.compile(
+    r'\{\{\s*(?:([A-Za-z0-9_]+)|scheme\s*:\s*"([^"]*)"\s*\|\s*"([^"]*)")\s*\}\}')
+SCHEMES = ("dark", "light")
 # Slugs become file names, so they're kept to lowercase words and dashes.
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 # Each palette's {{uuid}} is made from its slug in this namespace.
@@ -130,6 +140,10 @@ def read_palette_file(path):
         sys.exit(f"{path}: palettes in palettes/ must be named after their "
                  f"slug; rename it to {slug}-palette.toml")
 
+    if data.get("scheme") not in (None, *SCHEMES):
+        sys.exit(f'{path}: `scheme` must be "dark" or "light" (or left out, '
+                 f"to work it out from `bg`)")
+
     colors = data.setdefault("colors", {})
     if not isinstance(colors, dict):
         sys.exit(f"{path}: `colors` must be a [colors] table")
@@ -154,10 +168,20 @@ def color_formats(key, value):
     }
 
 
+def scheme_of(color):
+    """ "light" for a background black text reads better on, else "dark"."""
+    channels = [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+              for c in channels]
+    luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+    # The contrast with black beats the contrast with white.
+    return "light" if (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) else "dark"
+
+
 def load_palette(path):
     """Read a palette and return its template values: every color as
     #rrggbb (with references to other colors followed) and in its other
-    forms (see color_formats), plus `name`, `slug` and `uuid`."""
+    forms (see color_formats), plus `name`, `slug`, `uuid` and `scheme`."""
     data = read_palette_file(path)
     colors = data["colors"]
 
@@ -181,6 +205,7 @@ def load_palette(path):
     values["name"] = data["name"]
     values["slug"] = data["slug"]
     values["uuid"] = str(uuid.uuid5(UUID_NAMESPACE, data["slug"]))
+    values["scheme"] = data.get("scheme") or (scheme_of(values["bg"]) if "bg" in values else "dark")
     return values
 
 
@@ -200,7 +225,9 @@ def render(template_path, values):
     missing = set()
 
     def substitute(match):
-        key = match.group(1)
+        key, for_dark, for_light = match.groups()
+        if key is None:
+            return for_dark if values["scheme"] == "dark" else for_light
         if key not in values:
             missing.add(key)
             return match.group(0)
@@ -211,6 +238,11 @@ def render(template_path, values):
         sys.exit(f"{template_path.relative_to(ROOT)}: the palette has no "
                  f"color named {', '.join(sorted(missing))}")
     return result
+
+
+def template_path(template, values):
+    """A template's file, with {scheme} in its path filled in."""
+    return ROOT / template.format(scheme=values["scheme"])
 
 
 def output_path(output, slug):
@@ -276,7 +308,7 @@ def add(names):
         # Render everything before writing anything, so a bad template
         # leaves no half-generated palette behind.
         rendered = [(output_path(output, values["slug"]),
-                     render(ROOT / template, values))
+                     render(template_path(template, values), values))
                     for template, output in TARGETS]
         for path, content in rendered:
             path.parent.mkdir(parents=True, exist_ok=True)

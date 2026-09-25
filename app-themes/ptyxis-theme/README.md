@@ -6,8 +6,8 @@ writes one `<slug>.palette` file for each palette you generate, for example
 `blue-purple.palette`. Each uses the same colors as the matching VS Code
 theme's built-in terminal.
 
-The palettes only have a dark version, so they look the same whether GNOME is
-set to light or dark mode.
+Each palette uses the palette's colors whether GNOME is set to light or dark
+mode.
 
 The `.palette` files are generated from `palette.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

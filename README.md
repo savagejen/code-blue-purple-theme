@@ -104,10 +104,22 @@ only it, are committed as the default. Generating or removing other palettes cha
 Don't edit generated files by hand; change the palette or template and run
 `jenerate.py` again.
 
-The templates currently assume a dark palette: the VS Code theme template
-sets `"type": "dark"` (`package.json` follows each theme's type), and the
-Ptyxis, Tilix, Obsidian, Vim, Firefox, Vivaldi, Chromium, JetBrains, GTK3
-and KDE themes only have a dark variant.
+## Light and dark palettes
+
+Palettes can be dark or light. `jenerate.py` works out which from the
+palette's editor background (`bg`): a palette is light if black text reads
+better on it than white. A palette can also say which it is, with
+`scheme = "dark"` or `scheme = "light"` after its `slug`. The themes follow:
+VS Code and Firefox mark the theme dark or light, JetBrains themes build on
+the IDE's dark or light theme, GTK3 themes on Adwaita's dark or light
+version, Obsidian and Vim tell the app which it is, and Chromium picks
+matching search logos for the new tab page. The other apps just use the
+palette's colors.
+
+Templates can use `{{scheme}}` (`dark` or `light`), and
+`{{scheme: "text for dark" | "text for light"}}`. A template whose dark and
+light versions differ too much for that can have `{scheme}` in its path in
+`TARGETS`, like JetBrains' `theme-{scheme}.json.tmpl`.
 
 ## Changing colors
 
@@ -145,6 +157,9 @@ explains any that a palette breaks:
   quotes, slashes, backslashes, `<`, `>`, `&` or line breaks. (It's written
   into JSON and XML files, and also names the Obsidian theme's folder.)
 - Every color is a quoted string: `"#rrggbb"` or another color's name.
+- `scheme` is optional: `"dark"` or `"light"`, for a palette whose editor
+  background (`bg`) doesn't make that clear. See
+  [Light and dark palettes](#light-and-dark-palettes).
 
 ## Adding an app
 

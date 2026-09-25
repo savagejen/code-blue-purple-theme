@@ -322,6 +322,22 @@ test_save_as_palette_keeps_the_description() {
   assert_file_contains "$SANDBOX/repo/palettes/sunset-palette.toml" "# Sunset, described again."
 }
 
+# GIVEN a palette that says scheme = "light"
+# WHEN loading it and saving it unchanged
+# THEN the scheme line is kept, and the file is byte for byte the same
+test_the_scheme_setting_is_kept() {
+  { sed -n '1,/^slug = /p' "$SANDBOX/repo/palettes/sunset-palette.toml"
+    echo 'scheme = "light"'
+    sed '1,/^slug = /d' "$SANDBOX/repo/palettes/sunset-palette.toml"; } >"$SANDBOX/repo/palettes/lit-palette.toml"
+  sed -i 's/^slug = .*/slug = "lit"/' "$SANDBOX/repo/palettes/lit-palette.toml"
+  start_server
+  post /api/load '{"filename": "lit-palette.toml"}'
+  assert_json 'd["palette"]["scheme"]' "light"
+  post /api/save "$(palette_body)"
+  assert_json 'd["ok"]' "True"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/lit-palette.toml"
+}
+
 # --- Tests: checking ---------------------------------------------------------
 
 # GIVEN the work-in-progress palette

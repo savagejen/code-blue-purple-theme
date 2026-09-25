@@ -2,7 +2,8 @@
   Jenerated Blue Purple: the editor color scheme for the JetBrains theme, generated
   by jenerate.py from palettes/blue-purple-palette.toml. Don't edit this file;
   change the palette or app-themes/jetbrains-theme/editor-scheme.xml.tmpl.
-  Anything not set here comes from Darcula. Colors are written without a #.
+  Anything not set here comes from Darcula (or, for a light palette, Default).
+  Colors are written without a #.
   EFFECT_TYPE: 1 underline, 2 wavy underline, 3 strikethrough.
   FONT_TYPE: 1 bold, 2 italic.
 -->

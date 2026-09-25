@@ -41,15 +41,18 @@ colors, see [Changing colors](../../README.md#changing-colors).
 
 ## How the colors are used
 
-The UI theme builds on the IDE's own dark theme for the New UI
-(`"parentTheme": "ExperimentalDark"`), which defines the whole UI in terms of
+The UI theme builds on the IDE's own theme for the New UI, dark or light to
+match the palette (`"parentTheme": "ExperimentalDark"` or
+`"ExperimentalLight"`), which defines the whole UI in terms of
 a set of named colors: `Gray1` to `Gray14` from darkest to lightest, and
 shades of `Blue`, `Green`, `Yellow`, `Red`, `Orange`, `Purple` and `Teal`. The
 theme redefines those names with the palette's colors, so every part of the
 IDE follows the palette:
 
 - the grays are the palette's backgrounds (`bg`, `bg_sidebar`, `bg_hover`,
-  ...) and then its text colors (`text_faint` up to `text_bright`),
+  ...) and its text colors: for a dark palette the backgrounds are the dark
+  end and the text the light end, and for a light palette the other way
+  round (`theme-dark.json.tmpl` and `theme-light.json.tmpl`),
 - the blues are the accent colors, used for selection, focus, default buttons
   and links, and
 - the other colors are the palette's `green`, `yellow`, `red`, `orange`,
@@ -58,9 +61,9 @@ IDE follows the palette:
 
 The window's toolbar and the status bar use `bg_chrome`, as in VS Code.
 
-The editor color scheme builds on Darcula, and sets the same syntax colors as
-the VS Code theme, and the same 16 console colors as the terminal themes.
-The themes only have a dark version.
+The editor color scheme builds on Darcula (or, for a light palette, the
+IDE's default light scheme), and sets the same syntax colors as the VS Code
+theme, and the same 16 console colors as the terminal themes.
 
 ## Install
 

@@ -22,8 +22,9 @@ The colors follow the VS Code theme: the darkest background (`bg_chrome`) for
 the window and unselected tabs, the editor background (`bg`) for the toolbar,
 the selected tab and the new tab page, `bg_hover` for the address bar, and the
 palette's text colors for text and icons. On the new tab page, links use
-`accent_soft`, and search engines with a logo show their light version. The
-themes only have a dark version.
+`accent_soft`, and search engines with a logo show a version that suits the
+palette: their light logo on a dark palette's new tab page, and their usual
+one on a light palette's.
 
 The manifests are generated from `manifest.json.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

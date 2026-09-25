@@ -11,8 +11,8 @@ palettes, see [Getting started](../../README.md#getting-started).
 The colorschemes use the palette's exact colors in GUI Vim, and in terminals
 with `termguicolors` set. Without it, they fall back to the terminal's 16
 colors, which the matching [Ptyxis](../ptyxis-theme/) or
-[Tilix](../tilix-theme/) theme sets to the same palette. They only have a dark
-version.
+[Tilix](../tilix-theme/) theme sets to the same palette. Each colorscheme sets
+Vim's `background` to `dark` or `light`, to match the palette.
 
 The colorschemes are generated from `colorscheme.vim.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

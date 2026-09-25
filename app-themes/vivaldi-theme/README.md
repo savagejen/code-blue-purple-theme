@@ -17,7 +17,7 @@ The palette's colors fill Vivaldi's five theme colors:
 | Highlight     | `accent`      | focus, selections and progress |
 
 The theme doesn't take its accent color from web pages, so the tab bar keeps
-the palette's colors. The themes only have a dark version.
+the palette's colors.
 
 The files are generated from `settings.json.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

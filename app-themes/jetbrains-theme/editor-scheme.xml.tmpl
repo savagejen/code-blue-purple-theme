@@ -2,11 +2,12 @@
   Jenerated {{name}}: the editor color scheme for the JetBrains theme, generated
   by jenerate.py from palettes/{{slug}}-palette.toml. Don't edit this file;
   change the palette or app-themes/jetbrains-theme/editor-scheme.xml.tmpl.
-  Anything not set here comes from Darcula. Colors are written without a #.
+  Anything not set here comes from Darcula (or, for a light palette, Default).
+  Colors are written without a #.
   EFFECT_TYPE: 1 underline, 2 wavy underline, 3 strikethrough.
   FONT_TYPE: 1 bold, 2 italic.
 -->
-<scheme name="Jenerated {{name}}" version="142" parent_scheme="Darcula">
+<scheme name="Jenerated {{name}}" version="142" parent_scheme="{{scheme: "Darcula" | "Default"}}">
   <colors>
     <option name="CARET_COLOR" value="{{accent_hex}}"/>
     <option name="CARET_ROW_COLOR" value="{{bg_line_highlight_hex}}"/>

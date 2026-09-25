@@ -2,7 +2,8 @@
    palettes/blue-purple-palette.toml. Don't edit this file; change the palette or
    app-themes/gtk3-theme/gtk.css.tmpl.
 
-   It builds on the dark Adwaita theme that comes with GTK3, and recolors the
+   It builds on the Adwaita theme that comes with GTK3 (its dark or light
+   version, to match the palette), and recolors the
    main widgets with the palette. Two things keep Adwaita's own colors from
    showing through:
    - Adwaita paints many widgets with background images (gradients), so

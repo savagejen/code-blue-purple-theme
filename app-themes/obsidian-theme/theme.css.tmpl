@@ -2,12 +2,12 @@
    Don't edit this file; change the palette or
    app-themes/obsidian-theme/theme.css.tmpl. */
 
-/* The palette is dark, so it applies in both of Obsidian's color schemes. */
+/* The palette's colors apply in both of Obsidian's color schemes. */
 .theme-dark,
 .theme-light {
-  color-scheme: dark;
+  color-scheme: {{scheme}};
 
-  /* Base scale, darkest to lightest */
+  /* Base scale, from the background to the text */
   --color-base-00: {{bg}};
   --color-base-05: {{bg_minimap}};
   --color-base-10: {{bg_line_highlight}};

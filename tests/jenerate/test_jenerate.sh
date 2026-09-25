@@ -873,6 +873,135 @@ test_remove_deletes_the_kde_themes() {
   assert_exists "$SANDBOX/repo/app-themes/kde-theme/colors.tmpl"
 }
 
+# --- Tests: light and dark palettes -----------------------------------------
+
+# write_light_palette slug name [extra lines...] -> writes a palette copied
+# from Sunset but with a near-white editor background, plus any extra lines
+# (which go before [colors]).
+write_light_palette() {
+  local slug="$1" name="$2"
+  shift 2
+  {
+    sed -n '1,/^\[colors\]/{/^\[colors\]/!p}' "$SANDBOX/repo/palettes/sunset-palette.toml" |
+      sed -e "s|^name = .*|name = \"$name\"|" -e "s|^slug = .*|slug = \"$slug\"|"
+    for line in "$@"; do printf '%s\n' "$line"; done
+    sed -n '/^\[colors\]/,$p' "$SANDBOX/repo/palettes/sunset-palette.toml" |
+      sed 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/'
+  } >"$SANDBOX/repo/palettes/$slug-palette.toml"
+}
+
+# scheme_facts slug -> prints how each app's theme for the palette is set up:
+# VS Code's type and package.json uiTheme, JetBrains' dark flag and parent
+# themes, and the Firefox, Chromium, Obsidian, Vim and GTK3 settings.
+scheme_facts() {
+  "$PYTHON" -c '
+import json, re, sys
+slug, d = sys.argv[1], sys.argv[2] + "/app-themes"
+vs = json.load(open(f"{d}/vs-code-theme/themes/jenerated-{slug}-color-theme.json"))
+pkg = {t["path"]: t["uiTheme"] for t in json.load(open(f"{d}/vs-code-theme/package.json"))["contributes"]["themes"]}
+jb = json.load(open(f"{d}/jetbrains-theme/{slug}/jenerated-{slug}.theme.json"))
+xml = open(f"{d}/jetbrains-theme/{slug}/jenerated-{slug}.xml").read()
+ff = json.load(open(f"{d}/firefox-theme/{slug}/manifest.json"))
+cr = json.load(open(f"{d}/chromium-theme/{slug}/manifest.json"))
+print(vs["type"], pkg[f"./themes/jenerated-{slug}-color-theme.json"], jb["dark"], jb["parentTheme"],
+      re.search(r"parent_scheme=\"(\w+)\"", xml).group(1), ff["theme"]["properties"]["color_scheme"],
+      cr["theme"]["properties"]["ntp_logo_alternate"],
+      re.search(r"color-scheme: (\w+)", open(f"{d}/obsidian-theme/{slug}/theme.css").read()).group(1),
+      re.search(r"set background=(\w+)", open(f"{d}/vim-theme/colors/jenerated-{slug}.vim").read()).group(1),
+      re.search(r"gtk-contained[-a-z]*\.css", open(f"{d}/gtk3-theme/{slug}/gtk-3.0/gtk.css").read()).group(0))
+' "$1" "$SANDBOX/repo"
+}
+
+DARK_FACTS="dark vs-dark True ExperimentalDark Darcula dark 1 dark dark gtk-contained-dark.css"
+LIGHT_FACTS="light vs False ExperimentalLight Default light 0 light light gtk-contained.css"
+
+# GIVEN the Sunset palette, which has a dark editor background
+# WHEN generating it
+# THEN every app's theme is set up as dark
+test_a_dark_background_makes_dark_themes() {
+  run_jenerate sunset
+  assert_status 0
+  facts="$(scheme_facts sunset)"
+  [ "$facts" = "$DARK_FACTS" ] || fail "expected dark themes: $DARK_FACTS, got: $facts"
+}
+
+# GIVEN a palette with a near-white editor background
+# WHEN generating it
+# THEN every app's theme is set up as light, and JetBrains' gray scale runs
+#      from the palette's text (Gray1) to its editor background (Gray14)
+test_a_light_background_makes_light_themes() {
+  write_light_palette daylight Daylight
+  run_jenerate daylight
+  assert_status 0
+  facts="$(scheme_facts daylight)"
+  [ "$facts" = "$LIGHT_FACTS" ] || fail "expected light themes: $LIGHT_FACTS, got: $facts"
+  jetbrains="$(jetbrains_theme daylight)/jenerated-daylight.theme.json"
+  assert_file_contains "$jetbrains" "\"Gray1\": \"$(color text)\""
+  assert_file_contains "$jetbrains" "\"Gray14\": \"#fbfbfd\""
+}
+
+# GIVEN a palette with a dark background but scheme = "light", and one with
+#       a light background but scheme = "dark"
+# WHEN generating them
+# THEN each follows its scheme setting, not its background
+test_the_scheme_setting_overrides_the_background() {
+  write_palette "$SANDBOX/lit.toml" "Lit" "lit"
+  { sed -n '1,/^slug = /p' "$SANDBOX/lit.toml"; echo 'scheme = "light"'; sed '1,/^slug = /d' "$SANDBOX/lit.toml"; } \
+    >"$SANDBOX/repo/palettes/lit-palette.toml"
+  write_light_palette dim Dim 'scheme = "dark"'
+  run_jenerate lit,dim
+  assert_status 0
+  facts="$(scheme_facts lit)"
+  [ "$facts" = "$LIGHT_FACTS" ] || fail "expected scheme = \"light\" to make light themes, got: $facts"
+  facts="$(scheme_facts dim)"
+  [ "$facts" = "$DARK_FACTS" ] || fail "expected scheme = \"dark\" to make dark themes, got: $facts"
+}
+
+# GIVEN a palette whose scheme is neither "dark" nor "light"
+# WHEN generating it
+# THEN it's refused, saying what's allowed
+test_scheme_must_be_dark_or_light() {
+  write_light_palette odd Odd 'scheme = "sepia"'
+  run_jenerate odd
+  assert_status 1
+  assert_contains '`scheme` must be "dark" or "light" (or left out, to work it out from `bg`)'
+}
+
+# GIVEN a template using {{scheme}} and {{scheme: "night" | "day"}}
+# WHEN generating a dark palette and a light one
+# THEN the dark one gets "dark" and "night", and the light one "light" and
+#      "day"
+test_templates_can_choose_by_scheme() {
+  printf '%s\n' '{{scheme}}|{{ scheme : "night" | "day" }}' >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  assert_file_equals "$(slack_theme sunset)" "dark|night"
+  assert_file_equals "$(slack_theme daylight)" "light|day"
+}
+
+# GIVEN a light palette, and GTK3's Python bindings
+# WHEN generating it and loading its GTK3 theme with GTK's own parser
+# THEN GTK reports no errors (including in the light Adwaita it imports)
+test_light_gtk3_theme_parses_in_gtk() {
+  "$PYTHON" -c 'import gi; gi.require_version("Gtk", "3.0"); from gi.repository import Gtk' 2>/dev/null || return 0
+  write_light_palette daylight Daylight
+  run_jenerate daylight
+  OUTPUT="$("$PYTHON" -c '
+import sys, gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, GLib
+provider, errors = Gtk.CssProvider(), []
+provider.connect("parsing-error", lambda p, s, e: errors.append(e.message))
+try:
+    provider.load_from_path(sys.argv[1])
+except GLib.Error as e:
+    errors.append(e.message)
+print("\n".join(errors) or "no errors")
+' "$(gtk3_theme daylight)/gtk-3.0/gtk.css" 2>&1)"
+  assert_contains "no errors"
+}
+
 # --- Tests: Obsidian ---------------------------------------------------------
 
 # GIVEN the Sunset palette
@@ -963,7 +1092,7 @@ test_package_json_keeps_the_base_fields() {
 # WHEN generating Sunset
 # THEN package.json gives Sunset the light uiTheme, vs
 test_package_json_uses_each_themes_type() {
-  sed 's/"type": "dark"/"type": "light"/' \
+  sed 's/"type": "{{scheme}}"/"type": "light"/' \
     "$SANDBOX/repo/app-themes/vs-code-theme/themes/color-theme.json.tmpl" >"$SANDBOX/light.tmpl"
   cp "$SANDBOX/light.tmpl" "$SANDBOX/repo/app-themes/vs-code-theme/themes/color-theme.json.tmpl"
   run_jenerate sunset

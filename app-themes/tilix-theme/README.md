@@ -6,8 +6,8 @@ file for each palette you generate, for example `blue-purple.json`. Each uses
 the same colors as the matching VS Code theme's built-in terminal and the
 Ptyxis palette, and shows up in Tilix as "Jenerated" plus the palette's name.
 
-The schemes only have a dark version, so they look the same whether GNOME is
-set to light or dark mode.
+Each scheme uses the palette's colors whether GNOME is set to light or dark
+mode.
 
 The `.json` files are generated from `scheme.json.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

@@ -2,7 +2,8 @@
    palettes/{{slug}}-palette.toml. Don't edit this file; change the palette or
    app-themes/gtk3-theme/gtk.css.tmpl.
 
-   It builds on the dark Adwaita theme that comes with GTK3, and recolors the
+   It builds on the Adwaita theme that comes with GTK3 (its dark or light
+   version, to match the palette), and recolors the
    main widgets with the palette. Two things keep Adwaita's own colors from
    showing through:
    - Adwaita paints many widgets with background images (gradients), so
@@ -10,7 +11,7 @@
    - Adwaita restyles unfocused windows with :backdrop rules, so each rule
      here has :backdrop copies of its selectors. */
 
-@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained{{scheme: "-dark" | ""}}.css");
 
 /* Named colors, for apps that use them in their own styles. */
 @define-color theme_bg_color {{bg_sidebar}};

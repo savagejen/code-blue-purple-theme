@@ -6,8 +6,8 @@ for example `blue-purple/`, holding the theme's `theme.css` and
 `manifest.json`. Blue Purple is included; to add other palettes, see
 [Getting started](../../README.md#getting-started).
 
-The themes only have a dark version, so they look the same whether Obsidian
-is set to light or dark.
+Each theme uses the palette's colors whether Obsidian is set to light or
+dark, and tells Obsidian whether the palette is dark or light.
 
 The files are generated from `theme.css.tmpl` and `manifest.json.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

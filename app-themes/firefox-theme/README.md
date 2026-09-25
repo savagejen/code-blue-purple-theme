@@ -7,8 +7,8 @@ generate, for example `blue-purple/`, holding the theme's `manifest.json`.
 Blue Purple is included; to add other palettes, see
 [Getting started](../../README.md#getting-started).
 
-The themes are dark, and mark Firefox's own pages as dark. Websites still
-follow your system's light or dark setting.
+Each theme marks Firefox's own pages as dark or light, to match the palette.
+Websites still follow your system's light or dark setting.
 
 The manifests are generated from `manifest.json.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see

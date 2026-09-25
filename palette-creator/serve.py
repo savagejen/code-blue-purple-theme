@@ -154,7 +154,8 @@ def read_palette(path):
         groups.append({"title": "", "colors": rest})
     groups = [g for g in groups if g["colors"]]
     return {"header": header, "description": description_from_header(header),
-            "name": data["name"], "slug": data["slug"], "groups": groups}
+            "name": data["name"], "slug": data["slug"], "scheme": data.get("scheme"),
+            "groups": groups}
 
 
 def one_line(text, what):
@@ -183,8 +184,11 @@ def write_palette(palette):
             lines.append("")
         # json.dumps writes a valid TOML string, so a stray quote is caught
         # by jenerate.py's checks, with its usual message.
-        lines += [f"name = {json.dumps(name)}", f"slug = {json.dumps(slug)}",
-                  "", "[colors]"]
+        lines += [f"name = {json.dumps(name)}", f"slug = {json.dumps(slug)}"]
+        # A palette can say it's dark or light; otherwise that's worked out.
+        if palette.get("scheme") is not None:
+            lines.append(f"scheme = {json.dumps(palette['scheme'])}")
+        lines += ["", "[colors]"]
         keys = set()
         for i, group in enumerate(groups):
             if i:
@@ -217,7 +221,7 @@ def check_palette(palette):
         path.write_text(text)
         values = jenerate_check(jenerate.load_palette, path, path=path)
     for template, _ in jenerate.TARGETS:
-        jenerate_check(jenerate.render, jenerate.ROOT / template, values)
+        jenerate_check(jenerate.render, jenerate.template_path(template, values), values)
     return text
 
 

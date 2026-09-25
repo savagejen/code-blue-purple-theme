@@ -61,8 +61,9 @@ folder by default; to let them, run
 
 ## How it's built
 
-`gtk.css` imports the dark Adwaita theme that comes with GTK3, so every
-widget has a complete style, and then recolors the main widgets with the
+`gtk.css` imports the Adwaita theme that comes with GTK3, its dark or light
+version to match the palette, so every widget has a complete style, and then
+recolors the main widgets with the
 palette. Adwaita paints many widgets with gradients, and restyles unfocused
 windows separately, so the theme sets each background as an image too, and
 repeats each rule for unfocused (`:backdrop`) windows. It also sets GTK's

@@ -1,7 +1,7 @@
 {
   "name": "jenerated-themes",
   "displayName": "Jenerated Themes",
-  "description": "Dark themes with high contrast text, generated from shared color palettes.",
+  "description": "Themes with high contrast text, generated from shared color palettes.",
   "version": "1.0.0",
   "publisher": "local",
   "license": "MIT",
