@@ -68,7 +68,8 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # GIVEN a Linux system
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      JetBrains apps, Chromium browsers, Ptyxis, Tilix, GTK3 apps and KDE
+#      JetBrains apps, Chromium browsers, Ptyxis, Tilix, GTK3 apps, KDE and
+#      Decky Loader
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
@@ -84,13 +85,14 @@ test_app_menu_on_linux_includes_the_terminals() {
   assert_contains "10) Tilix (terminal)"
   assert_contains "11) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
   assert_contains "12) KDE Plasma (Plasma and KDE apps, Konsole, Kate)"
+  assert_contains "13) Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi and
 #      JetBrains apps and Chromium browsers, but not Ptyxis, Tilix, GTK3
-#      apps or KDE
+#      apps, KDE or Decky Loader
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
@@ -106,6 +108,7 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
   assert_not_contains "Tilix"
   assert_not_contains "GTK3"
   assert_not_contains "KDE"
+  assert_not_contains "Decky"
 }
 
 # GIVEN the palettes in palettes/
@@ -936,6 +939,38 @@ test_kde_leaves_the_color_scheme_when_declined() {
   assert_missing "$SANDBOX/plasma-applied"
   assert_contains "System Settings -> Colors & Themes -> Colors"
   assert_exists "$SANDBOX/home/$KDE_DATA/color-schemes/Jenerated-blue-purple.colors"
+}
+
+# --- Tests: Decky Loader ----------------------------------------------------
+
+# GIVEN a Linux system with Decky Loader installed (a ~/homebrew folder)
+# WHEN choosing Decky Loader and Blue Purple
+# THEN the theme folder is linked into ~/homebrew/themes, and it explains how
+#      to turn it on in CSS Loader, without saying Decky is missing
+test_decky_links_the_theme() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/homebrew/plugins"
+  run_setup "1\n13\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/homebrew/themes/Jenerated-blue-purple" \
+    "$SANDBOX/repo/app-themes/decky-theme/blue-purple"
+  assert_contains "choose CSS Loader"
+  assert_contains "Turn on \"Jenerated Blue Purple\"."
+  assert_not_contains "Decky Loader isn't installed yet"
+}
+
+# GIVEN a Linux system without Decky Loader (no ~/homebrew folder)
+# WHEN choosing Decky Loader and Sunset
+# THEN it says Decky Loader isn't installed and where to get it, and links the
+#      theme anyway, ready for when it is
+test_decky_explains_when_decky_is_missing() {
+  fake_os Linux
+  run_setup "1\n13\n2\n"
+  assert_status 0
+  assert_contains "Decky Loader isn't installed yet"
+  assert_contains "https://decky.xyz"
+  assert_link "$SANDBOX/home/homebrew/themes/Jenerated-sunset" \
+    "$SANDBOX/repo/app-themes/decky-theme/sunset"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

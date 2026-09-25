@@ -14,6 +14,7 @@ install it in any app without running anything.
 Each app has its own folder with a template and install instructions:
 
 - [Chromium browsers (Chrome, Brave, Edge, Opera and more)](app-themes/chromium-theme/)
+- [Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)](app-themes/decky-theme/)
 - [Firefox](app-themes/firefox-theme/)
 - [GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)](app-themes/gtk3-theme/)
 - [JetBrains apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)](app-themes/jetbrains-theme/)

@@ -52,6 +52,7 @@ jetbrains_theme() { printf '%s' "$SANDBOX/repo/app-themes/jetbrains-theme/$1"; }
 gtk3_theme() { printf '%s' "$SANDBOX/repo/app-themes/gtk3-theme/$1"; }
 chromium_theme() { printf '%s' "$SANDBOX/repo/app-themes/chromium-theme/$1"; }
 kde_theme() { printf '%s' "$SANDBOX/repo/app-themes/kde-theme/$1"; }
+decky_theme() { printf '%s' "$SANDBOX/repo/app-themes/decky-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -186,6 +187,8 @@ test_generates_every_app_theme() {
   assert_exists "$(kde_theme sunset)/Jenerated-sunset.colors"
   assert_exists "$(kde_theme sunset)/Jenerated-sunset.colorscheme"
   assert_exists "$(kde_theme sunset)/Jenerated-sunset.theme"
+  assert_exists "$(decky_theme sunset)/theme.json"
+  assert_exists "$(decky_theme sunset)/shared.css"
 }
 
 # GIVEN the Sunset palette
@@ -200,7 +203,8 @@ test_fills_in_every_placeholder() {
     "$(jetbrains_theme sunset)/jenerated-sunset.theme.json" "$(jetbrains_theme sunset)/jenerated-sunset.xml" \
     "$(gtk3_theme sunset)/gtk-3.0/gtk.css" "$(gtk3_theme sunset)/index.theme" \
     "$(chromium_theme sunset)/manifest.json" "$(kde_theme sunset)/Jenerated-sunset.colors" \
-    "$(kde_theme sunset)/Jenerated-sunset.colorscheme" "$(kde_theme sunset)/Jenerated-sunset.theme"; do
+    "$(kde_theme sunset)/Jenerated-sunset.colorscheme" "$(kde_theme sunset)/Jenerated-sunset.theme" \
+    "$(decky_theme sunset)/theme.json" "$(decky_theme sunset)/shared.css"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -296,7 +300,8 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/chromium-theme/blue-purple/manifest.json \
     app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colors \
     app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colorscheme \
-    app-themes/kde-theme/blue-purple/Jenerated-blue-purple.theme; do
+    app-themes/kde-theme/blue-purple/Jenerated-blue-purple.theme \
+    app-themes/decky-theme/blue-purple/theme.json app-themes/decky-theme/blue-purple/shared.css; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -871,6 +876,84 @@ test_remove_deletes_the_kde_themes() {
   assert_contains "Removed app-themes/kde-theme/sunset/Jenerated-sunset.colors"
   assert_missing "$(kde_theme sunset)"
   assert_exists "$SANDBOX/repo/app-themes/kde-theme/colors.tmpl"
+}
+
+# --- Tests: Decky Loader ----------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its CSS Loader theme.json is valid JSON, is named after the palette,
+#      uses manifest version 8, and injects shared.css into Steam's Big
+#      Picture, Quick Access and main menu tabs
+test_decky_theme_json_names_the_theme() {
+  run_jenerate sunset
+  result="$("$PYTHON" -c '
+import json, sys
+t = json.load(open(sys.argv[1]))
+print(t["name"], t["manifest_version"], t["target"], t["inject"])
+' "$(decky_theme sunset)/theme.json")"
+  expected="Jenerated Sunset 8 System-Wide {'shared.css': ['SP', 'QuickAccess', 'MainMenu']}"
+  [ "$result" = "$expected" ] || fail "expected '$expected', got '$result'"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its CSS Loader stylesheet sets Steam's colors from the palette: the
+#      darkest background, the panels, the text, the accent and the status
+#      colors
+test_decky_theme_uses_the_palette() {
+  run_jenerate sunset
+  css="$(decky_theme sunset)/shared.css"
+  assert_file_contains "$css" "--gpSystemDarkestGrey: $(color bg_chrome) !important;"
+  assert_file_contains "$css" "--gpSystemDarkerGrey: $(color bg) !important;"
+  assert_file_contains "$css" "--gpSystemLightestGrey: $(color text) !important;"
+  assert_file_contains "$css" "--gpColor-Blue: $(color accent) !important;"
+  assert_file_contains "$css" "--gpColor-Green: $(color green) !important;"
+  assert_file_contains "$css" "--gpColor-Red: $(color red) !important;"
+  assert_file_contains "$css" "--gpBackground-Neutral-LightSoft: rgba($(color_rgb text), 0.2) !important;"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading every custom property its stylesheet sets
+# THEN each is one of the color names Steam itself defines (so a typo can't
+#      silently do nothing), and the braces balance
+test_decky_theme_only_sets_steams_color_names() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+steam = set("""
+gpSystemDarkestGrey gpSystemDarkerGrey gpSystemDarkGrey gpSystemGrey
+gpSystemLightGrey gpSystemLighterGrey gpSystemLightestGrey
+gpStoreDarkestGrey gpStoreDarkerGrey gpStoreDarkGrey gpStoreGrey
+gpStoreLightGrey gpStoreLighterGrey gpStoreLightestGrey
+gpColor-Blue gpColor-BlueHi gpColor-ChalkyBlue gpColor-DustyBlue gpColor-LightBlue
+gpColor-Green gpColor-GreenHi gpColor-Orange gpColor-Red gpColor-RedHi gpColor-Yellow
+gpBackground-DarkHard gpBackground-DarkMedium gpBackground-DarkSoft gpBackground-DarkSofter
+gpBackground-LightHarder gpBackground-LightHard gpBackground-LightMedium
+gpBackground-LightSoft gpBackground-LightSofter
+gpBackground-Neutral-LightHarder gpBackground-Neutral-LightHard
+gpBackground-Neutral-LightMedium gpBackground-Neutral-LightSoft
+gpBackground-Neutral-LightSofter gpGradient-LibraryBackground
+""".split())
+css = re.sub(r"/\*.*?\*/", "", open(sys.argv[1]).read(), flags=re.S)
+for name in re.findall(r"--([A-Za-z0-9-]+)\s*:", css):
+    if name not in steam:
+        print(f"--{name} is not one of Steam'"'"'s color names")
+if css.count("{") != css.count("}"):
+    print("the braces do not balance")
+' "$(decky_theme sunset)/shared.css")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its CSS Loader theme folder is deleted, and the templates are kept
+test_remove_deletes_the_decky_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/decky-theme/sunset/theme.json"
+  assert_missing "$(decky_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/decky-theme/shared.css.tmpl"
 }
 
 # --- Tests: light and dark palettes -----------------------------------------

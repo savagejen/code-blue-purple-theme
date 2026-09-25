@@ -64,6 +64,8 @@ TARGETS = [
     ("app-themes/kde-theme/konsole.colorscheme.tmpl", "app-themes/kde-theme/{slug}/Jenerated-{slug}.colorscheme"),
     ("app-themes/kde-theme/syntax.theme.tmpl", "app-themes/kde-theme/{slug}/Jenerated-{slug}.theme"),
     ("app-themes/gtk3-theme/index.theme.tmpl", "app-themes/gtk3-theme/{slug}/index.theme"),
+    ("app-themes/decky-theme/theme.json.tmpl", "app-themes/decky-theme/{slug}/theme.json"),
+    ("app-themes/decky-theme/shared.css.tmpl", "app-themes/decky-theme/{slug}/shared.css"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code

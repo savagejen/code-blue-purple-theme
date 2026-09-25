@@ -224,8 +224,9 @@ APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains" "chro
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)"
     "GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
-    "KDE Plasma (Plasma and KDE apps, Konsole, Kate)")
-  APP_IDS+=("ptyxis" "tilix" "gtk3" "kde")
+    "KDE Plasma (Plasma and KDE apps, Konsole, Kate)"
+    "Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)")
+  APP_IDS+=("ptyxis" "tilix" "gtk3" "kde" "decky")
 fi
 
 choose "Which app do you want to theme?" "${APPS[@]}"
@@ -661,6 +662,29 @@ install_kde() {
   say "GTK apps follow Plasma's colors too, through KDE's GTK integration."
 }
 
+install_decky() {
+  local themes="$HOME/homebrew/themes"
+
+  step "Installing the CSS Loader theme"
+  if [ ! -d "$HOME/homebrew" ]; then
+    say "Decky Loader isn't installed yet (there's no ~/homebrew folder), so the"
+    say "theme will wait for it. Install Decky Loader from https://decky.xyz,"
+    say "then CSS Loader from Decky's plugin store."
+  fi
+  mkdir -p "$themes"
+  install_link "$themes/Jenerated-$SLUG" "$ROOT/app-themes/decky-theme/$SLUG"
+
+  step "Done! To turn the theme on, in Gaming Mode:"
+  say "1. Open the Quick Access menu (the ... button on a Steam Deck), then"
+  say "   Decky's plug icon, and choose CSS Loader."
+  say "2. If CSS Loader was already running, scroll to the bottom and press"
+  say "   Refresh so it finds the new theme."
+  say "3. Turn on \"Jenerated $NAME\"."
+  say "CSS Loader reads the theme from this folder, so after changing the"
+  say "palette, press Refresh again. To go back to Steam's own colors, turn the"
+  say "theme off."
+}
+
 install_tilix() {
   local schemes="$HOME/.config/tilix/schemes"
 
@@ -722,6 +746,7 @@ case "$APP" in
   tilix) install_tilix ;;
   gtk3) install_gtk3 ;;
   kde) install_kde ;;
+  decky) install_decky ;;
 esac
 
 say ""
