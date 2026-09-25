@@ -4,6 +4,7 @@ vs-code-theme/themes/jenerated-*-color-theme.json
 ptyxis-theme/*.palette
 slack-theme/*.txt
 tilix-theme/*.json
+vim-theme/colors/jenerated-*.vim
 obsidian-theme/*/
 *.vsix
 
@@ -17,6 +18,7 @@ palette-creator/work-in-progress-palette.toml
 !ptyxis-theme/blue-purple.palette
 !slack-theme/blue-purple.txt
 !tilix-theme/blue-purple.json
+!vim-theme/colors/jenerated-blue-purple.vim
 !obsidian-theme/blue-purple/
 
 # Python bytecode (from importing jenerate.py)

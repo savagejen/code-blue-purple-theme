@@ -156,8 +156,8 @@ choose "What would you like to do?" \
 
 # --- Pick an app -------------------------------------------------------------
 
-APPS=("VS Code" "Slack" "Obsidian")
-APP_IDS=("vscode" "slack" "obsidian")
+APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim")
+APP_IDS=("vscode" "slack" "obsidian" "vim")
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)")
   APP_IDS+=("ptyxis" "tilix")
@@ -349,6 +349,47 @@ install_obsidian() {
   say "Themes are per vault; run ./setup.sh again for your other vaults."
 }
 
+install_vim() {
+  local vim_pack="$HOME/.vim/pack/jenerated/start/jenerated-themes"
+  local nvim_pack="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/site/pack/jenerated/start/jenerated-themes"
+  local has_vim="" has_nvim=""
+  { command -v vim >/dev/null 2>&1 || [ -d "$HOME/.vim" ]; } && has_vim=1
+  { command -v nvim >/dev/null 2>&1 || [ -d "$HOME/.config/nvim" ]; } && has_nvim=1
+  # With neither found, set it up for Vim.
+  [ -z "$has_nvim" ] && has_vim=1
+
+  # vim-theme is a Vim package: linked once, every generated palette's
+  # colorscheme (in its colors/ folder) is available.
+  if [ -n "$has_vim" ]; then
+    step "Installing the colorschemes for Vim"
+    mkdir -p "$(dirname "$vim_pack")"
+    install_link "$vim_pack" "$ROOT/vim-theme"
+  fi
+  if [ -n "$has_nvim" ]; then
+    step "Installing the colorschemes for Neovim"
+    mkdir -p "$(dirname "$nvim_pack")"
+    install_link "$nvim_pack" "$ROOT/vim-theme"
+  fi
+
+  step "Done! To turn the colorscheme on:"
+  say "Try it now with :colorscheme jenerated-$SLUG"
+  say ""
+  if [ -n "$has_vim" ]; then
+    say "To keep it, add these lines to ~/.vimrc:"
+    say "    set termguicolors"
+    say "    colorscheme jenerated-$SLUG"
+  fi
+  if [ -n "$has_nvim" ]; then
+    say "To keep it in Neovim, add these lines to ~/.config/nvim/init.lua:"
+    say "    vim.opt.termguicolors = true"
+    say "    vim.cmd.colorscheme(\"jenerated-$SLUG\")"
+  fi
+  say ""
+  say "termguicolors gives the palette's exact colors. If your terminal doesn't"
+  say "support true color, leave it out: the colorscheme then uses the terminal's"
+  say "16 colors, which the Ptyxis and Tilix themes set to the same palette."
+}
+
 install_tilix() {
   local schemes="$HOME/.config/tilix/schemes"
 
@@ -402,6 +443,7 @@ case "$APP" in
   ptyxis) install_ptyxis ;;
   slack) install_slack ;;
   obsidian) install_obsidian ;;
+  vim) install_vim ;;
   tilix) install_tilix ;;
 esac
 

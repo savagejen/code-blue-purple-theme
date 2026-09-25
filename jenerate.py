@@ -39,6 +39,7 @@ TARGETS = [
     ("ptyxis-theme/palette.tmpl", "ptyxis-theme/{slug}.palette"),
     ("slack-theme/slack-theme.txt.tmpl", "slack-theme/{slug}.txt"),
     ("tilix-theme/scheme.json.tmpl", "tilix-theme/{slug}.json"),
+    ("vim-theme/colorscheme.vim.tmpl", "vim-theme/colors/jenerated-{slug}.vim"),
     ("obsidian-theme/theme.css.tmpl", "obsidian-theme/{slug}/theme.css"),
     ("obsidian-theme/manifest.json.tmpl", "obsidian-theme/{slug}/manifest.json"),
 ]

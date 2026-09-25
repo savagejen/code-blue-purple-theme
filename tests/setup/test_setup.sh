@@ -37,7 +37,7 @@ run_setup() {
   local answers="$1"
   shift
   OUTPUT="$(cd "${RUN_FROM:-$SANDBOX}" && printf '%b' "$answers" |
-    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= \
+    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= \
       bash "${SETUP:-$SANDBOX/repo/setup.sh}" "$@" 2>&1)"
   STATUS=$?
 }
@@ -59,26 +59,29 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 
 # GIVEN a Linux system
 # WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack, Obsidian, Ptyxis and Tilix
+# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Ptyxis and Tilix
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
-  assert_contains "4) Ptyxis (Ubuntu terminal)"
-  assert_contains "5) Tilix (terminal)"
+  assert_contains "4) Vim / Neovim"
+  assert_contains "5) Ptyxis (Ubuntu terminal)"
+  assert_contains "6) Tilix (terminal)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack and Obsidian, but not Ptyxis or Tilix
+# THEN the app menu lists VS Code, Slack, Obsidian and Vim, but not Ptyxis or
+#      Tilix
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
   assert_contains "1) VS Code"
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
+  assert_contains "4) Vim / Neovim"
   assert_not_contains "Ptyxis"
   assert_not_contains "Tilix"
 }
@@ -269,7 +272,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blurple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "1\n5\n1\n"
+  run_setup "1\n6\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blurple' is not a #rrggbb value"
@@ -287,7 +290,7 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "1\n5\n2\n"
+  run_setup "1\n6\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/tilix-theme/sunset.json"
   assert_exists "$repo/tilix-theme/sunset.json"
@@ -426,7 +429,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "1\n4\n1\n"
+  run_setup "1\n5\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
@@ -438,8 +441,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "1\n4\n1\n"
-  run_setup "1\n4\n1\n"
+  run_setup "1\n5\n1\n"
+  run_setup "1\n5\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
@@ -455,7 +458,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "1\n5\n1\n"
+  run_setup "1\n6\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/tilix-theme/blue-purple.json"
@@ -467,7 +470,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "1\n5\n2\n"
+  run_setup "1\n6\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/tilix-theme/sunset.json"
@@ -481,7 +484,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "1\n5\n1\n"
+  run_setup "1\n6\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -491,8 +494,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "1\n5\n1\n"
-  run_setup "1\n5\n1\n"
+  run_setup "1\n6\n1\n"
+  run_setup "1\n6\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -504,9 +507,74 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "1\n5\n1\nn\n"
+  run_setup "1\n6\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
+}
+
+# --- Tests: Vim --------------------------------------------------------------
+
+VIM_PACK=".vim/pack/jenerated/start/jenerated-themes"
+NVIM_PACK=".local/share/nvim/site/pack/jenerated/start/jenerated-themes"
+
+# vim_loads scheme -> fails unless the real Vim, with the sandbox's home,
+# finds and loads the colorscheme. Skipped when Vim isn't installed.
+vim_loads() {
+  command -v vim >/dev/null 2>&1 || return 0
+  rm -f "$SANDBOX/vim-result"
+  HOME="$SANDBOX/home" vim -Nu NONE -i NONE -es \
+    -c "try | colorscheme $1 | call writefile([g:colors_name], '$SANDBOX/vim-result') | catch | call writefile([v:exception], '$SANDBOX/vim-result') | endtry" \
+    -c 'qa!' </dev/null >/dev/null 2>&1
+  assert_file_equals "$SANDBOX/vim-result" "$1"
+}
+
+# GIVEN no Neovim config
+# WHEN choosing Vim and Blue Purple
+# THEN vim-theme is linked as a Vim package, Vim can load the colorscheme,
+#      and it says what to add to ~/.vimrc
+test_vim_links_the_package() {
+  run_setup "1\n4\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/$VIM_PACK" "$SANDBOX/repo/vim-theme"
+  assert_contains "colorscheme jenerated-blue-purple"
+  assert_contains "~/.vimrc"
+  vim_loads jenerated-blue-purple
+}
+
+# GIVEN a Neovim config folder
+# WHEN choosing Vim and Blue Purple
+# THEN vim-theme is also linked as a Neovim package, and it says what to add
+#      to init.lua
+test_vim_links_the_package_for_neovim() {
+  mkdir -p "$SANDBOX/home/.config/nvim"
+  run_setup "1\n4\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/$NVIM_PACK" "$SANDBOX/repo/vim-theme"
+  assert_contains 'vim.cmd.colorscheme("jenerated-blue-purple")'
+}
+
+# GIVEN Vim was set up with Blue Purple
+# WHEN choosing Vim and Sunset
+# THEN the link is already there, and Sunset's newly generated colorscheme
+#      loads through it too
+test_vim_one_link_serves_every_palette() {
+  run_setup "1\n4\n1\n"
+  run_setup "1\n4\n2\n"
+  assert_status 0
+  assert_contains "Already installed"
+  assert_exists "$SANDBOX/repo/vim-theme/colors/jenerated-sunset.vim"
+  vim_loads jenerated-sunset
+}
+
+# GIVEN an old copy of the colorschemes where the Vim package goes
+# WHEN choosing Vim and answering no to replacing it
+# THEN it exits with status 1 and the copy is untouched
+test_vim_asks_before_replacing_a_copy() {
+  mkdir -p "$SANDBOX/home/$VIM_PACK/colors"
+  touch "$SANDBOX/home/$VIM_PACK/colors/keep-me.vim"
+  run_setup "1\n4\n1\nn\n"
+  assert_status 1
+  assert_exists "$SANDBOX/home/$VIM_PACK/colors/keep-me.vim"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

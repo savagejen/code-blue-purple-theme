@@ -43,6 +43,39 @@ ptyxis_palette() { printf '%s' "$SANDBOX/repo/ptyxis-theme/$1.palette"; }
 slack_theme() { printf '%s' "$SANDBOX/repo/slack-theme/$1.txt"; }
 obsidian_theme() { printf '%s' "$SANDBOX/repo/obsidian-theme/$1"; }
 tilix_scheme() { printf '%s' "$SANDBOX/repo/tilix-theme/$1.json"; }
+vim_scheme() { printf '%s' "$SANDBOX/repo/vim-theme/colors/jenerated-$1.vim"; }
+
+# The tests read expected colors from the palette itself, so palettes can be
+# changed without changing the tests.
+#   color key [palette]     -> the color's #rrggbb, following references
+#   color_rgb key [palette] -> its "r, g, b"
+#   color_hsl key [palette] -> its "h|s|l" (whole degrees and percents)
+# The palette defaults to palettes/sunset-palette.toml in the sandbox.
+color_forms() {
+  "$PYTHON" -c '
+import colorsys, sys, tomllib
+form, key, path = sys.argv[1:]
+colors = tomllib.load(open(path, "rb"))["colors"]
+value = colors[key]
+while not value.startswith("#"):
+    value = colors[value]
+r, g, b = (int(value[i:i + 2], 16) for i in (1, 3, 5))
+h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+print({"hex": value, "rgb": f"{r}, {g}, {b}",
+       "hsl": f"{round(h * 360) % 360}|{round(s * 100)}|{round(l * 100)}"}[form])
+' "$1" "$2" "${3:-$SANDBOX/repo/palettes/sunset-palette.toml}"
+}
+color() { color_forms hex "$@"; }
+color_rgb() { color_forms rgb "$@"; }
+color_hsl() { color_forms hsl "$@"; }
+
+# with_references file -> rewrites a palette so term_red refers to red and
+# term_bright_black to text_faint, whatever it had before.
+with_references() {
+  grep -v -e '^term_red = ' -e '^term_bright_black = ' "$1" >"$1.tmp"
+  printf '%s\n' 'term_red = "red"' 'term_bright_black = "text_faint"' >>"$1.tmp"
+  mv "$1.tmp" "$1"
+}
 PACKAGE_JSON_REL="vs-code-theme/package.json"
 
 # Prints package.json's theme labels, one per line, in order.
@@ -133,6 +166,7 @@ test_generates_every_app_theme() {
   assert_exists "$(obsidian_theme sunset)/theme.css"
   assert_exists "$(obsidian_theme sunset)/manifest.json"
   assert_exists "$(tilix_scheme sunset)"
+  assert_exists "$(vim_scheme sunset)"
 }
 
 # GIVEN the Sunset palette
@@ -142,7 +176,7 @@ test_fills_in_every_placeholder() {
   run_jenerate sunset
   for file in "$(vscode_theme sunset)" "$(ptyxis_palette sunset)" "$(slack_theme sunset)" \
     "$(obsidian_theme sunset)/theme.css" "$(obsidian_theme sunset)/manifest.json" \
-    "$(tilix_scheme sunset)"; do
+    "$(tilix_scheme sunset)" "$(vim_scheme sunset)"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -152,10 +186,15 @@ test_fills_in_every_placeholder() {
 # THEN the Slack, Ptyxis and VS Code files contain Sunset's colors and name
 test_uses_the_palette_colors() {
   run_jenerate sunset
-  assert_file_equals "$(slack_theme sunset)" \
-    "#21141b,#301d26,#e4572e,#ffffff,#301d26,#f2e4dc,#9ad96b,#ff4d5e,#110a0e,#f2e4dc"
+  # The Slack template's order: sidebar, hover, accent, bright text, hover,
+  # text, green, red, chrome, text.
+  expected=""
+  for key in bg_sidebar bg_hover accent text_bright bg_hover text green red bg_chrome text; do
+    expected="$expected${expected:+,}$(color "$key")"
+  done
+  assert_file_equals "$(slack_theme sunset)" "$expected"
   assert_file_contains "$(ptyxis_palette sunset)" "Name=Sunset"
-  assert_file_contains "$(ptyxis_palette sunset)" "Cursor=#e4572e"
+  assert_file_contains "$(ptyxis_palette sunset)" "Cursor=$(color accent)"
   assert_file_contains "$(vscode_theme sunset)" '"name": "Jenerated Sunset"'
 }
 
@@ -164,19 +203,20 @@ test_uses_the_palette_colors() {
 # THEN the theme has Sunset's accent followed by 33
 test_keeps_transparency_suffixes() {
   run_jenerate sunset
-  # The template writes {{accent}}33 for a translucent accent.
-  assert_file_contains "$(vscode_theme sunset)" '"#e4572e33"'
+  assert_file_contains "$(vscode_theme sunset)" "\"$(color accent)33\""
 }
 
-# GIVEN Sunset's terminal colors refer to other colors by name
-# WHEN generating Sunset
+# GIVEN a palette where term_red refers to red, and term_bright_black to
+#       text_faint
+# WHEN generating it
 # THEN the Ptyxis palette has the referenced colors' hex values
 test_follows_color_references() {
-  run_jenerate sunset
-  # term_red = "red", and red = "#ff4d5e".
-  assert_file_contains "$(ptyxis_palette sunset)" "Color1=#ff4d5e"
-  # term_bright_black = "text_faint", and text_faint = "#6a4d58".
-  assert_file_contains "$(ptyxis_palette sunset)" "Color8=#6a4d58"
+  write_palette "$SANDBOX/repo/palettes/refs-palette.toml" "Refs" "refs"
+  with_references "$SANDBOX/repo/palettes/refs-palette.toml"
+  run_jenerate refs
+  assert_status 0
+  assert_file_contains "$(ptyxis_palette refs)" "Color1=$(color red)"
+  assert_file_contains "$(ptyxis_palette refs)" "Color8=$(color text_faint)"
 }
 
 # GIVEN a palette where term_red refers to danger, which refers to alarm, which
@@ -209,7 +249,7 @@ test_placeholders_may_have_spaces() {
   printf '{{ accent }}|{{name}}|{{  slug  }}\n' >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
   run_jenerate sunset
   assert_status 0
-  assert_file_equals "$(slack_theme sunset)" "#e4572e|Sunset|sunset"
+  assert_file_equals "$(slack_theme sunset)" "$(color accent)|Sunset|sunset"
 }
 
 # GIVEN the committed Blue Purple files
@@ -223,7 +263,7 @@ test_blue_purple_matches_the_committed_files() {
   for rel in vs-code-theme/themes/jenerated-blue-purple-color-theme.json \
     ptyxis-theme/blue-purple.palette slack-theme/blue-purple.txt \
     obsidian-theme/blue-purple/theme.css obsidian-theme/blue-purple/manifest.json \
-    tilix-theme/blue-purple.json; do
+    tilix-theme/blue-purple.json vim-theme/colors/jenerated-blue-purple.vim; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -326,31 +366,35 @@ render_colors() {
 }
 
 # GIVEN a template using {{accent_rgb}}
-# WHEN generating Sunset (accent #e4572e)
-# THEN it becomes '228, 87, 46'
+# WHEN generating Sunset
+# THEN it becomes Sunset's accent as "r, g, b"
 test_colors_are_available_as_rgb() {
-  # Sunset's accent is #e4572e.
   render_colors accent_rgb
   assert_status 0
-  [ "$RENDERED" = "228, 87, 46" ] || fail "expected accent_rgb '228, 87, 46', got '$RENDERED'"
+  expected="$(color_rgb accent)"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_rgb '$expected', got '$RENDERED'"
 }
 
 # GIVEN a template using {{accent_h}}, {{accent_s}} and {{accent_l}}
-# WHEN generating Sunset (accent #e4572e)
-# THEN they become 14, 77 and 54
+# WHEN generating Sunset
+# THEN they become Sunset's accent's hue, saturation and lightness
 test_colors_are_available_as_hsl() {
   render_colors accent_h accent_s accent_l
-  [ "$RENDERED" = "14|77|54" ] || fail "expected accent h|s|l '14|77|54', got '$RENDERED'"
+  expected="$(color_hsl accent)"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent h|s|l '$expected', got '$RENDERED'"
 }
 
-# GIVEN a template using {{term_red_rgb}}, where term_red refers to red
-#       (#ff4d5e)
-# WHEN generating Sunset
-# THEN it becomes '255, 77, 94'
+# GIVEN a palette where term_red refers to red, and a template using
+#       {{term_red_rgb}}
+# WHEN generating it
+# THEN it becomes red's "r, g, b"
 test_referenced_colors_get_formats_too() {
-  # term_red = "red", and red = "#ff4d5e".
-  render_colors term_red_rgb
-  [ "$RENDERED" = "255, 77, 94" ] || fail "expected term_red_rgb '255, 77, 94', got '$RENDERED'"
+  write_palette "$SANDBOX/repo/palettes/refs-palette.toml" "Refs" "refs"
+  with_references "$SANDBOX/repo/palettes/refs-palette.toml"
+  printf '%s\n' '{{term_red_rgb}}' >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  run_jenerate refs
+  assert_status 0
+  assert_file_equals "$(slack_theme refs)" "$(color_rgb red)"
 }
 
 # GIVEN a palette with grey, white, black and #ff0001 (a hue just under 360)
@@ -400,9 +444,8 @@ s = json.load(open(sys.argv[1]))
 print(s["name"], s["background-color"], s["foreground-color"],
       len(s["palette"]), s["palette"][1], s["palette"][15], s["cursor-background-color"])
 ' "$(tilix_scheme sunset)")"
-  # term_red = "red" = #ff4d5e, and term_bright_white = "text_bright" = #ffffff.
-  [ "$result" = "Jenerated Sunset #1b1117 #f2e4dc 16 #ff4d5e #ffffff #e4572e" ] ||
-    fail "unexpected Tilix scheme values: $result"
+  expected="Jenerated Sunset $(color bg) $(color text) 16 $(color term_red) $(color term_bright_white) $(color accent)"
+  [ "$result" = "$expected" ] || fail "expected Tilix scheme values '$expected', got '$result'"
 }
 
 # GIVEN Sunset has been generated
@@ -414,6 +457,45 @@ test_remove_deletes_the_tilix_scheme() {
   assert_contains "Removed tilix-theme/sunset.json"
   assert_missing "$(tilix_scheme sunset)"
   assert_exists "$SANDBOX/repo/tilix-theme/scheme.json.tmpl"
+}
+
+# --- Tests: Vim --------------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the Vim colorscheme is named after the slug and uses Sunset's colors,
+#      including followed references in the terminal colors
+test_vim_scheme_uses_the_palette() {
+  run_jenerate sunset
+  scheme="$(vim_scheme sunset)"
+  assert_file_contains "$scheme" "let g:colors_name = 'jenerated-sunset'"
+  assert_file_contains "$scheme" "guibg=$(color bg)"
+  assert_file_contains "$scheme" "'$(color term_red)'"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and loading the colorscheme in the real Vim
+# THEN it loads without errors, with the palette's background
+test_vim_scheme_loads_in_vim() {
+  command -v vim >/dev/null 2>&1 || return 0
+  run_jenerate sunset
+  bg="$(color bg | tr 'A-F' 'a-f')"
+  vim -Nu NONE -i NONE -es --cmd "set rtp^=$SANDBOX/repo/vim-theme" -c "set termguicolors" \
+    -c "try | colorscheme jenerated-sunset | call writefile([g:colors_name . ' ' . tolower(synIDattr(hlID('Normal'), 'bg#')) . ' [' . v:errmsg . ']'], '$SANDBOX/vim-result') | catch | call writefile([v:exception], '$SANDBOX/vim-result') | endtry" \
+    -c 'qa!' </dev/null >/dev/null 2>&1
+  assert_file_equals "$SANDBOX/vim-result" "jenerated-sunset $bg []"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Vim colorscheme is deleted, and the colors folder and Blue
+#      Purple's colorscheme are kept
+test_remove_deletes_the_vim_scheme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed vim-theme/colors/jenerated-sunset.vim"
+  assert_missing "$(vim_scheme sunset)"
+  assert_exists "$(vim_scheme blue-purple)"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------
@@ -434,12 +516,13 @@ test_obsidian_manifest_names_the_theme() {
 test_obsidian_css_uses_the_palette() {
   run_jenerate sunset
   css="$(obsidian_theme sunset)/theme.css"
-  assert_file_contains "$css" "--color-accent: #e4572e;"
-  assert_file_contains "$css" "--accent-h: 14;"
-  assert_file_contains "$css" "--accent-s: 77%;"
-  assert_file_contains "$css" "--accent-l: 54%;"
-  assert_file_contains "$css" "--color-red-rgb: 255, 77, 94;"
-  assert_file_contains "$css" "--background-primary: #1b1117;"
+  IFS='|' read -r h s l <<<"$(color_hsl accent)"
+  assert_file_contains "$css" "--color-accent: $(color accent);"
+  assert_file_contains "$css" "--accent-h: $h;"
+  assert_file_contains "$css" "--accent-s: $s%;"
+  assert_file_contains "$css" "--accent-l: $l%;"
+  assert_file_contains "$css" "--color-red-rgb: $(color_rgb red);"
+  assert_file_contains "$css" "--background-primary: $(color bg);"
 }
 
 # GIVEN the Sunset palette
