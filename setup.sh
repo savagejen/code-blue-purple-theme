@@ -226,8 +226,8 @@ choose "What would you like to do?" \
 
 APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim" "Firefox" "Vivaldi"
   "JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
-  "Chromium browsers (Chrome, Brave, Edge, Opera and more)")
-APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains" "chromium")
+  "Chromium browsers (Chrome, Brave, Edge, Opera and more)" "Godot")
+APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains" "chromium" "godot")
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)"
     "GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
@@ -669,6 +669,118 @@ install_kde() {
   say "GTK apps follow Plasma's colors too, through KDE's GTK integration."
 }
 
+# Where Godot keeps its editor settings: the usual place, and a Flatpak's if
+# one is installed.
+godot_config_dirs() {
+  if [ "$OS" = "Darwin" ]; then
+    printf '%s\n' "$HOME/Library/Application Support/Godot"
+    return 0
+  fi
+  printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}/godot"
+  local app
+  for app in org.godotengine.Godot org.godotengine.GodotSharp; do
+    if [ -d "$HOME/.var/app/$app" ]; then
+      printf '%s\n' "$HOME/.var/app/$app/config/godot"
+    fi
+  done
+  return 0
+}
+
+# The newest editor settings file in a Godot config folder, or nothing.
+# Godot 4.3 and later name it editor_settings-4.<minor>.tres; earlier 4.x
+# versions, editor_settings-4.tres.
+godot_settings_file() {
+  local newest
+  newest="$(ls "$1"/editor_settings-4.[0-9]*.tres 2>/dev/null | sort -V | tail -n 1)"
+  if [ -n "$newest" ]; then
+    printf '%s' "$newest"
+  elif [ -f "$1/editor_settings-4.tres" ]; then
+    printf '%s' "$1/editor_settings-4.tres"
+  fi
+}
+
+# Prints the settings to change by hand, from the comment in
+# editor-settings.cfg.
+godot_manual_steps() {
+  say "In Godot, open Editor -> Editor Settings and set:"
+  sed -n 's/^;   /  /p' "$1" | while IFS= read -r line; do say "$line"; done
+}
+
+# apply_godot_settings settings-file cfg-file: sets each "key = value" line
+# of the cfg file in Godot's editor settings, replacing the key's line if
+# it's there and adding it if not.
+apply_godot_settings() {
+  "$PYTHON" -c '
+import re, sys
+settings_path, cfg_path = sys.argv[1], sys.argv[2]
+text = open(settings_path).read()
+if not re.search(r"^\[resource\]$", text, re.M):
+    sys.exit(f"{settings_path} does not look like Godot editor settings")
+for line in open(cfg_path).read().splitlines():
+    if not line.strip() or line.startswith(";"):
+        continue
+    key = line.split(" = ", 1)[0]
+    pattern = re.compile(rf"^{re.escape(key)} = .*$", re.M)
+    if pattern.search(text):
+        text = pattern.sub(lambda m: line, text, count=1)
+    else:
+        text = text.rstrip("\n") + "\n" + line + "\n"
+open(settings_path, "w").write(text)
+' "$1" "$2"
+}
+
+install_godot() {
+  local folder="$ROOT/app-themes/godot-theme/$SLUG"
+  local theme="Jenerated-$SLUG"
+  local cfg="$folder/editor-settings.cfg"
+  local dir file applied=""
+  local files=()
+
+  step "Installing the Godot script editor theme"
+  while IFS= read -r dir; do
+    mkdir -p "$dir/text_editor_themes"
+    install_link "$dir/text_editor_themes/$theme.tet" "$folder/$theme.tet"
+    file="$(godot_settings_file "$dir")"
+    if [ -n "$file" ]; then files+=("$file"); fi
+  done < <(godot_config_dirs)
+
+  # The rest of the editor takes its colors from a few editor settings.
+  say ""
+  if [ "${#files[@]}" -eq 0 ]; then
+    say "Godot hasn't been opened yet, so it has no editor settings to change."
+    say "Open it once and run ./setup.sh again, or set the colors by hand."
+  elif pgrep -i godot >/dev/null 2>&1; then
+    say "Godot is open, and it saves its settings when it closes, which would"
+    say "undo any change made now. Close it and run ./setup.sh again, or set"
+    say "the colors by hand."
+  elif [ -z "$PYTHON" ]; then
+    say "Changing Godot's editor settings for you needs Python 3.11 or later;"
+    say "set the colors by hand."
+  elif ask_yes "Set Godot's editor colors to Jenerated $NAME? (Your settings are backed up first.)"; then
+    for file in "${files[@]}"; do
+      # Keep the first backup: it's the settings from before any palette.
+      [ -e "$file.before-jenerated" ] || cp "$file" "$file.before-jenerated"
+      apply_godot_settings "$file" "$cfg" || die "couldn't update $file"
+      say "Updated $file"
+    done
+    applied=1
+  fi
+
+  if [ -n "$applied" ]; then
+    step "Done! Open Godot: the editor and the script editor use Jenerated $NAME."
+    say "To go back, choose Default for Color Preset and Color Theme in"
+    say "Editor -> Editor Settings, or restore the backup with Godot closed:"
+    for file in "${files[@]}"; do
+      say "    cp \"$file.before-jenerated\" \"$file\""
+    done
+  else
+    step "Done! To turn the theme on:"
+    godot_manual_steps "$cfg"
+  fi
+  say "After changing the palette, run ./setup.sh again (the script editor"
+  say "theme updates by itself, but the interface colors are copied)."
+}
+
 install_decky() {
   local themes="$HOME/homebrew/themes"
 
@@ -754,6 +866,7 @@ case "$APP" in
   gtk3) install_gtk3 ;;
   kde) install_kde ;;
   decky) install_decky ;;
+  godot) install_godot ;;
 esac
 
 say ""

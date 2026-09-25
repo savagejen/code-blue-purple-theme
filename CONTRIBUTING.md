@@ -55,8 +55,10 @@ What you need:
   after it, for example `{{accent}}33`.
 - For apps that need them, each color is also available as numbers:
   `{{accent_rgb}}` gives `88, 101, 243`, `{{accent_rgb_csv}}` gives
-  `88,101,243`, `{{accent_h}}`, `{{accent_s}}` and `{{accent_l}}` give `235`,
-  `87` and `65`, and `{{accent_hex}}` gives `5865F3` (without the `#`).
+  `88,101,243`, `{{accent_float}}` gives `0.3451, 0.3961, 0.9529` (each
+  channel from 0 to 1), `{{accent_h}}`, `{{accent_s}}` and `{{accent_l}}` give
+  `235`, `87` and `65`, and `{{accent_hex}}` gives `5865F3` (without the
+  `#`).
 - `{{name}}` and `{{slug}}` are the palette's name and slug.
 - `{{uuid}}` is an ID made from the palette's slug, the same every time, for
   apps that identify themes by UUID.

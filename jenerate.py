@@ -14,8 +14,10 @@ generated; nothing else is touched. Each template's {{name}} placeholders are
 replaced with the palette's colors (plus its `name` and `slug`), and the result
 is written next to the template. Each color is also available as RGB and HSL
 numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
-{{accent_rgb_csv}} is "88,101,243", {{accent_h}}, {{accent_s}} and {{accent_l}}
-are "235", "87" and "65", and {{accent_hex}} is "5865F3" (without the #).
+{{accent_rgb_csv}} is "88,101,243", {{accent_float}} is "0.3451, 0.3961,
+0.9529" (each channel from 0 to 1), {{accent_h}}, {{accent_s}} and
+{{accent_l}} are "235", "87" and "65", and {{accent_hex}} is "5865F3"
+(without the #).
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
 
@@ -66,6 +68,8 @@ TARGETS = [
     ("app-themes/gtk3-theme/index.theme.tmpl", "app-themes/gtk3-theme/{slug}/index.theme"),
     ("app-themes/decky-theme/theme.json.tmpl", "app-themes/decky-theme/{slug}/theme.json"),
     ("app-themes/decky-theme/shared.css.tmpl", "app-themes/decky-theme/{slug}/shared.css"),
+    ("app-themes/godot-theme/text-editor.tet.tmpl", "app-themes/godot-theme/{slug}/Jenerated-{slug}.tet"),
+    ("app-themes/godot-theme/editor-settings.cfg.tmpl", "app-themes/godot-theme/{slug}/editor-settings.cfg"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
@@ -164,6 +168,7 @@ def color_formats(key, value):
         f"{key}_hex": value[1:],
         f"{key}_rgb": f"{r}, {g}, {b}",
         f"{key}_rgb_csv": f"{r},{g},{b}",
+        f"{key}_float": f"{r / 255:.4f}, {g / 255:.4f}, {b / 255:.4f}",
         f"{key}_h": str(round(h * 360) % 360),
         f"{key}_s": str(round(s * 100)),
         f"{key}_l": str(round(l * 100)),

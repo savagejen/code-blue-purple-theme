@@ -45,7 +45,7 @@ run_setup() {
   local answers="$1"
   shift
   OUTPUT="$(cd "${RUN_FROM:-$SANDBOX}" && printf '%b' "$answers" |
-    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= XDG_CACHE_HOME= \
+    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= XDG_CACHE_HOME= XDG_CONFIG_HOME= \
       bash "${SETUP:-$SANDBOX/repo/setup.sh}" "$@" 2>&1)"
   STATUS=$?
 }
@@ -68,8 +68,8 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # GIVEN a Linux system
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      JetBrains apps, Chromium browsers, Ptyxis, Tilix, GTK3 apps, KDE and
-#      Decky Loader
+#      JetBrains apps, Chromium browsers, Godot, Ptyxis, Tilix, GTK3 apps, KDE
+#      and Decky Loader
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
@@ -81,18 +81,19 @@ test_app_menu_on_linux_includes_the_terminals() {
   assert_contains "6) Vivaldi"
   assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
   assert_contains "8) Chromium browsers (Chrome, Brave, Edge, Opera and more)"
-  assert_contains "9) Ptyxis (Ubuntu terminal)"
-  assert_contains "10) Tilix (terminal)"
-  assert_contains "11) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
-  assert_contains "12) KDE Plasma (Plasma and KDE apps, Konsole, Kate)"
-  assert_contains "13) Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)"
+  assert_contains "9) Godot"
+  assert_contains "10) Ptyxis (Ubuntu terminal)"
+  assert_contains "11) Tilix (terminal)"
+  assert_contains "12) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
+  assert_contains "13) KDE Plasma (Plasma and KDE apps, Konsole, Kate)"
+  assert_contains "14) Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi and
-#      JetBrains apps and Chromium browsers, but not Ptyxis, Tilix, GTK3
-#      apps, KDE or Decky Loader
+# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
+#      JetBrains apps, Chromium browsers and Godot, but not Ptyxis, Tilix,
+#      GTK3 apps, KDE or Decky Loader
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
@@ -104,6 +105,7 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
   assert_contains "6) Vivaldi"
   assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
   assert_contains "8) Chromium browsers (Chrome, Brave, Edge, Opera and more)"
+  assert_contains "9) Godot"
   assert_not_contains "Ptyxis"
   assert_not_contains "Tilix"
   assert_not_contains "GTK3"
@@ -297,7 +299,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blue-purple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "1\n10\n1\n"
+  run_setup "1\n11\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blue-purple' is not a #rrggbb value"
@@ -315,7 +317,7 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "1\n10\n2\n"
+  run_setup "1\n11\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
   assert_exists "$repo/app-themes/tilix-theme/sunset.json"
@@ -454,7 +456,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "1\n9\n1\n"
+  run_setup "1\n10\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -466,8 +468,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "1\n9\n1\n"
-  run_setup "1\n9\n1\n"
+  run_setup "1\n10\n1\n"
+  run_setup "1\n10\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -483,7 +485,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "1\n10\n1\n"
+  run_setup "1\n11\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
@@ -495,7 +497,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "1\n10\n2\n"
+  run_setup "1\n11\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
@@ -509,7 +511,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "1\n10\n1\n"
+  run_setup "1\n11\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -519,8 +521,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "1\n10\n1\n"
-  run_setup "1\n10\n1\n"
+  run_setup "1\n11\n1\n"
+  run_setup "1\n11\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -532,7 +534,7 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "1\n10\n1\nn\n"
+  run_setup "1\n11\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
 }
@@ -811,7 +813,7 @@ esac"
 #      and it explains how to turn it on
 test_gtk3_links_the_theme() {
   fake_os Linux
-  run_setup "1\n11\n1\n"
+  run_setup "1\n12\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
   assert_exists "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple/gtk-3.0/gtk.css"
@@ -826,7 +828,7 @@ test_gtk3_links_the_theme() {
 test_gtk3_switches_the_theme_when_asked() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\n11\n2\ny\n"
+  run_setup "1\n12\n2\ny\n"
   assert_status 0
   assert_contains "Your GTK3 theme is 'Yaru-dark'."
   assert_file_equals "$SANDBOX/gsettings-set" "set org.gnome.desktop.interface gtk-theme Jenerated-sunset"
@@ -840,7 +842,7 @@ test_gtk3_switches_the_theme_when_asked() {
 test_gtk3_leaves_the_theme_setting_when_declined() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\n11\n1\nn\n"
+  run_setup "1\n12\n1\nn\n"
   assert_status 0
   assert_missing "$SANDBOX/gsettings-set"
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
@@ -900,7 +902,7 @@ fi"
 #      looks for them, and it explains how to turn each on
 test_kde_links_the_themes() {
   fake_os Linux
-  run_setup "1\n12\n1\n"
+  run_setup "1\n13\n1\n"
   assert_status 0
   folder="$SANDBOX/repo/app-themes/kde-theme/blue-purple"
   assert_link "$SANDBOX/home/$KDE_DATA/color-schemes/Jenerated-blue-purple.colors" "$folder/Jenerated-blue-purple.colors"
@@ -919,7 +921,7 @@ test_kde_links_the_themes() {
 test_kde_switches_the_color_scheme_when_asked() {
   fake_os Linux
   fake_plasma BreezeDark
-  run_setup "1\n12\n2\ny\n"
+  run_setup "1\n13\n2\ny\n"
   assert_status 0
   assert_contains "Your Plasma color scheme is BreezeDark."
   assert_file_equals "$SANDBOX/plasma-applied" "Jenerated-sunset"
@@ -934,7 +936,7 @@ test_kde_switches_the_color_scheme_when_asked() {
 test_kde_leaves_the_color_scheme_when_declined() {
   fake_os Linux
   fake_plasma BreezeDark
-  run_setup "1\n12\n1\nn\n"
+  run_setup "1\n13\n1\nn\n"
   assert_status 0
   assert_missing "$SANDBOX/plasma-applied"
   assert_contains "System Settings -> Colors & Themes -> Colors"
@@ -950,7 +952,7 @@ test_kde_leaves_the_color_scheme_when_declined() {
 test_decky_links_the_theme() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/homebrew/plugins"
-  run_setup "1\n13\n1\n"
+  run_setup "1\n14\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/homebrew/themes/Jenerated-blue-purple" \
     "$SANDBOX/repo/app-themes/decky-theme/blue-purple"
@@ -965,12 +967,173 @@ test_decky_links_the_theme() {
 #      theme anyway, ready for when it is
 test_decky_explains_when_decky_is_missing() {
   fake_os Linux
-  run_setup "1\n13\n2\n"
+  run_setup "1\n14\n2\n"
   assert_status 0
   assert_contains "Decky Loader isn't installed yet"
   assert_contains "https://decky.xyz"
   assert_link "$SANDBOX/home/homebrew/themes/Jenerated-sunset" \
     "$SANDBOX/repo/app-themes/decky-theme/sunset"
+}
+
+# --- Tests: Godot -----------------------------------------------------------
+
+GODOT_CFG=".config/godot"
+
+# godot_settings path -> writes a small Godot editor settings file with the
+# default color preset, base color and script editor theme.
+godot_settings() {
+  mkdir -p "$(dirname "$1")"
+  printf '%s\n' '[gd_resource type="EditorSettings" format=3]' '' '[resource]' \
+    'interface/theme/color_preset = "Default"' \
+    'interface/theme/base_color = Color(0.14, 0.14, 0.14, 1)' \
+    'text_editor/theme/color_theme = "Default"' >"$1"
+}
+
+# GIVEN a Linux system where Godot has never been opened (no settings)
+# WHEN choosing Godot and Blue Purple
+# THEN the script editor theme is linked where Godot looks for it, and it
+#      explains that Godot has to be opened first, with the settings to
+#      change by hand
+test_godot_links_the_theme_and_explains_before_first_run() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  run_setup "1\n9\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/$GODOT_CFG/text_editor_themes/Jenerated-blue-purple.tet" \
+    "$SANDBOX/repo/app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet"
+  assert_contains "Godot hasn't been opened yet"
+  assert_contains "Interface > Theme > Color Preset: Custom"
+  assert_contains "Text Editor > Theme > Color Theme: Jenerated-blue-purple"
+}
+
+# GIVEN Godot's settings for 4.5 and 4.6, and Godot closed
+# WHEN choosing Godot and Blue Purple, and answering yes to setting colors
+# THEN the 4.6 settings are backed up, then get Blue Purple's settings (each
+#      key once, replacing the old line or added), 4.5's are left alone, and
+#      it says how to go back
+test_godot_sets_the_editor_colors_when_asked() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.5.tres"
+  godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
+  run_setup "1\n9\n1\ny\n"
+  assert_status 0
+  settings="$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  assert_same_file "$settings.before-jenerated" "$SANDBOX/original.tres"
+  while IFS= read -r line; do
+    case "$line" in ";"* | "") continue ;; esac
+    [ "$(grep -cxF -- "$line" "$settings")" = 1 ] || fail "expected one line '$line' in $settings"
+  done <"$SANDBOX/repo/app-themes/godot-theme/blue-purple/editor-settings.cfg"
+  assert_file_not_contains "$settings" "Color(0.14, 0.14, 0.14, 1)"
+  assert_file_contains "$settings" "[resource]"
+  assert_same_file "$SANDBOX/home/$GODOT_CFG/editor_settings-4.5.tres" "$SANDBOX/original.tres"
+  assert_contains "Updated $settings"
+  assert_contains "cp \"$settings.before-jenerated\" \"$settings\""
+}
+
+# GIVEN Godot's settings, already set to Blue Purple by setup.sh
+# WHEN choosing Godot and Sunset, and answering yes again
+# THEN the settings get Sunset's, and the backup is still the settings from
+#      before any palette
+test_godot_keeps_the_first_backup() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
+  run_setup "1\n9\n1\ny\n"
+  run_setup "1\n9\n2\ny\n"
+  assert_status 0
+  settings="$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  assert_file_contains "$settings" 'text_editor/theme/color_theme = "Jenerated-sunset"'
+  assert_file_not_contains "$settings" "Jenerated-blue-purple"
+  assert_same_file "$settings.before-jenerated" "$SANDBOX/original.tres"
+}
+
+# GIVEN Godot's settings, and Godot closed
+# WHEN choosing Godot and answering no to setting colors
+# THEN the settings are left alone, with no backup, and the settings to
+#      change by hand are shown
+test_godot_leaves_the_settings_when_declined() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
+  run_setup "1\n9\n1\nn\n"
+  assert_status 0
+  assert_same_file "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
+  assert_missing "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres.before-jenerated"
+  assert_contains "Interface > Theme > Color Preset: Custom"
+}
+
+# GIVEN Godot's settings, and Godot running
+# WHEN choosing Godot
+# THEN it doesn't offer to change the settings (Godot would overwrite them
+#      when it closes), says to close it first, and shows the settings to
+#      change by hand
+test_godot_waits_while_godot_is_open() {
+  fake_os Linux
+  fake_command pgrep "exit 0"
+  godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
+  run_setup "1\n9\n1\n"
+  assert_status 0
+  assert_contains "Godot is open"
+  assert_not_contains "Set Godot's editor colors"
+  assert_same_file "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
+  assert_contains "Interface > Theme > Base Color:"
+}
+
+# GIVEN the Godot Flatpak, with its own settings, as well as the usual
+#       settings folder
+# WHEN choosing Godot and answering yes
+# THEN the theme is linked into both, and both settings files are updated
+test_godot_themes_the_flatpak_too() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  flatpak="$SANDBOX/home/.var/app/org.godotengine.Godot/config/godot"
+  godot_settings "$flatpak/editor_settings-4.6.tres"
+  godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  run_setup "1\n9\n1\ny\n"
+  assert_status 0
+  for dir in "$SANDBOX/home/$GODOT_CFG" "$flatpak"; do
+    assert_link "$dir/text_editor_themes/Jenerated-blue-purple.tet" \
+      "$SANDBOX/repo/app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet"
+    assert_file_contains "$dir/editor_settings-4.6.tres" 'text_editor/theme/color_theme = "Jenerated-blue-purple"'
+  done
+}
+
+# GIVEN Godot settings named editor_settings-4.tres (before 4.3),
+#       -4.9.tres and -4.10.tres
+# WHEN choosing Godot and answering yes
+# THEN the newest, 4.10's, is the one updated
+test_godot_updates_the_newest_settings() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  for version in 4 4.9 4.10; do
+    godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-$version.tres"
+  done
+  run_setup "1\n9\n1\ny\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/$GODOT_CFG/editor_settings-4.10.tres" "Jenerated-blue-purple"
+  assert_file_not_contains "$SANDBOX/home/$GODOT_CFG/editor_settings-4.9.tres" "Jenerated"
+  assert_file_not_contains "$SANDBOX/home/$GODOT_CFG/editor_settings-4.tres" "Jenerated"
+}
+
+# GIVEN a Mac with Godot's settings
+# WHEN choosing Godot (also 9 on a Mac) and answering yes
+# THEN the theme is linked into Godot's folder in Application Support, and
+#      its settings are updated
+test_godot_on_macos_uses_application_support() {
+  fake_os Darwin
+  fake_command pgrep "exit 1"
+  dir="$SANDBOX/home/Library/Application Support/Godot"
+  godot_settings "$dir/editor_settings-4.6.tres"
+  run_setup "1\n9\n1\ny\n"
+  assert_status 0
+  assert_link "$dir/text_editor_themes/Jenerated-blue-purple.tet" \
+    "$SANDBOX/repo/app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet"
+  assert_file_contains "$dir/editor_settings-4.6.tres" 'text_editor/theme/color_theme = "Jenerated-blue-purple"'
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

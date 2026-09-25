@@ -16,6 +16,7 @@ app-themes/gtk3-theme/*/
 app-themes/chromium-theme/*/
 app-themes/kde-theme/*/
 app-themes/decky-theme/*/
+app-themes/godot-theme/*/
 *.vsix
 
 # Your palette draft in the Palette Creator.
@@ -37,6 +38,7 @@ palette-creator/work-in-progress-palette.toml
 !app-themes/chromium-theme/blue-purple/
 !app-themes/kde-theme/blue-purple/
 !app-themes/decky-theme/blue-purple/
+!app-themes/godot-theme/blue-purple/
 # Chromium caches a theme in its folder when it loads it.
 app-themes/chromium-theme/*/Cached Theme.pak
 # CSS Loader saves each theme's settings in its folder.

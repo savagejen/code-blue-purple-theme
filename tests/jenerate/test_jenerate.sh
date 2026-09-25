@@ -53,6 +53,7 @@ gtk3_theme() { printf '%s' "$SANDBOX/repo/app-themes/gtk3-theme/$1"; }
 chromium_theme() { printf '%s' "$SANDBOX/repo/app-themes/chromium-theme/$1"; }
 kde_theme() { printf '%s' "$SANDBOX/repo/app-themes/kde-theme/$1"; }
 decky_theme() { printf '%s' "$SANDBOX/repo/app-themes/decky-theme/$1"; }
+godot_theme() { printf '%s' "$SANDBOX/repo/app-themes/godot-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -189,6 +190,8 @@ test_generates_every_app_theme() {
   assert_exists "$(kde_theme sunset)/Jenerated-sunset.theme"
   assert_exists "$(decky_theme sunset)/theme.json"
   assert_exists "$(decky_theme sunset)/shared.css"
+  assert_exists "$(godot_theme sunset)/Jenerated-sunset.tet"
+  assert_exists "$(godot_theme sunset)/editor-settings.cfg"
 }
 
 # GIVEN the Sunset palette
@@ -204,7 +207,8 @@ test_fills_in_every_placeholder() {
     "$(gtk3_theme sunset)/gtk-3.0/gtk.css" "$(gtk3_theme sunset)/index.theme" \
     "$(chromium_theme sunset)/manifest.json" "$(kde_theme sunset)/Jenerated-sunset.colors" \
     "$(kde_theme sunset)/Jenerated-sunset.colorscheme" "$(kde_theme sunset)/Jenerated-sunset.theme" \
-    "$(decky_theme sunset)/theme.json" "$(decky_theme sunset)/shared.css"; do
+    "$(decky_theme sunset)/theme.json" "$(decky_theme sunset)/shared.css" \
+    "$(godot_theme sunset)/Jenerated-sunset.tet" "$(godot_theme sunset)/editor-settings.cfg"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -301,7 +305,9 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colors \
     app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colorscheme \
     app-themes/kde-theme/blue-purple/Jenerated-blue-purple.theme \
-    app-themes/decky-theme/blue-purple/theme.json app-themes/decky-theme/blue-purple/shared.css; do
+    app-themes/decky-theme/blue-purple/theme.json app-themes/decky-theme/blue-purple/shared.css \
+    app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet \
+    app-themes/godot-theme/blue-purple/editor-settings.cfg; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -420,6 +426,17 @@ test_colors_are_available_as_hsl() {
   render_colors accent_h accent_s accent_l
   expected="$(color_hsl accent)"
   [ "$RENDERED" = "$expected" ] || fail "expected accent h|s|l '$expected', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_float}}
+# WHEN generating Sunset
+# THEN it becomes Sunset's accent as three numbers from 0 to 1, with four
+#      decimal places
+test_colors_are_available_as_floats() {
+  render_colors accent_float
+  assert_status 0
+  expected="$(color_rgb accent | awk -F', ' '{printf "%.4f, %.4f, %.4f", $1/255, $2/255, $3/255}')"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_float '$expected', got '$RENDERED'"
 }
 
 # GIVEN a palette where term_red refers to red, and a template using
@@ -954,6 +971,102 @@ test_remove_deletes_the_decky_theme() {
   assert_contains "Removed app-themes/decky-theme/sunset/theme.json"
   assert_missing "$(decky_theme sunset)"
   assert_exists "$SANDBOX/repo/app-themes/decky-theme/shared.css.tmpl"
+}
+
+# --- Tests: Godot -----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Godot script editor theme as an INI
+#      file
+# THEN it has a [color_theme] section setting the background, text,
+#      keywords, strings and GDScript colors from the palette
+test_godot_theme_uses_the_palette() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import configparser, sys
+c = configparser.ConfigParser(comment_prefixes=(";",), interpolation=None)
+c.optionxform = str
+c.read(sys.argv[1])
+t = c["color_theme"]
+for key in ("background_color", "text_color", "keyword_color", "string_color", "gdscript/node_path_color"):
+    print(key, t[key].strip(chr(34)))
+' "$(godot_theme sunset)/Jenerated-sunset.tet")"
+  expected="background_color $(color bg)
+text_color $(color text)
+keyword_color $(color accent)
+string_color $(color green)
+gdscript/node_path_color $(color yellow)"
+  [ "$OUTPUT" = "$expected" ] || fail "expected:
+$expected"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading every key in its Godot theme
+# THEN each is one of Godot's text editor color settings (so a typo can't
+#      silently do nothing), and each value is a quoted #rrggbb or #rrggbbaa
+test_godot_theme_only_sets_godots_color_settings() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+godot = set("""
+symbol_color keyword_color control_flow_keyword_color base_type_color engine_type_color
+user_type_color comment_color doc_comment_color string_color string_placeholder_color
+background_color completion_background_color completion_selected_color
+completion_existing_color completion_scroll_color completion_scroll_hovered_color
+completion_font_color text_color line_number_color safe_line_number_color caret_color
+caret_background_color text_selected_color selection_color brace_mismatch_color
+current_line_color line_length_guideline_color word_highlighted_color number_color
+function_color member_variable_color mark_color warning_color bookmark_color
+breakpoint_color executing_line_color code_folding_color folded_code_region_color
+search_result_color search_result_border_color warning_underline_color
+error_underline_color gdscript/function_definition_color gdscript/global_function_color
+gdscript/node_path_color gdscript/node_reference_color gdscript/annotation_color
+gdscript/string_name_color comment_markers/critical_color comment_markers/warning_color
+comment_markers/notice_color
+""".split())
+for line in open(sys.argv[1]).read().splitlines():
+    if not line.strip() or line.startswith(";") or line == "[color_theme]":
+        continue
+    key, _, value = line.partition("=")
+    if key not in godot:
+        print(f"{key} is not one of Godot'"'"'s text editor color settings")
+    if not re.fullmatch(r"\"#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?\"", value):
+        print(f"{key} has {value}, not a quoted color")
+' "$(godot_theme sunset)/Jenerated-sunset.tet")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN the Sunset palette, and a light palette
+# WHEN generating them
+# THEN each one's Godot settings use its sidebar as the base color and its
+#      accent, as 0-to-1 numbers, choose its script editor theme, and use
+#      Godot's dark contrast (0.3) for Sunset and its light one (-0.06) for
+#      the light palette
+test_godot_settings_use_the_palette() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  settings="$(godot_theme sunset)/editor-settings.cfg"
+  float() { color_rgb "$@" | awk -F', ' '{printf "%.4f, %.4f, %.4f", $1/255, $2/255, $3/255}'; }
+  assert_file_contains "$settings" 'interface/theme/color_preset = "Custom"'
+  assert_file_contains "$settings" 'interface/theme/preset = "Custom"'
+  assert_file_contains "$settings" "interface/theme/base_color = Color($(float bg_sidebar), 1)"
+  assert_file_contains "$settings" "interface/theme/accent_color = Color($(float accent), 1)"
+  assert_file_contains "$settings" "interface/theme/contrast = 0.3"
+  assert_file_contains "$settings" 'text_editor/theme/color_theme = "Jenerated-sunset"'
+  assert_file_contains "$settings" ";   Interface > Theme > Base Color: $(color bg_sidebar)"
+  assert_file_contains "$(godot_theme daylight)/editor-settings.cfg" "interface/theme/contrast = -0.06"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Godot theme folder is deleted, and the templates are kept
+test_remove_deletes_the_godot_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/godot-theme/sunset/Jenerated-sunset.tet"
+  assert_missing "$(godot_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/godot-theme/text-editor.tet.tmpl"
 }
 
 # --- Tests: light and dark palettes -----------------------------------------

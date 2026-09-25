@@ -16,6 +16,7 @@ Each app has its own folder with a template and install instructions:
 - [Chromium browsers (Chrome, Brave, Edge, Opera and more)](app-themes/chromium-theme/)
 - [Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)](app-themes/decky-theme/)
 - [Firefox](app-themes/firefox-theme/)
+- [Godot](app-themes/godot-theme/)
 - [GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)](app-themes/gtk3-theme/)
 - [JetBrains apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)](app-themes/jetbrains-theme/)
 - [KDE Plasma (Plasma and KDE apps, Konsole, Kate)](app-themes/kde-theme/)
@@ -96,9 +97,9 @@ better on it than white. A palette can also say which it is, with
 `scheme = "dark"` or `scheme = "light"` after its `slug`. The themes follow:
 VS Code and Firefox mark the theme dark or light, JetBrains themes build on
 the IDE's dark or light theme, GTK3 themes on Adwaita's dark or light
-version, Obsidian and Vim tell the app which it is, and Chromium picks
-matching search logos for the new tab page. The other apps just use the
-palette's colors.
+version, Obsidian and Vim tell the app which it is, Godot uses its own
+contrast setting for dark or light, and Chromium picks matching search
+logos for the new tab page. The other apps just use the palette's colors.
 
 Two text colors matter most for light palettes: `text_bright` is text on the
 accent color (buttons, badges, selected menu items), and `text_strong` is
