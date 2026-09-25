@@ -13,9 +13,9 @@ path to a .toml file. Each run adds to, or updates, the themes already
 generated; nothing else is touched. Each template's {{name}} placeholders are
 replaced with the palette's colors (plus its `name` and `slug`), and the result
 is written next to the template. Each color is also available as RGB and HSL
-numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 242",
-{{accent_rgb_csv}} is "88,101,242", {{accent_h}}, {{accent_s}} and {{accent_l}}
-are "235", "86" and "65", and {{accent_hex}} is "5865F2" (without the #).
+numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
+{{accent_rgb_csv}} is "88,101,243", {{accent_h}}, {{accent_s}} and {{accent_l}}
+are "235", "87" and "65", and {{accent_hex}} is "5865F3" (without the #).
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
 """

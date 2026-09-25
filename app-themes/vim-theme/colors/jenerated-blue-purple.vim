@@ -17,10 +17,10 @@ let g:colors_name = 'jenerated-blue-purple'
 hi Normal         guifg=#DBDEE1 guibg=#12131c ctermfg=15 ctermbg=NONE gui=NONE cterm=NONE
 hi NormalFloat    guifg=#DBDEE1 guibg=#191b28 ctermfg=15 ctermbg=0
 hi FloatBorder    guifg=#2a2d40 guibg=#191b28 ctermfg=8 ctermbg=0
-hi Cursor         guifg=#12131c guibg=#5865F2 ctermfg=0 ctermbg=4
-hi lCursor        guifg=#12131c guibg=#5865F2 ctermfg=0 ctermbg=4
-hi CursorIM       guifg=#12131c guibg=#5865F2 ctermfg=0 ctermbg=4
-hi TermCursor     guifg=#12131c guibg=#5865F2 ctermfg=0 ctermbg=4
+hi Cursor         guifg=#12131c guibg=#5865F3 ctermfg=0 ctermbg=4
+hi lCursor        guifg=#12131c guibg=#5865F3 ctermfg=0 ctermbg=4
+hi CursorIM       guifg=#12131c guibg=#5865F3 ctermfg=0 ctermbg=4
+hi TermCursor     guifg=#12131c guibg=#5865F3 ctermfg=0 ctermbg=4
 hi CursorLine     guibg=#1a1c2a ctermbg=0 gui=NONE cterm=NONE
 hi CursorColumn   guibg=#1a1c2a ctermbg=0
 hi ColorColumn    guibg=#1a1c2a ctermbg=0
@@ -40,11 +40,11 @@ hi MatchParen     guifg=#ffffff guibg=#22243d ctermfg=15 ctermbg=8 gui=bold cter
 hi Visual         guibg=#3c4270 ctermbg=8 gui=NONE cterm=NONE
 hi VisualNOS      guibg=#3c4270 ctermbg=8
 hi Search         guifg=#12131c guibg=#9cb2fa ctermfg=0 ctermbg=3 gui=NONE cterm=NONE
-hi IncSearch      guifg=#12131c guibg=#EB459E ctermfg=0 ctermbg=5 gui=NONE cterm=NONE
-hi CurSearch      guifg=#12131c guibg=#EB459E ctermfg=0 ctermbg=5 gui=NONE cterm=NONE
+hi IncSearch      guifg=#12131c guibg=#EB459F ctermfg=0 ctermbg=5 gui=NONE cterm=NONE
+hi CurSearch      guifg=#12131c guibg=#EB459F ctermfg=0 ctermbg=5 gui=NONE cterm=NONE
 hi QuickFixLine   guibg=#22243d ctermbg=0 gui=bold cterm=bold
 hi Directory      guifg=#7289DA ctermfg=12
-hi Title          guifg=#5865F2 ctermfg=4 gui=bold cterm=bold
+hi Title          guifg=#5865F3 ctermfg=4 gui=bold cterm=bold
 
 " --- Status line, tabs and menus ---------------------------------------------
 hi StatusLine       guifg=#B5BAC1 guibg=#0a0b13 ctermfg=7 ctermbg=0 gui=NONE cterm=NONE
@@ -54,7 +54,7 @@ hi StatusLineTermNC guifg=#6b6f8a guibg=#0a0b13 ctermfg=8 ctermbg=0 gui=NONE cte
 hi TabLine          guifg=#6b6f8a guibg=#161825 ctermfg=8 ctermbg=0 gui=NONE cterm=NONE
 hi TabLineFill      guifg=#6b6f8a guibg=#0a0b13 ctermfg=8 ctermbg=0 gui=NONE cterm=NONE
 hi TabLineSel       guifg=#ffffff guibg=#12131c ctermfg=15 ctermbg=NONE gui=bold cterm=bold
-hi WildMenu         guifg=#ffffff guibg=#5865F2 ctermfg=15 ctermbg=4 gui=bold cterm=bold
+hi WildMenu         guifg=#ffffff guibg=#5865F3 ctermfg=15 ctermbg=4 gui=bold cterm=bold
 hi Pmenu            guifg=#DBDEE1 guibg=#191b28 ctermfg=15 ctermbg=0
 hi PmenuSel         guifg=#ffffff guibg=#22243d ctermfg=15 ctermbg=8 gui=bold cterm=bold
 hi PmenuSbar        guibg=#191b28 ctermbg=0
@@ -63,34 +63,34 @@ hi PmenuMatch       guifg=#7289DA guibg=#191b28 ctermfg=12 ctermbg=0 gui=bold ct
 hi PmenuMatchSel    guifg=#7289DA guibg=#22243d ctermfg=12 ctermbg=8 gui=bold cterm=bold
 
 " --- Messages ----------------------------------------------------------------
-hi ErrorMsg       guifg=#ED4245 guibg=NONE ctermfg=1 ctermbg=NONE gui=bold cterm=bold
-hi WarningMsg     guifg=#FEE75C ctermfg=3
-hi MoreMsg        guifg=#57F287 ctermfg=2
+hi ErrorMsg       guifg=#ED4246 guibg=NONE ctermfg=1 ctermbg=NONE gui=bold cterm=bold
+hi WarningMsg     guifg=#FEE75D ctermfg=3
+hi MoreMsg        guifg=#57F288 ctermfg=2
 hi ModeMsg        guifg=#B5BAC1 ctermfg=7 gui=bold cterm=bold
 hi Question       guifg=#7289DA ctermfg=12
 
 " --- Diffs and spelling ------------------------------------------------------
-hi DiffAdd        guifg=#57F287 guibg=#1a1c2a ctermfg=2 ctermbg=0 gui=NONE cterm=NONE
-hi DiffDelete     guifg=#ED4245 guibg=#1a1c2a ctermfg=1 ctermbg=0 gui=NONE cterm=NONE
+hi DiffAdd        guifg=#57F288 guibg=#1a1c2a ctermfg=2 ctermbg=0 gui=NONE cterm=NONE
+hi DiffDelete     guifg=#ED4246 guibg=#1a1c2a ctermfg=1 ctermbg=0 gui=NONE cterm=NONE
 hi DiffChange     guibg=#1a1c2a ctermbg=0 gui=NONE cterm=NONE
 hi DiffText       guifg=#9cb2fa guibg=#22243d ctermfg=11 ctermbg=8 gui=bold cterm=bold
-hi diffAdded      guifg=#57F287 ctermfg=2
-hi diffRemoved    guifg=#ED4245 ctermfg=1
-hi diffChanged    guifg=#5865F2 ctermfg=4
+hi diffAdded      guifg=#57F288 ctermfg=2
+hi diffRemoved    guifg=#ED4246 ctermfg=1
+hi diffChanged    guifg=#5865F3 ctermfg=4
 hi diffLine       guifg=#7289DA ctermfg=12
-hi SpellBad       guisp=#ED4245 gui=undercurl ctermfg=1 cterm=underline
-hi SpellCap       guisp=#FEE75C gui=undercurl ctermfg=3 cterm=underline
-hi SpellRare      guisp=#EB459E gui=undercurl ctermfg=5 cterm=underline
+hi SpellBad       guisp=#ED4246 gui=undercurl ctermfg=1 cterm=underline
+hi SpellCap       guisp=#FEE75D gui=undercurl ctermfg=3 cterm=underline
+hi SpellRare      guisp=#EB459F gui=undercurl ctermfg=5 cterm=underline
 hi SpellLocal     guisp=#4fd1c5 gui=undercurl ctermfg=6 cterm=underline
 
 " --- Syntax (the same colors as the VS Code theme) ---------------------------
 hi Comment        guifg=#6b6f8a ctermfg=8 gui=italic cterm=italic
-hi Constant       guifg=#EB459E ctermfg=5
-hi String         guifg=#57F287 ctermfg=2
-hi Character      guifg=#57F287 ctermfg=2
+hi Constant       guifg=#EB459F ctermfg=5
+hi String         guifg=#57F288 ctermfg=2
+hi Character      guifg=#57F288 ctermfg=2
 hi Number         guifg=#f2a65a ctermfg=3
 hi Float          guifg=#f2a65a ctermfg=3
-hi Boolean        guifg=#EB459E ctermfg=5
+hi Boolean        guifg=#EB459F ctermfg=5
 hi Identifier     guifg=#DBDEE1 ctermfg=15 gui=NONE cterm=NONE
 hi Function       guifg=#8593f5 ctermfg=12
 hi Statement      guifg=#7289DA ctermfg=12 gui=bold cterm=bold
@@ -106,35 +106,35 @@ hi Define         guifg=#7289DA ctermfg=12
 hi Macro          guifg=#8593f5 ctermfg=12
 hi PreCondit      guifg=#7289DA ctermfg=12
 hi Type           guifg=#4fd1c5 ctermfg=6 gui=NONE cterm=NONE
-hi StorageClass   guifg=#5865F2 ctermfg=4
-hi Structure      guifg=#5865F2 ctermfg=4
+hi StorageClass   guifg=#5865F3 ctermfg=4
+hi Structure      guifg=#5865F3 ctermfg=4
 hi Typedef        guifg=#4fd1c5 ctermfg=6
-hi Special        guifg=#FEE75C ctermfg=3
-hi SpecialChar    guifg=#FEE75C ctermfg=3
-hi Tag            guifg=#5865F2 ctermfg=4
+hi Special        guifg=#FEE75D ctermfg=3
+hi SpecialChar    guifg=#FEE75D ctermfg=3
+hi Tag            guifg=#5865F3 ctermfg=4
 hi Delimiter      guifg=#B5BAC1 ctermfg=7
 hi SpecialComment guifg=#6b6f8a ctermfg=8 gui=bold,italic cterm=bold
-hi Debug          guifg=#ED4245 ctermfg=1
+hi Debug          guifg=#ED4246 ctermfg=1
 hi Underlined     guifg=#7289DA ctermfg=12 gui=underline cterm=underline
 hi Ignore         guifg=#4b4d63 ctermfg=8
-hi Error          guifg=#ED4245 guibg=NONE ctermfg=1 ctermbg=NONE gui=underline cterm=underline
-hi Todo           guifg=#12131c guibg=#FEE75C ctermfg=0 ctermbg=3 gui=bold cterm=bold
+hi Error          guifg=#ED4246 guibg=NONE ctermfg=1 ctermbg=NONE gui=underline cterm=underline
+hi Todo           guifg=#12131c guibg=#FEE75D ctermfg=0 ctermbg=3 gui=bold cterm=bold
 
 " Markup (Markdown and help files)
-hi htmlH1         guifg=#5865F2 ctermfg=4 gui=bold cterm=bold
+hi htmlH1         guifg=#5865F3 ctermfg=4 gui=bold cterm=bold
 hi htmlBold       guifg=#DBDEE1 ctermfg=15 gui=bold cterm=bold
 hi htmlItalic     guifg=#DBDEE1 ctermfg=15 gui=italic cterm=italic
-hi markdownH1     guifg=#5865F2 ctermfg=4 gui=bold cterm=bold
-hi markdownH2     guifg=#5865F2 ctermfg=4 gui=bold cterm=bold
-hi markdownH3     guifg=#5865F2 ctermfg=4 gui=bold cterm=bold
+hi markdownH1     guifg=#5865F3 ctermfg=4 gui=bold cterm=bold
+hi markdownH2     guifg=#5865F3 ctermfg=4 gui=bold cterm=bold
+hi markdownH3     guifg=#5865F3 ctermfg=4 gui=bold cterm=bold
 hi markdownUrl    guifg=#7289DA ctermfg=12 gui=underline cterm=underline
 hi markdownCode   guifg=#f2a65a ctermfg=3
 hi helpHyperTextJump guifg=#7289DA ctermfg=12
 
 " --- The built-in terminal: the same 16 colors as the terminal themes --------
 let g:terminal_ansi_colors = [
-  \ '#1e1f2e', '#ED4245', '#57F287', '#FEE75C',
-  \ '#5865F2', '#EB459E', '#4fd1c5', '#DBDEE1',
+  \ '#1e1f2e', '#ED4246', '#57F288', '#FEE75D',
+  \ '#5865F3', '#EB459F', '#4fd1c5', '#DBDEE1',
   \ '#4b4d63', '#f47a7d', '#8bf6ac', '#fdf08a',
   \ '#8593f5', '#f18cbf', '#8be3da', '#ffffff']
 
@@ -145,14 +145,14 @@ if has('nvim')
   endfor
   unlet s:i
 
-  hi DiagnosticError          guifg=#ED4245 ctermfg=1
-  hi DiagnosticWarn           guifg=#FEE75C ctermfg=3
-  hi DiagnosticInfo           guifg=#5865F2 ctermfg=4
+  hi DiagnosticError          guifg=#ED4246 ctermfg=1
+  hi DiagnosticWarn           guifg=#FEE75D ctermfg=3
+  hi DiagnosticInfo           guifg=#5865F3 ctermfg=4
   hi DiagnosticHint           guifg=#4fd1c5 ctermfg=6
-  hi DiagnosticOk             guifg=#57F287 ctermfg=2
-  hi DiagnosticUnderlineError guisp=#ED4245 gui=undercurl cterm=underline
-  hi DiagnosticUnderlineWarn  guisp=#FEE75C gui=undercurl cterm=underline
-  hi DiagnosticUnderlineInfo  guisp=#5865F2 gui=undercurl cterm=underline
+  hi DiagnosticOk             guifg=#57F288 ctermfg=2
+  hi DiagnosticUnderlineError guisp=#ED4246 gui=undercurl cterm=underline
+  hi DiagnosticUnderlineWarn  guisp=#FEE75D gui=undercurl cterm=underline
+  hi DiagnosticUnderlineInfo  guisp=#5865F3 gui=undercurl cterm=underline
   hi DiagnosticUnderlineHint  guisp=#4fd1c5 gui=undercurl cterm=underline
 
   " Tree-sitter captures that the standard groups above don't cover
@@ -161,8 +161,8 @@ if has('nvim')
   hi @property           guifg=#9cb2fa ctermfg=11
   hi @variable.member    guifg=#9cb2fa ctermfg=11
   hi @field              guifg=#9cb2fa ctermfg=11
-  hi @constant.builtin   guifg=#EB459E ctermfg=5
+  hi @constant.builtin   guifg=#EB459F ctermfg=5
   hi @tag.attribute      guifg=#f2a65a ctermfg=3
-  hi @string.regexp      guifg=#FEE75C ctermfg=3
-  hi @keyword.storage    guifg=#5865F2 ctermfg=4
+  hi @string.regexp      guifg=#FEE75D ctermfg=3
+  hi @keyword.storage    guifg=#5865F3 ctermfg=4
 endif

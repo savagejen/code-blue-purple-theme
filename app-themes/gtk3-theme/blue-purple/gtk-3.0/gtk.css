@@ -17,7 +17,7 @@
 @define-color theme_fg_color #DBDEE1;
 @define-color theme_base_color #12131c;
 @define-color theme_text_color #DBDEE1;
-@define-color theme_selected_bg_color #5865F2;
+@define-color theme_selected_bg_color #5865F3;
 @define-color theme_selected_fg_color #ffffff;
 @define-color theme_unfocused_bg_color #161825;
 @define-color theme_unfocused_fg_color #DBDEE1;
@@ -30,9 +30,9 @@
 @define-color insensitive_base_color #12131c;
 @define-color borders #2a2d40;
 @define-color unfocused_borders #2a2d40;
-@define-color warning_color #FEE75C;
-@define-color error_color #ED4245;
-@define-color success_color #57F287;
+@define-color warning_color #FEE75D;
+@define-color error_color #ED4246;
+@define-color success_color #57F288;
 @define-color content_view_bg #12131c;
 @define-color text_view_bg #12131c;
 @define-color wm_title #DBDEE1;
@@ -58,7 +58,7 @@ list, list:backdrop {
 
 textview,
 entry {
-  caret-color: #5865F2;
+  caret-color: #5865F3;
 }
 
 .dim-label, .dim-label:backdrop {
@@ -104,8 +104,8 @@ iconview:selected, iconview:selected:backdrop,
 treeview.view:selected, treeview.view:selected:backdrop,
 row:selected, row:selected:backdrop,
 flowboxchild:selected, flowboxchild:selected:backdrop {
-  background-color: alpha(#5865F2, 0.35);
-  background-image: image(alpha(#5865F2, 0.35));
+  background-color: alpha(#5865F3, 0.35);
+  background-image: image(alpha(#5865F3, 0.35));
   color: #ffffff;
 }
 
@@ -177,10 +177,10 @@ button:disabled, button:disabled:backdrop {
 }
 
 button.suggested-action, button.suggested-action:backdrop {
-  background-color: #5865F2;
-  background-image: image(#5865F2);
+  background-color: #5865F3;
+  background-image: image(#5865F3);
   color: #ffffff;
-  border-color: #5865F2;
+  border-color: #5865F3;
 }
 
 button.suggested-action:hover {
@@ -189,10 +189,10 @@ button.suggested-action:hover {
 }
 
 button.destructive-action, button.destructive-action:backdrop {
-  background-color: #ED4245;
-  background-image: image(#ED4245);
+  background-color: #ED4246;
+  background-image: image(#ED4246);
   color: #ffffff;
-  border-color: #ED4245;
+  border-color: #ED4246;
 }
 
 treeview.view header button, treeview.view header button:backdrop {
@@ -215,8 +215,8 @@ spinbutton:not(.vertical), spinbutton:not(.vertical):backdrop {
 
 entry:focus,
 spinbutton:focus {
-  border-color: #5865F2;
-  box-shadow: inset 0 0 0 1px #5865F2;
+  border-color: #5865F3;
+  box-shadow: inset 0 0 0 1px #5865F3;
 }
 
 entry:disabled, entry:disabled:backdrop {
@@ -250,11 +250,11 @@ notebook > header tab:checked, notebook > header tab:checked:backdrop {
 }
 
 notebook > header.top tab:checked, notebook > header.top tab:checked:backdrop {
-  box-shadow: inset 0 -3px #5865F2;
+  box-shadow: inset 0 -3px #5865F3;
 }
 
 notebook > header.bottom tab:checked, notebook > header.bottom tab:checked:backdrop {
-  box-shadow: inset 0 3px #5865F2;
+  box-shadow: inset 0 3px #5865F3;
 }
 
 notebook > stack:not(:only-child), notebook > stack:not(:only-child):backdrop {
@@ -288,15 +288,15 @@ popover.background, popover.background:backdrop {
 menu menuitem:hover,
 .menu menuitem:hover,
 .context-menu menuitem:hover {
-  background-color: #5865F2;
-  background-image: image(#5865F2);
+  background-color: #5865F3;
+  background-image: image(#5865F3);
   color: #ffffff;
 }
 
 menubar > menuitem:hover {
   background-color: #1e2032;
   background-image: image(#1e2032);
-  box-shadow: inset 0 -3px #5865F2;
+  box-shadow: inset 0 -3px #5865F3;
 }
 
 popover modelbutton:hover {
@@ -332,7 +332,7 @@ scrollbar slider:hover {
 }
 
 scrollbar slider:active {
-  background-color: #5865F2;
+  background-color: #5865F3;
 }
 
 /* --- Switches, checkboxes, sliders and progress -------------------------- */
@@ -344,9 +344,9 @@ switch, switch:backdrop {
 }
 
 switch:checked, switch:checked:backdrop {
-  background-color: #5865F2;
-  background-image: image(#5865F2);
-  border-color: #5865F2;
+  background-color: #5865F3;
+  background-image: image(#5865F3);
+  border-color: #5865F3;
 }
 
 switch slider, switch slider:backdrop {
@@ -372,9 +372,9 @@ check:checked, check:checked:backdrop,
 radio:checked, radio:checked:backdrop,
 check:indeterminate, check:indeterminate:backdrop,
 radio:indeterminate, radio:indeterminate:backdrop {
-  background-color: #5865F2;
-  background-image: image(#5865F2);
-  border-color: #5865F2;
+  background-color: #5865F3;
+  background-image: image(#5865F3);
+  border-color: #5865F3;
   color: #ffffff;
 }
 
@@ -389,9 +389,9 @@ levelbar trough, levelbar trough:backdrop {
 scale highlight, scale highlight:backdrop,
 progressbar progress, progressbar progress:backdrop,
 levelbar block.filled, levelbar block.filled:backdrop {
-  background-color: #5865F2;
-  background-image: image(#5865F2);
-  border-color: #5865F2;
+  background-color: #5865F3;
+  background-image: image(#5865F3);
+  border-color: #5865F3;
 }
 
 scale slider, scale slider:backdrop {
@@ -401,5 +401,5 @@ scale slider, scale slider:backdrop {
 }
 
 spinner, spinner:backdrop {
-  color: #5865F2;
+  color: #5865F3;
 }

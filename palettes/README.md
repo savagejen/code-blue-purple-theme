@@ -19,11 +19,11 @@ directly with `./jenerate.py <slug>`. To make your own, see
 `blue-purple`, the default: its themes come already generated.
 
 Dark blue/purple with high contrast text and a near-black 'midnight'
-background, with a blurple accent.
+background, with a blue-purple accent.
 
 ![The Blue Purple palette in the Palette Creator's preview](Screenshots/blue-purple.png)
 
-Editor `#12131c` · Sidebar `#161825` · Accent `#5865F2` · Text `#DBDEE1`
+Editor `#12131c` · Sidebar `#161825` · Accent `#5865F3` · Text `#DBDEE1`
 
 ## Anodized
 

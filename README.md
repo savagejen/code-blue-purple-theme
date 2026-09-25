@@ -84,10 +84,10 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
   file with `{{color_name}}` placeholders where the colors go. A template can
   add transparency after a placeholder, for example `{{accent}}33`. For apps
   that need them, each color is also available as RGB and HSL numbers:
-  `{{accent_rgb}}` gives `88, 101, 242` (and `{{accent_rgb_csv}}` gives
-  `88,101,242`), `{{accent_h}}`, `{{accent_s}}` and `{{accent_l}}` give
-  `235`, `86` and `65`, and `{{accent_hex}}` gives
-  `5865F2` (without the `#`). `{{uuid}}` is an ID made from the palette's
+  `{{accent_rgb}}` gives `88, 101, 243` (and `{{accent_rgb_csv}}` gives
+  `88,101,243`), `{{accent_h}}`, `{{accent_s}}` and `{{accent_l}}` give
+  `235`, `87` and `65`, and `{{accent_hex}}` gives
+  `5865F3` (without the `#`). `{{uuid}}` is an ID made from the palette's
   slug, the same every time, for apps that identify themes by UUID.
 - **`jenerate.py`** fills in every template for each palette you name and
   writes the results next to the templates, named after the palette's slug.

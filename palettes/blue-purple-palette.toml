@@ -33,19 +33,19 @@ text = "#DBDEE1"
 text_bright = "#ffffff"        # text on the accent color
 
 # Accent
-accent = "#5865F2"             # cursor, focus, buttons, badges
+accent = "#5865F3"             # cursor, focus, buttons, badges
 accent_hover = "#4752c4"       # hovered buttons
 accent_soft = "#7289DA"        # keywords, links
 accent_light = "#8593f5"       # functions
 accent_pale = "#9cb2fa"        # properties
 
 # Syntax and status colors
-red = "#ED4245"                # errors, deleted
+red = "#ED4246"                # errors, deleted
 orange = "#f2a65a"             # numbers, parameters, attributes
-yellow = "#FEE75C"             # warnings, regex
-green = "#57F287"              # strings, added
+yellow = "#FEE75D"             # warnings, regex
+green = "#57F288"              # strings, added
 cyan = "#4fd1c5"               # classes, types
-magenta = "#EB459E"            # constants, search matches
+magenta = "#EB459F"            # constants, search matches
 
 # Terminal (ANSI) colors
 term_black = "#1e1f2e"

@@ -1187,14 +1187,14 @@ test_colors_that_refer_to_each_other_in_a_loop() {
   assert_contains "refers to itself in a loop"
 }
 
-# GIVEN a color set to 'blurple', which is neither #rrggbb nor another color
+# GIVEN a color set to 'blue-purple', which is neither #rrggbb nor another color
 # WHEN generating the palette
 # THEN it exits with status 1, naming the color and its value
 test_color_that_is_not_hex_or_a_name() {
-  write_palette "$SANDBOX/repo/palettes/bad-palette.toml" "Bad" "bad" 'mystery = "blurple"'
+  write_palette "$SANDBOX/repo/palettes/bad-palette.toml" "Bad" "bad" 'mystery = "blue-purple"'
   run_jenerate bad
   assert_status 1
-  assert_contains "color \`mystery\` = 'blurple' is not a #rrggbb value"
+  assert_contains "color \`mystery\` = 'blue-purple' is not a #rrggbb value"
 }
 
 # GIVEN a color set to the short form '#fff'
@@ -1249,7 +1249,7 @@ test_missing_package_json_template_is_named() {
 # WHEN generating bad,sunset
 # THEN it exits with status 1 before generating Sunset
 test_a_bad_palette_stops_before_later_ones() {
-  write_palette "$SANDBOX/repo/palettes/bad-palette.toml" "Bad" "bad" 'mystery = "blurple"'
+  write_palette "$SANDBOX/repo/palettes/bad-palette.toml" "Bad" "bad" 'mystery = "blue-purple"'
   run_jenerate bad,sunset
   assert_status 1
   assert_missing "$(slack_theme sunset)"

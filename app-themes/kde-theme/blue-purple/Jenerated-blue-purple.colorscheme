@@ -22,46 +22,46 @@ Color=30,31,46
 Color=75,77,99
 
 [Color1]
-Color=237,66,69
+Color=237,66,70
 
 [Color1Faint]
-Color=237,66,69
+Color=237,66,70
 
 [Color1Intense]
 Color=244,122,125
 
 [Color2]
-Color=87,242,135
+Color=87,242,136
 
 [Color2Faint]
-Color=87,242,135
+Color=87,242,136
 
 [Color2Intense]
 Color=139,246,172
 
 [Color3]
-Color=254,231,92
+Color=254,231,93
 
 [Color3Faint]
-Color=254,231,92
+Color=254,231,93
 
 [Color3Intense]
 Color=253,240,138
 
 [Color4]
-Color=88,101,242
+Color=88,101,243
 
 [Color4Faint]
-Color=88,101,242
+Color=88,101,243
 
 [Color4Intense]
 Color=133,147,245
 
 [Color5]
-Color=235,69,158
+Color=235,69,159
 
 [Color5Faint]
-Color=235,69,158
+Color=235,69,159
 
 [Color5Intense]
 Color=241,140,191

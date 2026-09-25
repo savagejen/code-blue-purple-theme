@@ -293,11 +293,11 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   fake_os Linux
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
-  printf 'mystery = "blurple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
+  printf 'mystery = "blue-purple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
   run_setup "1\n10\n1\n"
   assert_status 1
   assert_contains "1) Bad"
-  assert_contains "color \`mystery\` = 'blurple' is not a #rrggbb value"
+  assert_contains "color \`mystery\` = 'blue-purple' is not a #rrggbb value"
   assert_not_contains "Done!"
   assert_missing "$SANDBOX/home/.config/tilix/schemes/jenerated-bad.json"
 }
@@ -1238,7 +1238,7 @@ test_prep_commit_regenerates_blue_purple_from_changed_templates() {
   printf '{{accent}}|{{name}}\n' >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_setup "" --prep-commit
   assert_status 0
-  assert_file_equals "$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt" "#5865F2|Blue Purple"
+  assert_file_equals "$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt" "#5865F3|Blue Purple"
 }
 
 EXAMPLE_ZIP="app-themes/vivaldi-theme/jenerated-blue-purple.zip"

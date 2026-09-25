@@ -23,29 +23,29 @@
 
   /* Accent (Obsidian works out its accent shades from these) */
   --accent-h: 235;
-  --accent-s: 86%;
+  --accent-s: 87%;
   --accent-l: 65%;
-  --color-accent: #5865F2;
+  --color-accent: #5865F3;
   --color-accent-1: #7289DA;
   --color-accent-2: #8593f5;
 
   /* Named colors, used by callouts, tags and plugins */
-  --color-red: #ED4245;
-  --color-red-rgb: 237, 66, 69;
+  --color-red: #ED4246;
+  --color-red-rgb: 237, 66, 70;
   --color-orange: #f2a65a;
   --color-orange-rgb: 242, 166, 90;
-  --color-yellow: #FEE75C;
-  --color-yellow-rgb: 254, 231, 92;
-  --color-green: #57F287;
-  --color-green-rgb: 87, 242, 135;
+  --color-yellow: #FEE75D;
+  --color-yellow-rgb: 254, 231, 93;
+  --color-green: #57F288;
+  --color-green-rgb: 87, 242, 136;
   --color-cyan: #4fd1c5;
   --color-cyan-rgb: 79, 209, 197;
-  --color-blue: #5865F2;
-  --color-blue-rgb: 88, 101, 242;
+  --color-blue: #5865F3;
+  --color-blue-rgb: 88, 101, 243;
   --color-purple: #8593f5;
   --color-purple-rgb: 133, 147, 245;
-  --color-pink: #EB459E;
-  --color-pink-rgb: 235, 69, 158;
+  --color-pink: #EB459F;
+  --color-pink-rgb: 235, 69, 159;
 
   /* Backgrounds */
   --background-primary: #12131c;
@@ -53,14 +53,14 @@
   --background-secondary: #161825;
   --background-secondary-alt: #0a0b13;
   --background-modifier-hover: #1e2032;
-  --background-modifier-active-hover: #5865F233;
+  --background-modifier-active-hover: #5865F333;
   --background-modifier-border: #2a2d40;
   --background-modifier-border-hover: #363a52;
-  --background-modifier-border-focus: #5865F2;
+  --background-modifier-border-focus: #5865F3;
   --background-modifier-form-field: #1e2032;
-  --background-modifier-error: #ED4245;
-  --background-modifier-error-hover: #ED4245;
-  --background-modifier-success: #57F287;
+  --background-modifier-error: #ED4246;
+  --background-modifier-error-hover: #ED4246;
+  --background-modifier-success: #57F288;
   --background-modifier-message: #191b28;
 
   /* Text */
@@ -70,19 +70,19 @@
   --text-on-accent: #ffffff;
   --text-accent: #7289DA;
   --text-accent-hover: #9cb2fa;
-  --text-error: #ED4245;
-  --text-warning: #FEE75C;
-  --text-success: #57F287;
+  --text-error: #ED4246;
+  --text-warning: #FEE75D;
+  --text-success: #57F288;
   --text-selection: #3c4270aa;
-  --text-highlight-bg: #FEE75C40;
-  --caret-color: #5865F2;
+  --text-highlight-bg: #FEE75D40;
+  --caret-color: #5865F3;
 
   /* Buttons and controls */
   --interactive-normal: #1e2032;
   --interactive-hover: #363a52;
-  --interactive-accent: #5865F2;
+  --interactive-accent: #5865F3;
   --interactive-accent-hover: #4752c4;
-  --checkbox-color: #5865F2;
+  --checkbox-color: #5865F3;
   --checkbox-color-hover: #4752c4;
   --checkbox-marker-color: #12131c;
   --checkbox-border-color: #6b6f8a;
@@ -107,7 +107,7 @@
   --nav-item-background-hover: #1e2032;
   --nav-item-background-active: #22243d;
   --scrollbar-thumb-bg: #4b4d6355;
-  --scrollbar-active-thumb-bg: #5865F2aa;
+  --scrollbar-active-thumb-bg: #5865F3aa;
 
   /* Notes */
   --link-color: #7289DA;
@@ -115,12 +115,12 @@
   --link-unresolved-color: #7289DA;
   --link-external-color: #4fd1c5;
   --link-external-color-hover: #4fd1c5;
-  --blockquote-border-color: #5865F2;
+  --blockquote-border-color: #5865F3;
   --hr-color: #2a2d40;
   --tag-color: #7289DA;
   --tag-color-hover: #9cb2fa;
-  --tag-background: #5865F226;
-  --tag-background-hover: #5865F240;
+  --tag-background: #5865F326;
+  --tag-background-hover: #5865F340;
   --list-marker-color: #6b6f8a;
   --list-marker-color-hover: #B5BAC1;
 
@@ -131,18 +131,18 @@
   --code-keyword: #7289DA;
   --code-function: #8593f5;
   --code-property: #9cb2fa;
-  --code-string: #57F287;
+  --code-string: #57F288;
   --code-value: #f2a65a;
-  --code-tag: #5865F2;
+  --code-tag: #5865F3;
   --code-operator: #B5BAC1;
   --code-punctuation: #B5BAC1;
-  --code-important: #FEE75C;
+  --code-important: #FEE75D;
 
   /* Graph view */
   --graph-node: #B5BAC1;
   --graph-node-unresolved: #4b4d63;
-  --graph-node-focused: #5865F2;
-  --graph-node-tag: #57F287;
-  --graph-node-attachment: #FEE75C;
+  --graph-node-focused: #5865F3;
+  --graph-node-tag: #57F288;
+  --graph-node-attachment: #FEE75D;
   --graph-line: #2a2d40;
 }

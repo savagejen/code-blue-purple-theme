@@ -230,9 +230,9 @@ test_saving_a_change_keeps_the_layout() {
 # THEN it's refused with jenerate.py's message, and the file is unchanged
 test_saving_an_invalid_palette_changes_nothing() {
   start_server
-  post /api/save "$(palette_body "" 'colors["accent"]["value"] = "blurple"')"
+  post /api/save "$(palette_body "" 'colors["accent"]["value"] = "blue-purple"')"
   assert_json 'd["ok"]' "False"
-  assert_json 'd["error"]' "color \`accent\` = 'blurple' is not a #rrggbb value or the name of another color"
+  assert_json 'd["error"]' "color \`accent\` = 'blue-purple' is not a #rrggbb value or the name of another color"
   assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
 }
 
@@ -357,7 +357,7 @@ for g in p["groups"]:
     g["colors"] = [c for c in g["colors"] if c["key"] != "accent"]
 for c in colors.values():
     if c["value"] == "accent":
-        c["value"] = "#5865F2"
+        c["value"] = "#5865F3"
 ')"
   assert_json 'd["ok"]' "False"
   assert_contains "the palette has no color named accent"
