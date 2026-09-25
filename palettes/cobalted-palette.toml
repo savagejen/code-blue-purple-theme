@@ -1,0 +1,68 @@
+# Blue and white china: cobalt backgrounds that deepen toward the edges like
+# a glaze, china-white text, a sky-blue accent, and soft syntax colors of
+# sage, honey, marmalade, rosehip, rose and misty forest blue.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Cobalted"
+slug = "cobalted"
+
+[colors]
+# Backgrounds: cobalt, deepest at the edges
+bg_chrome = "#0a1846"          # activity bar, title bar, status bar: deep cobalt
+bg_minimap = "#0f215c"
+bg = "#132a6e"                 # editor and terminal: cobalt
+bg_sidebar = "#102462"         # deeper cobalt
+bg_widget = "#183278"          # popups, hovers, notifications
+bg_line_highlight = "#18327c"
+bg_hover = "#1d3a88"           # hovered items, inputs
+bg_selected = "#234396"        # inactive selection in lists
+bg_secondary_hover = "#2d51a8" # hovered secondary buttons
+selection = "#2f55ab"          # selected text in the editor
+
+# Lines
+guide = "#1f3a82"              # indent guides, rulers
+whitespace = "#29468f"         # rendered whitespace
+border = "#223f8a"
+
+# Text: china white, dimmest to brightest
+text_faint = "#5f78b4"         # line numbers, ignored files
+text_muted = "#93a8d6"         # comments, inactive tabs: faded glaze
+text_subtle = "#cbd5ea"        # sidebar text, punctuation
+text = "#f1efe8"               # china white
+text_bright = "#0a1846"        # text on the accent color: deep cobalt
+text_strong = "#ffffff"        # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#8cc3f4"             # sky blue: cursor, focus, buttons, badges
+accent_hover = "#aad3f7"       # hovered buttons
+accent_soft = "#a9b9ff"        # periwinkle: keywords, links
+accent_light = "#8fd3f7"       # clear sky: functions
+accent_pale = "#c9d9f6"        # porcelain blue: properties
+
+# Syntax and status colors
+red = "#ff9a90"                # rosehip: errors, deleted
+orange = "#f8b672"             # marmalade: numbers, parameters, attributes
+yellow = "#f2d77c"             # honey: warnings, regex
+green = "#afd98a"              # sage: strings, added
+cyan = "#8fcfc4"               # misty forest blue: classes, types
+magenta = "#f6a3ca"            # rose: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#2a1c16"         # brown-black
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "text_subtle"
+term_bright_black = "text_muted"
+term_bright_red = "#ffbab3"
+term_bright_green = "#c9e8ad"
+term_bright_yellow = "#f8e6a6"
+term_bright_blue = "#b5daf8"
+term_bright_magenta = "#f9c3dc"
+term_bright_cyan = "#b3e2da"
+term_bright_white = "#ffffff"

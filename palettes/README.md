@@ -103,3 +103,15 @@ blue raspberry.
 ![The Candy palette in the Palette Creator's preview](Screenshots/candy.png)
 
 Editor `#fffaf4` · Sidebar `#fdedf2` · Accent `#c72448` · Text `#3b2330`
+
+## Cobalted
+
+`cobalted`
+
+Blue and white china: cobalt backgrounds that deepen toward the edges like a
+glaze, china-white text, a sky-blue accent, and soft syntax colors of sage,
+honey, marmalade, rosehip, rose and misty forest blue.
+
+![The Cobalted palette in the Palette Creator's preview](Screenshots/cobalted.png)
+
+Editor `#132a6e` · Sidebar `#102462` · Accent `#8cc3f4` · Text `#f1efe8`
