@@ -3,10 +3,10 @@
 Colorschemes for [Vim](https://www.vim.org) (8 or later) and
 [Neovim](https://neovim.io) that match the VS Code themes: the same syntax
 colors, and the same 16 colors in the built-in terminal as the Ptyxis and
-Tilix themes. [jenerate.py](../jenerate.py) writes one colorscheme for each
+Tilix themes. [jenerate.py](../../jenerate.py) writes one colorscheme for each
 palette you generate, named `jenerated-<slug>`, in `colors/`, for example
 `colors/jenerated-blue-purple.vim`. Blue Purple is included; to add other
-palettes, see [Getting started](../README.md#getting-started).
+palettes, see [Getting started](../../README.md#getting-started).
 
 The colorschemes use the palette's exact colors in GUI Vim, and in terminals
 with `termguicolors` set. Without it, they fall back to the terminal's 16
@@ -15,8 +15,8 @@ colors, which the matching [Ptyxis](../ptyxis-theme/) or
 version.
 
 The colorschemes are generated from `colorscheme.vim.tmpl` by
-[jenerate.py](../jenerate.py). To change colors, see
-[Changing colors](../README.md#changing-colors).
+[jenerate.py](../../jenerate.py). To change colors, see
+[Changing colors](../../README.md#changing-colors).
 
 ## Install
 
@@ -36,11 +36,11 @@ install by hand:
    ```bash
    # Vim
    mkdir -p ~/.vim/pack/jenerated/start
-   ln -s "$PWD/jenerated-themes/vim-theme" ~/.vim/pack/jenerated/start/jenerated-themes
+   ln -s "$PWD/jenerated-themes/app-themes/vim-theme" ~/.vim/pack/jenerated/start/jenerated-themes
 
    # Neovim
    mkdir -p ~/.local/share/nvim/site/pack/jenerated/start
-   ln -s "$PWD/jenerated-themes/vim-theme" ~/.local/share/nvim/site/pack/jenerated/start/jenerated-themes
+   ln -s "$PWD/jenerated-themes/app-themes/vim-theme" ~/.local/share/nvim/site/pack/jenerated/start/jenerated-themes
    ```
 
 3. Try it with `:colorscheme jenerated-blue-purple`. To keep it, add this to

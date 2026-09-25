@@ -1,14 +1,14 @@
 # Jenerated Themes for Slack
 
 Slack sidebar themes that match the VS Code themes.
-[jenerate.py](../jenerate.py) writes one `<slug>.txt` file for each palette
+[jenerate.py](../../jenerate.py) writes one `<slug>.txt` file for each palette
 you generate, for example `blue-purple.txt`. Each file holds the theme string
 you give Slack. [blue-purple.txt](blue-purple.txt) is included; to add other
-palettes, see [Getting started](../README.md#getting-started).
+palettes, see [Getting started](../../README.md#getting-started).
 
 The files are generated from `slack-theme.txt.tmpl` by
-[jenerate.py](../jenerate.py). To change colors, see
-[Changing colors](../README.md#changing-colors).
+[jenerate.py](../../jenerate.py). To change colors, see
+[Changing colors](../../README.md#changing-colors).
 
 ## Apply a theme
 

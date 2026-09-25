@@ -235,10 +235,10 @@ test_generates_the_chosen_palette() {
   run_setup "1\n2\n2\n"
   assert_status 0
   assert_contains "Generated Sunset (sunset)"
-  assert_exists "$SANDBOX/repo/slack-theme/sunset.txt"
-  assert_exists "$SANDBOX/repo/ptyxis-theme/sunset.palette"
-  assert_exists "$SANDBOX/repo/vs-code-theme/themes/jenerated-sunset-color-theme.json"
-  grep -q '"Jenerated Sunset"' "$SANDBOX/repo/vs-code-theme/package.json" ||
+  assert_exists "$SANDBOX/repo/app-themes/slack-theme/sunset.txt"
+  assert_exists "$SANDBOX/repo/app-themes/ptyxis-theme/sunset.palette"
+  assert_exists "$SANDBOX/repo/app-themes/vs-code-theme/themes/jenerated-sunset-color-theme.json"
+  grep -q '"Jenerated Sunset"' "$SANDBOX/repo/app-themes/vs-code-theme/package.json" ||
     fail "expected package.json to list Jenerated Sunset"
 }
 
@@ -250,7 +250,7 @@ test_blue_purple_works_without_python() {
   run_setup "1\n2\n1\n"
   assert_status 0
   assert_contains "Python 3.11+ not found"
-  assert_contains "$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
+  assert_contains "$(tr -d '\n' <"$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt")"
 }
 
 # GIVEN no Python 3.11 or later
@@ -292,14 +292,14 @@ test_repo_in_a_folder_with_spaces() {
   SETUP="$repo/setup.sh"
   run_setup "1\n6\n2\n"
   assert_status 0
-  assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/tilix-theme/sunset.json"
-  assert_exists "$repo/tilix-theme/sunset.json"
+  assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
+  assert_exists "$repo/app-themes/tilix-theme/sunset.json"
   run_setup "1\n1\n1\n"
   assert_status 0
-  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$repo/vs-code-theme"
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$repo/app-themes/vs-code-theme"
   run_setup "1\n3\n1\n$SANDBOX/Notes\n"
   assert_status 0
-  assert_link "$SANDBOX/Notes/.obsidian/themes/Jenerated Blue Purple" "$repo/obsidian-theme/blue-purple"
+  assert_link "$SANDBOX/Notes/.obsidian/themes/Jenerated Blue Purple" "$repo/app-themes/obsidian-theme/blue-purple"
 }
 
 # --- Tests: VS Code ----------------------------------------------------------
@@ -311,7 +311,7 @@ test_repo_in_a_folder_with_spaces() {
 test_vscode_links_the_extension() {
   run_setup "1\n1\n1\n"
   assert_status 0
-  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
   assert_contains 'Choose "Jenerated Blue Purple"'
 }
 
@@ -320,7 +320,7 @@ test_vscode_links_the_extension() {
 # THEN it says it's already installed and doesn't offer to replace it
 test_vscode_already_linked_is_left_alone() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
-  ln -s "$SANDBOX/repo/vs-code-theme" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
+  ln -s "$SANDBOX/repo/app-themes/vs-code-theme" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
   run_setup "1\n1\n1\n"
   assert_status 0
   assert_contains "Already installed"
@@ -335,7 +335,7 @@ test_vscode_replaces_an_old_copy_when_asked() {
   run_setup "1\n1\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
-  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
 }
 
 # GIVEN the extension linked to some other folder
@@ -346,7 +346,7 @@ test_vscode_replaces_a_link_to_another_folder() {
   ln -s "$SANDBOX/elsewhere" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
   run_setup "1\n1\n1\n\n"
   assert_status 0
-  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/vs-code-theme"
+  assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
   assert_exists "$SANDBOX/elsewhere"
 }
 
@@ -432,7 +432,7 @@ test_ptyxis_links_the_palette() {
   run_setup "1\n5\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
-    "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
+    "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
   assert_contains 'choose "Blue Purple"'
 }
 
@@ -445,7 +445,7 @@ test_ptyxis_running_twice_is_fine() {
   run_setup "1\n5\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
-    "$SANDBOX/repo/ptyxis-theme/blue-purple.palette"
+    "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
 }
 
 # --- Tests: Tilix -----------------------------------------------------------
@@ -461,7 +461,7 @@ test_tilix_links_the_scheme() {
   run_setup "1\n6\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
-    "$SANDBOX/repo/tilix-theme/blue-purple.json"
+    "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
   assert_contains 'choose "Jenerated Blue Purple"'
 }
 
@@ -473,8 +473,8 @@ test_tilix_links_a_generated_palette() {
   run_setup "1\n6\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
-    "$SANDBOX/repo/tilix-theme/sunset.json"
-  assert_exists "$SANDBOX/repo/tilix-theme/sunset.json"
+    "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
+  assert_exists "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
 }
 
 # GIVEN a scheme of the user's own called blue-purple.json
@@ -530,12 +530,12 @@ vim_loads() {
 
 # GIVEN no Neovim config
 # WHEN choosing Vim and Blue Purple
-# THEN vim-theme is linked as a Vim package, Vim can load the colorscheme,
+# THEN app-themes/vim-theme is linked as a Vim package, Vim can load the colorscheme,
 #      and it says what to add to ~/.vimrc
 test_vim_links_the_package() {
   run_setup "1\n4\n1\n"
   assert_status 0
-  assert_link "$SANDBOX/home/$VIM_PACK" "$SANDBOX/repo/vim-theme"
+  assert_link "$SANDBOX/home/$VIM_PACK" "$SANDBOX/repo/app-themes/vim-theme"
   assert_contains "colorscheme jenerated-blue-purple"
   assert_contains "~/.vimrc"
   vim_loads jenerated-blue-purple
@@ -543,13 +543,13 @@ test_vim_links_the_package() {
 
 # GIVEN a Neovim config folder
 # WHEN choosing Vim and Blue Purple
-# THEN vim-theme is also linked as a Neovim package, and it says what to add
+# THEN app-themes/vim-theme is also linked as a Neovim package, and it says what to add
 #      to init.lua
 test_vim_links_the_package_for_neovim() {
   mkdir -p "$SANDBOX/home/.config/nvim"
   run_setup "1\n4\n1\n"
   assert_status 0
-  assert_link "$SANDBOX/home/$NVIM_PACK" "$SANDBOX/repo/vim-theme"
+  assert_link "$SANDBOX/home/$NVIM_PACK" "$SANDBOX/repo/app-themes/vim-theme"
   assert_contains 'vim.cmd.colorscheme("jenerated-blue-purple")'
 }
 
@@ -562,7 +562,7 @@ test_vim_one_link_serves_every_palette() {
   run_setup "1\n4\n2\n"
   assert_status 0
   assert_contains "Already installed"
-  assert_exists "$SANDBOX/repo/vim-theme/colors/jenerated-sunset.vim"
+  assert_exists "$SANDBOX/repo/app-themes/vim-theme/colors/jenerated-sunset.vim"
   vim_loads jenerated-sunset
 }
 
@@ -614,7 +614,7 @@ test_obsidian_links_the_theme_into_a_known_vault() {
   assert_status 0
   assert_contains "1) $SANDBOX/Notes"
   assert_contains "2) Another folder (type its path)"
-  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
   assert_contains 'choose "Jenerated Blue Purple"'
 }
 
@@ -653,7 +653,7 @@ test_obsidian_vault_with_spaces_in_its_path() {
   know_vaults "$LINUX_CONFIG" "$SANDBOX/My Work"
   run_setup "1\n3\n1\n1\n"
   assert_status 0
-  assert_link "$(obsidian_theme "$SANDBOX/My Work" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_link "$(obsidian_theme "$SANDBOX/My Work" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
 
 # GIVEN a Mac with Obsidian's vault list in ~/Library/Application Support
@@ -698,7 +698,7 @@ test_obsidian_asks_for_a_path_when_no_vaults_are_known() {
   assert_status 0
   assert_contains "Path to your vault folder:"
   assert_not_contains "Another folder"
-  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
 
 # GIVEN a known vault, and another vault in the home folder
@@ -710,7 +710,7 @@ test_obsidian_another_folder_expands_the_home_folder() {
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
   run_setup "1\n3\n1\n2\n~/Vault\n"
   assert_status 0
-  assert_link "$(obsidian_theme "$SANDBOX/home/Vault" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_link "$(obsidian_theme "$SANDBOX/home/Vault" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
 
 # GIVEN a vault called Notes in the folder setup.sh is run from
@@ -721,7 +721,7 @@ test_obsidian_relative_path_is_relative_to_where_setup_ran() {
   RUN_FROM="$SANDBOX/work"
   run_setup "1\n3\n1\nNotes\n"
   assert_status 0
-  assert_link "$(obsidian_theme "$SANDBOX/work/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_link "$(obsidian_theme "$SANDBOX/work/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
 
 # GIVEN no Obsidian vault list
@@ -760,7 +760,7 @@ test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
   mkdir -p "$SANDBOX/Plain"
   run_setup "1\n3\n1\n$SANDBOX/Plain\ny\n"
   assert_status 0
-  assert_link "$(obsidian_theme "$SANDBOX/Plain" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_link "$(obsidian_theme "$SANDBOX/Plain" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
 
 # GIVEN the theme is already linked into a vault
@@ -785,23 +785,24 @@ test_obsidian_replaces_an_old_copy_when_asked() {
   run_setup "1\n3\n1\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
-  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/obsidian-theme/blue-purple"
+  assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
 
 # --- Tests: preparing a commit ----------------------------------------------
 
 # The generated files git tracks: Blue Purple's defaults.
-BLUE_PURPLE_FILES="vs-code-theme/themes/jenerated-blue-purple-color-theme.json
-ptyxis-theme/blue-purple.palette
-slack-theme/blue-purple.txt
-obsidian-theme/blue-purple/theme.css
-obsidian-theme/blue-purple/manifest.json
-tilix-theme/blue-purple.json"
+BLUE_PURPLE_FILES="app-themes/vs-code-theme/themes/jenerated-blue-purple-color-theme.json
+app-themes/ptyxis-theme/blue-purple.palette
+app-themes/slack-theme/blue-purple.txt
+app-themes/obsidian-theme/blue-purple/theme.css
+app-themes/obsidian-theme/blue-purple/manifest.json
+app-themes/tilix-theme/blue-purple.json"
 
-# Fails unless package.json matches the committed one.
+# Fails unless package.json matches the one git has (staged, or else
+# committed).
 assert_package_json_is_committed() {
-  git -C "$REPO" show HEAD:vs-code-theme/package.json >"$SANDBOX/committed-package.json"
-  assert_same_file "$SANDBOX/repo/vs-code-theme/package.json" "$SANDBOX/committed-package.json"
+  git -C "$REPO" show :app-themes/vs-code-theme/package.json >"$SANDBOX/committed-package.json"
+  assert_same_file "$SANDBOX/repo/app-themes/vs-code-theme/package.json" "$SANDBOX/committed-package.json"
 }
 
 # GIVEN Sunset has been generated, so package.json lists it
@@ -813,7 +814,7 @@ test_prep_commit_resets_package_json() {
   run_setup "" --prep-commit
   assert_status 0
   assert_package_json_is_committed
-  assert_exists "$SANDBOX/repo/tilix-theme/sunset.json"
+  assert_exists "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
   assert_contains "./jenerate.py sunset"
 }
 
@@ -859,24 +860,24 @@ test_prep_commit_lists_every_other_generated_theme() {
 # THEN package.json keeps the change but lists only Blue Purple
 test_prep_commit_keeps_package_json_template_changes() {
   sed 's/"version": "1.0.0"/"version": "1.1.0"/' \
-    "$SANDBOX/repo/vs-code-theme/package.json.tmpl" >"$SANDBOX/package.json.tmpl"
-  cp "$SANDBOX/package.json.tmpl" "$SANDBOX/repo/vs-code-theme/package.json.tmpl"
+    "$SANDBOX/repo/app-themes/vs-code-theme/package.json.tmpl" >"$SANDBOX/package.json.tmpl"
+  cp "$SANDBOX/package.json.tmpl" "$SANDBOX/repo/app-themes/vs-code-theme/package.json.tmpl"
   sandbox_jenerate sunset
   run_setup "" --prep-commit
   assert_status 0
-  assert_file_contains "$SANDBOX/repo/vs-code-theme/package.json" '"version": "1.1.0"'
-  assert_file_contains "$SANDBOX/repo/vs-code-theme/package.json" '"label": "Jenerated Blue Purple"'
-  assert_file_not_contains "$SANDBOX/repo/vs-code-theme/package.json" "Sunset"
+  assert_file_contains "$SANDBOX/repo/app-themes/vs-code-theme/package.json" '"version": "1.1.0"'
+  assert_file_contains "$SANDBOX/repo/app-themes/vs-code-theme/package.json" '"label": "Jenerated Blue Purple"'
+  assert_file_not_contains "$SANDBOX/repo/app-themes/vs-code-theme/package.json" "Sunset"
 }
 
 # GIVEN a template has been changed
 # WHEN running setup.sh --prep-commit
 # THEN Blue Purple's generated file picks up the change, ready to commit
 test_prep_commit_regenerates_blue_purple_from_changed_templates() {
-  printf '{{accent}}|{{name}}\n' >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  printf '{{accent}}|{{name}}\n' >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_setup "" --prep-commit
   assert_status 0
-  assert_file_equals "$SANDBOX/repo/slack-theme/blue-purple.txt" "#5865F2|Blue Purple"
+  assert_file_equals "$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt" "#5865F2|Blue Purple"
 }
 
 # GIVEN no Python 3.11 or later
@@ -884,12 +885,12 @@ test_prep_commit_regenerates_blue_purple_from_changed_templates() {
 # THEN it exits with status 1, saying it needs Python, and changes nothing
 test_prep_commit_needs_python() {
   sandbox_jenerate sunset
-  cp "$SANDBOX/repo/vs-code-theme/package.json" "$SANDBOX/before.json"
+  cp "$SANDBOX/repo/app-themes/vs-code-theme/package.json" "$SANDBOX/before.json"
   fake_no_python
   run_setup "" --prep-commit
   assert_status 1
   assert_contains "--prep-commit needs Python 3.11 or later"
-  assert_same_file "$SANDBOX/repo/vs-code-theme/package.json" "$SANDBOX/before.json"
+  assert_same_file "$SANDBOX/repo/app-themes/vs-code-theme/package.json" "$SANDBOX/before.json"
 }
 
 # GIVEN an option setup.sh doesn't know
@@ -909,7 +910,7 @@ test_unknown_option_is_an_error() {
 # THEN the theme string is printed and copied to the clipboard
 test_slack_prints_and_copies_the_theme_string() {
   fake_os Linux
-  theme="$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
+  theme="$(tr -d '\n' <"$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt")"
   run_setup "1\n2\n1\n"
   assert_status 0
   assert_contains "    $theme"
@@ -946,7 +947,7 @@ test_slack_without_a_clipboard_tool_still_prints_the_string() {
       "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" 2>&1)"
   STATUS=$?
   assert_status 0
-  assert_contains "$(tr -d '\n' <"$SANDBOX/repo/slack-theme/blue-purple.txt")"
+  assert_contains "$(tr -d '\n' <"$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt")"
   assert_not_contains "Copied to your clipboard"
 }
 

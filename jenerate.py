@@ -29,25 +29,25 @@ ROOT = Path(__file__).resolve().parent
 PALETTES = ROOT / "palettes"
 
 # Generated VS Code theme files, relative to the repository root.
-VSCODE_THEME = "vs-code-theme/themes/jenerated-{slug}-color-theme.json"
+VSCODE_THEME = "app-themes/vs-code-theme/themes/jenerated-{slug}-color-theme.json"
 
 # (template, output) pairs, relative to the repository root. {slug} in the
 # output path is replaced with the palette's slug; it may name a folder, which
 # is created as needed and deleted with the palette's last file.
 TARGETS = [
-    ("vs-code-theme/themes/color-theme.json.tmpl", VSCODE_THEME),
-    ("ptyxis-theme/palette.tmpl", "ptyxis-theme/{slug}.palette"),
-    ("slack-theme/slack-theme.txt.tmpl", "slack-theme/{slug}.txt"),
-    ("tilix-theme/scheme.json.tmpl", "tilix-theme/{slug}.json"),
-    ("vim-theme/colorscheme.vim.tmpl", "vim-theme/colors/jenerated-{slug}.vim"),
-    ("obsidian-theme/theme.css.tmpl", "obsidian-theme/{slug}/theme.css"),
-    ("obsidian-theme/manifest.json.tmpl", "obsidian-theme/{slug}/manifest.json"),
+    ("app-themes/vs-code-theme/themes/color-theme.json.tmpl", VSCODE_THEME),
+    ("app-themes/ptyxis-theme/palette.tmpl", "app-themes/ptyxis-theme/{slug}.palette"),
+    ("app-themes/slack-theme/slack-theme.txt.tmpl", "app-themes/slack-theme/{slug}.txt"),
+    ("app-themes/tilix-theme/scheme.json.tmpl", "app-themes/tilix-theme/{slug}.json"),
+    ("app-themes/vim-theme/colorscheme.vim.tmpl", "app-themes/vim-theme/colors/jenerated-{slug}.vim"),
+    ("app-themes/obsidian-theme/theme.css.tmpl", "app-themes/obsidian-theme/{slug}/theme.css"),
+    ("app-themes/obsidian-theme/manifest.json.tmpl", "app-themes/obsidian-theme/{slug}/manifest.json"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
 # theme file that exists.
-VSCODE_PACKAGE_BASE = ROOT / "vs-code-theme/package.json.tmpl"
-VSCODE_PACKAGE = ROOT / "vs-code-theme/package.json"
+VSCODE_PACKAGE_BASE = ROOT / "app-themes/vs-code-theme/package.json.tmpl"
+VSCODE_PACKAGE = ROOT / "app-themes/vs-code-theme/package.json"
 
 # A theme file's "type" -> the "uiTheme" VS Code expects in package.json.
 VSCODE_UI_THEMES = {
@@ -198,7 +198,7 @@ def output_path(output, slug):
 
 
 def slug_folders(slug):
-    """The folders made just for this palette's files, like obsidian-theme/sunset."""
+    """The folders made just for this palette's files, like app-themes/obsidian-theme/sunset."""
     return {output_path(output, slug).parent for _, output in TARGETS
             if "{slug}" in str(Path(output).parent)}
 

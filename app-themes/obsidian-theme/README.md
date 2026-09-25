@@ -1,17 +1,17 @@
 # Jenerated Themes for Obsidian
 
 [Obsidian](https://obsidian.md) themes that match the VS Code themes.
-[jenerate.py](../jenerate.py) writes one folder for each palette you generate,
+[jenerate.py](../../jenerate.py) writes one folder for each palette you generate,
 for example `blue-purple/`, holding the theme's `theme.css` and
 `manifest.json`. Blue Purple is included; to add other palettes, see
-[Getting started](../README.md#getting-started).
+[Getting started](../../README.md#getting-started).
 
 The themes only have a dark version, so they look the same whether Obsidian
 is set to light or dark.
 
 The files are generated from `theme.css.tmpl` and `manifest.json.tmpl` by
-[jenerate.py](../jenerate.py). To change colors, see
-[Changing colors](../README.md#changing-colors).
+[jenerate.py](../../jenerate.py). To change colors, see
+[Changing colors](../../README.md#changing-colors).
 
 ## Install
 
@@ -35,10 +35,10 @@ it lists the vaults Obsidian knows about. To install by hand:
    mkdir -p ~/Notes/.obsidian/themes
 
    # Symlink (ln needs an absolute path, hence $PWD)
-   ln -s "$PWD/jenerated-themes/obsidian-theme/blue-purple" "$HOME/Notes/.obsidian/themes/Jenerated Blue Purple"
+   ln -s "$PWD/jenerated-themes/app-themes/obsidian-theme/blue-purple" "$HOME/Notes/.obsidian/themes/Jenerated Blue Purple"
 
    # Or copy
-   cp -r ./jenerated-themes/obsidian-theme/blue-purple "$HOME/Notes/.obsidian/themes/Jenerated Blue Purple"
+   cp -r ./jenerated-themes/app-themes/obsidian-theme/blue-purple "$HOME/Notes/.obsidian/themes/Jenerated Blue Purple"
    ```
 
 3. In Obsidian, open **Settings** → **Appearance**, and under **Themes**

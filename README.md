@@ -13,12 +13,12 @@ install it in any app without running anything.
 
 Each app has its own folder with a template and install instructions:
 
-- [Obsidian](obsidian-theme/)
-- [Ptyxis (Ubuntu terminal)](ptyxis-theme/)
-- [Slack](slack-theme/)
-- [Tilix (terminal)](tilix-theme/)
-- [Vim and Neovim](vim-theme/)
-- [VS Code](vs-code-theme/)
+- [Obsidian](app-themes/obsidian-theme/)
+- [Ptyxis (Ubuntu terminal)](app-themes/ptyxis-theme/)
+- [Slack](app-themes/slack-theme/)
+- [Tilix (terminal)](app-themes/tilix-theme/)
+- [Vim and Neovim](app-themes/vim-theme/)
+- [VS Code](app-themes/vs-code-theme/)
 
 ## Getting started
 
@@ -79,13 +79,13 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
 - **`jenerate.py`** fills in every template for each palette you name and
   writes the results next to the templates, named after the palette's slug.
   Themes you generated earlier are kept. For VS Code it also rebuilds
-  `vs-code-theme/package.json` from `package.json.tmpl`, listing every
-  generated theme.
+  `app-themes/vs-code-theme/package.json` from `package.json.tmpl`, listing
+  every generated theme.
 
 Generated files are ignored by git (see `.gitignore`), so each person's copy
 holds only the palettes they chose. The exception is Blue Purple: its
-generated files, and a `vs-code-theme/package.json` that lists only it, are
-committed as the default. Generating or removing other palettes changes that
+generated files, and an `app-themes/vs-code-theme/package.json` that lists
+only it, are committed as the default. Generating or removing other palettes changes that
 `package.json` in your copy; don't commit that change.
 
 Don't edit generated files by hand; change the palette or template and run
@@ -139,7 +139,7 @@ explains any that a palette breaks:
 2. Add a `(template, output)` pair to `TARGETS` in `jenerate.py`. Use
    `{slug}` in the output path so each palette gets its own file. An app
    that needs several files per theme can use `{slug}` as a folder, like
-   Obsidian's `obsidian-theme/{slug}/theme.css`.
+   Obsidian's `app-themes/obsidian-theme/{slug}/theme.css`.
 3. Add the output pattern to `.gitignore` (keeping Blue Purple's files), and
    a README with install steps.
 4. Add the app to `setup.sh`, and tests for it in `tests/setup/`.

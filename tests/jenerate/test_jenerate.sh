@@ -38,12 +38,12 @@ write_palette() {
 }
 
 # Paths of the generated files for a slug.
-vscode_theme() { printf '%s' "$SANDBOX/repo/vs-code-theme/themes/jenerated-$1-color-theme.json"; }
-ptyxis_palette() { printf '%s' "$SANDBOX/repo/ptyxis-theme/$1.palette"; }
-slack_theme() { printf '%s' "$SANDBOX/repo/slack-theme/$1.txt"; }
-obsidian_theme() { printf '%s' "$SANDBOX/repo/obsidian-theme/$1"; }
-tilix_scheme() { printf '%s' "$SANDBOX/repo/tilix-theme/$1.json"; }
-vim_scheme() { printf '%s' "$SANDBOX/repo/vim-theme/colors/jenerated-$1.vim"; }
+vscode_theme() { printf '%s' "$SANDBOX/repo/app-themes/vs-code-theme/themes/jenerated-$1-color-theme.json"; }
+ptyxis_palette() { printf '%s' "$SANDBOX/repo/app-themes/ptyxis-theme/$1.palette"; }
+slack_theme() { printf '%s' "$SANDBOX/repo/app-themes/slack-theme/$1.txt"; }
+obsidian_theme() { printf '%s' "$SANDBOX/repo/app-themes/obsidian-theme/$1"; }
+tilix_scheme() { printf '%s' "$SANDBOX/repo/app-themes/tilix-theme/$1.json"; }
+vim_scheme() { printf '%s' "$SANDBOX/repo/app-themes/vim-theme/colors/jenerated-$1.vim"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -76,7 +76,7 @@ with_references() {
   printf '%s\n' 'term_red = "red"' 'term_bright_black = "text_faint"' >>"$1.tmp"
   mv "$1.tmp" "$1"
 }
-PACKAGE_JSON_REL="vs-code-theme/package.json"
+PACKAGE_JSON_REL="app-themes/vs-code-theme/package.json"
 
 # Prints package.json's theme labels, one per line, in order.
 package_labels() {
@@ -246,7 +246,7 @@ test_vscode_theme_is_valid_json() {
 # WHEN generating Sunset
 # THEN every placeholder is filled in
 test_placeholders_may_have_spaces() {
-  printf '{{ accent }}|{{name}}|{{  slug  }}\n' >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  printf '{{ accent }}|{{name}}|{{  slug  }}\n' >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_jenerate sunset
   assert_status 0
   assert_file_equals "$(slack_theme sunset)" "$(color accent)|Sunset|sunset"
@@ -260,15 +260,15 @@ test_blue_purple_matches_the_committed_files() {
   # default stays in sync with its palette and the templates.
   run_jenerate blue-purple
   assert_status 0
-  for rel in vs-code-theme/themes/jenerated-blue-purple-color-theme.json \
-    ptyxis-theme/blue-purple.palette slack-theme/blue-purple.txt \
-    obsidian-theme/blue-purple/theme.css obsidian-theme/blue-purple/manifest.json \
-    tilix-theme/blue-purple.json vim-theme/colors/jenerated-blue-purple.vim; do
+  for rel in app-themes/vs-code-theme/themes/jenerated-blue-purple-color-theme.json \
+    app-themes/ptyxis-theme/blue-purple.palette app-themes/slack-theme/blue-purple.txt \
+    app-themes/obsidian-theme/blue-purple/theme.css app-themes/obsidian-theme/blue-purple/manifest.json \
+    app-themes/tilix-theme/blue-purple.json app-themes/vim-theme/colors/jenerated-blue-purple.vim; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
-  # the committed one, which lists only Blue Purple.
-  git -C "$REPO" show "HEAD:$PACKAGE_JSON_REL" >"$SANDBOX/committed-package.json"
+  # the one git has (staged, or else committed), which lists only Blue Purple.
+  git -C "$REPO" show ":$PACKAGE_JSON_REL" >"$SANDBOX/committed-package.json"
   assert_same_file "$SANDBOX/repo/$PACKAGE_JSON_REL" "$SANDBOX/committed-package.json"
 }
 
@@ -341,14 +341,14 @@ test_repo_in_a_folder_with_spaces() {
   OUTPUT="$(cd "$SANDBOX" && "$PYTHON" "$repo/jenerate.py" "$SANDBOX/My Palettes/forest.toml" 2>&1)"
   STATUS=$?
   assert_status 0
-  assert_exists "$repo/obsidian-theme/forest/theme.css"
-  assert_exists "$repo/tilix-theme/forest.json"
+  assert_exists "$repo/app-themes/obsidian-theme/forest/theme.css"
+  assert_exists "$repo/app-themes/tilix-theme/forest.json"
   assert_file_contains "$repo/$PACKAGE_JSON_REL" '"path": "./themes/jenerated-forest-color-theme.json"'
   OUTPUT="$(cd "$SANDBOX" && "$PYTHON" "$repo/jenerate.py" --remove forest 2>&1)"
   STATUS=$?
   assert_status 0
-  assert_missing "$repo/obsidian-theme/forest"
-  assert_missing "$repo/tilix-theme/forest.json"
+  assert_missing "$repo/app-themes/obsidian-theme/forest"
+  assert_missing "$repo/app-themes/tilix-theme/forest.json"
 }
 
 # --- Tests: color formats --------------------------------------------------
@@ -360,7 +360,7 @@ render_colors() {
   for key in "$@"; do
     template="$template${template:+|}{{$key}}"
   done
-  printf '%s\n' "$template" >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  printf '%s\n' "$template" >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_jenerate sunset
   RENDERED="$(cat "$(slack_theme sunset)")"
 }
@@ -391,7 +391,7 @@ test_colors_are_available_as_hsl() {
 test_referenced_colors_get_formats_too() {
   write_palette "$SANDBOX/repo/palettes/refs-palette.toml" "Refs" "refs"
   with_references "$SANDBOX/repo/palettes/refs-palette.toml"
-  printf '%s\n' '{{term_red_rgb}}' >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  printf '%s\n' '{{term_red_rgb}}' >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_jenerate refs
   assert_status 0
   assert_file_equals "$(slack_theme refs)" "$(color_rgb red)"
@@ -404,7 +404,7 @@ test_color_format_edge_cases() {
   write_palette "$SANDBOX/repo/palettes/edges-palette.toml" "Edges" "edges" \
     'grey = "#808080"' 'white = "#FFFFFF"' 'black = "#000000"' 'almost_red = "#ff0001"'
   printf '%s\n' '{{grey_h}},{{grey_s}},{{grey_l}}|{{white_rgb}}|{{white_l}}|{{black_rgb}}|{{black_l}}|{{almost_red_h}}' \
-    >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+    >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_jenerate edges
   assert_status 0
   # A hue just under 360 degrees rounds to 0, not 360.
@@ -416,7 +416,7 @@ test_color_format_edge_cases() {
 # THEN the palette's own color is used, not accent's RGB numbers
 test_a_defined_color_wins_over_a_derived_one() {
   write_palette "$SANDBOX/repo/palettes/clash-palette.toml" "Clash" "clash" 'accent_rgb = "#010203"'
-  printf '%s\n' '{{accent_rgb}}' >"$SANDBOX/repo/slack-theme/slack-theme.txt.tmpl"
+  printf '%s\n' '{{accent_rgb}}' >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
   run_jenerate clash
   assert_status 0
   assert_file_equals "$(slack_theme clash)" "#010203"
@@ -454,9 +454,9 @@ print(s["name"], s["background-color"], s["foreground-color"],
 test_remove_deletes_the_tilix_scheme() {
   run_jenerate sunset
   run_jenerate --remove sunset
-  assert_contains "Removed tilix-theme/sunset.json"
+  assert_contains "Removed app-themes/tilix-theme/sunset.json"
   assert_missing "$(tilix_scheme sunset)"
-  assert_exists "$SANDBOX/repo/tilix-theme/scheme.json.tmpl"
+  assert_exists "$SANDBOX/repo/app-themes/tilix-theme/scheme.json.tmpl"
 }
 
 # --- Tests: Vim --------------------------------------------------------------
@@ -480,7 +480,7 @@ test_vim_scheme_loads_in_vim() {
   command -v vim >/dev/null 2>&1 || return 0
   run_jenerate sunset
   bg="$(color bg | tr 'A-F' 'a-f')"
-  vim -Nu NONE -i NONE -es --cmd "set rtp^=$SANDBOX/repo/vim-theme" -c "set termguicolors" \
+  vim -Nu NONE -i NONE -es --cmd "set rtp^=$SANDBOX/repo/app-themes/vim-theme" -c "set termguicolors" \
     -c "try | colorscheme jenerated-sunset | call writefile([g:colors_name . ' ' . tolower(synIDattr(hlID('Normal'), 'bg#')) . ' [' . v:errmsg . ']'], '$SANDBOX/vim-result') | catch | call writefile([v:exception], '$SANDBOX/vim-result') | endtry" \
     -c 'qa!' </dev/null >/dev/null 2>&1
   assert_file_equals "$SANDBOX/vim-result" "jenerated-sunset $bg []"
@@ -493,7 +493,7 @@ test_vim_scheme_loads_in_vim() {
 test_remove_deletes_the_vim_scheme() {
   run_jenerate sunset
   run_jenerate --remove sunset
-  assert_contains "Removed vim-theme/colors/jenerated-sunset.vim"
+  assert_contains "Removed app-themes/vim-theme/colors/jenerated-sunset.vim"
   assert_missing "$(vim_scheme sunset)"
   assert_exists "$(vim_scheme blue-purple)"
 }
@@ -544,7 +544,7 @@ test_remove_deletes_the_obsidian_folder() {
   run_jenerate --remove sunset
   assert_status 0
   assert_missing "$(obsidian_theme sunset)"
-  assert_exists "$SANDBOX/repo/obsidian-theme/theme.css.tmpl"
+  assert_exists "$SANDBOX/repo/app-themes/obsidian-theme/theme.css.tmpl"
 }
 
 # GIVEN Sunset has been generated and someone added a file to its Obsidian
@@ -589,8 +589,8 @@ test_package_json_keeps_the_base_fields() {
 # THEN package.json gives Sunset the light uiTheme, vs
 test_package_json_uses_each_themes_type() {
   sed 's/"type": "dark"/"type": "light"/' \
-    "$SANDBOX/repo/vs-code-theme/themes/color-theme.json.tmpl" >"$SANDBOX/light.tmpl"
-  cp "$SANDBOX/light.tmpl" "$SANDBOX/repo/vs-code-theme/themes/color-theme.json.tmpl"
+    "$SANDBOX/repo/app-themes/vs-code-theme/themes/color-theme.json.tmpl" >"$SANDBOX/light.tmpl"
+  cp "$SANDBOX/light.tmpl" "$SANDBOX/repo/app-themes/vs-code-theme/themes/color-theme.json.tmpl"
   run_jenerate sunset
   assert_status 0
   uitheme="$("$PYTHON" -c '
@@ -629,7 +629,7 @@ test_removing_a_broken_theme_fixes_it() {
   printf '{"name": "Broken",\n' >"$(vscode_theme broken)"
   run_jenerate --remove broken
   assert_status 0
-  assert_contains "Removed vs-code-theme/themes/jenerated-broken-color-theme.json"
+  assert_contains "Removed app-themes/vs-code-theme/themes/jenerated-broken-color-theme.json"
 }
 
 # GIVEN Sunset has been generated
@@ -651,7 +651,7 @@ test_remove_deletes_the_themes() {
   run_jenerate sunset
   run_jenerate --remove sunset
   assert_status 0
-  assert_contains "Removed slack-theme/sunset.txt"
+  assert_contains "Removed app-themes/slack-theme/sunset.txt"
   assert_missing "$(vscode_theme sunset)"
   assert_missing "$(ptyxis_palette sunset)"
   assert_missing "$(slack_theme sunset)"
@@ -852,10 +852,10 @@ test_missing_color_is_named_and_nothing_is_written() {
 # THEN it exits with status 1, naming the template, and writes none of
 #      Sunset's files
 test_missing_template_is_named_and_nothing_is_written() {
-  rm "$SANDBOX/repo/tilix-theme/scheme.json.tmpl"
+  rm "$SANDBOX/repo/app-themes/tilix-theme/scheme.json.tmpl"
   run_jenerate sunset
   assert_status 1
-  assert_contains "tilix-theme/scheme.json.tmpl: template not found"
+  assert_contains "app-themes/tilix-theme/scheme.json.tmpl: template not found"
   assert_missing "$(vscode_theme sunset)"
   assert_missing "$(slack_theme sunset)"
 }
@@ -864,10 +864,10 @@ test_missing_template_is_named_and_nothing_is_written() {
 # WHEN generating Sunset
 # THEN it exits with status 1, naming the template
 test_missing_package_json_template_is_named() {
-  rm "$SANDBOX/repo/vs-code-theme/package.json.tmpl"
+  rm "$SANDBOX/repo/app-themes/vs-code-theme/package.json.tmpl"
   run_jenerate sunset
   assert_status 1
-  assert_contains "vs-code-theme/package.json.tmpl: template not found"
+  assert_contains "app-themes/vs-code-theme/package.json.tmpl: template not found"
 }
 
 # GIVEN a bad palette followed by Sunset

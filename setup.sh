@@ -229,7 +229,7 @@ install_link() {
 install_vscode() {
   local extensions="$HOME/.vscode/extensions"
   local target="$extensions/jenerated-themes"
-  local source="$ROOT/vs-code-theme"
+  local source="$ROOT/app-themes/vs-code-theme"
 
   step "Installing the VS Code extension"
   mkdir -p "$extensions"
@@ -273,7 +273,7 @@ install_ptyxis() {
 
   step "Installing the Ptyxis palette"
   mkdir -p "$palettes"
-  ln -sf "$ROOT/ptyxis-theme/$SLUG.palette" "$palettes/$SLUG.palette"
+  ln -sf "$ROOT/app-themes/ptyxis-theme/$SLUG.palette" "$palettes/$SLUG.palette"
   say "Linked $palettes/$SLUG.palette"
 
   step "Done! To turn the palette on:"
@@ -340,7 +340,7 @@ install_obsidian() {
   mkdir -p "$themes"
   # Obsidian names a theme after its folder, which must match the name in
   # its manifest.json.
-  install_link "$themes/Jenerated $NAME" "$ROOT/obsidian-theme/$SLUG"
+  install_link "$themes/Jenerated $NAME" "$ROOT/app-themes/obsidian-theme/$SLUG"
 
   step "Done! To turn the theme on:"
   say "1. In Obsidian, open Settings -> Appearance."
@@ -358,17 +358,17 @@ install_vim() {
   # With neither found, set it up for Vim.
   [ -z "$has_nvim" ] && has_vim=1
 
-  # vim-theme is a Vim package: linked once, every generated palette's
+  # app-themes/vim-theme is a Vim package: linked once, every generated palette's
   # colorscheme (in its colors/ folder) is available.
   if [ -n "$has_vim" ]; then
     step "Installing the colorschemes for Vim"
     mkdir -p "$(dirname "$vim_pack")"
-    install_link "$vim_pack" "$ROOT/vim-theme"
+    install_link "$vim_pack" "$ROOT/app-themes/vim-theme"
   fi
   if [ -n "$has_nvim" ]; then
     step "Installing the colorschemes for Neovim"
     mkdir -p "$(dirname "$nvim_pack")"
-    install_link "$nvim_pack" "$ROOT/vim-theme"
+    install_link "$nvim_pack" "$ROOT/app-themes/vim-theme"
   fi
 
   step "Done! To turn the colorscheme on:"
@@ -396,7 +396,7 @@ install_tilix() {
   step "Installing the Tilix color scheme"
   mkdir -p "$schemes"
   # The jenerated- prefix keeps it from replacing a scheme of your own.
-  install_link "$schemes/jenerated-$SLUG.json" "$ROOT/tilix-theme/$SLUG.json"
+  install_link "$schemes/jenerated-$SLUG.json" "$ROOT/app-themes/tilix-theme/$SLUG.json"
 
   step "Done! To turn the color scheme on:"
   say "1. Close every Tilix window, then open Tilix again."
@@ -421,7 +421,7 @@ copy_to_clipboard() {
 
 install_slack() {
   local theme
-  theme="$(tr -d '\n' <"slack-theme/$SLUG.txt")"
+  theme="$(tr -d '\n' <"app-themes/slack-theme/$SLUG.txt")"
 
   step "Your Slack theme string"
   say ""

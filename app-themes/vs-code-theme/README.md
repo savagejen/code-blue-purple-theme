@@ -1,13 +1,13 @@
 # Jenerated Themes for VS Code
 
 A VS Code extension with one color theme for each palette you generate with
-[jenerate.py](../jenerate.py). It comes with the default, Blue Purple. Each theme is named "Jenerated" plus the
+[jenerate.py](../../jenerate.py). It comes with the default, Blue Purple. Each theme is named "Jenerated" plus the
 palette's name, for example "Jenerated Blue Purple".
 
 The theme files in `themes/` (`jenerated-<slug>-color-theme.json`) are
 generated from `themes/color-theme.json.tmpl`, and `package.json` from
 `package.json.tmpl`. To change colors, see
-[Changing colors](../README.md#changing-colors).
+[Changing colors](../../README.md#changing-colors).
 
 ## Try it without installing
 
@@ -18,7 +18,7 @@ Development Host with the themes available immediately.
 ## Install locally
 
 1. Clone this repository. Blue Purple is included; to add other palettes,
-   see [Getting started](../README.md#getting-started).
+   see [Getting started](../../README.md#getting-started).
 
    ```bash
    git clone https://github.com/savagejen/jenerated-themes jenerated-themes
@@ -31,10 +31,10 @@ Development Host with the themes available immediately.
 
    ```bash
    # Symlink (ln needs an absolute path, hence $PWD)
-   ln -s "$PWD/jenerated-themes/vs-code-theme" ~/.vscode/extensions/jenerated-themes
+   ln -s "$PWD/jenerated-themes/app-themes/vs-code-theme" ~/.vscode/extensions/jenerated-themes
 
    # Or copy
-   cp -r ./jenerated-themes/vs-code-theme ~/.vscode/extensions/jenerated-themes
+   cp -r ./jenerated-themes/app-themes/vs-code-theme ~/.vscode/extensions/jenerated-themes
    ```
 
 3. Reload VS Code: open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
@@ -47,7 +47,7 @@ Development Host with the themes available immediately.
 
 ```bash
 npm install -g @vscode/vsce
-cd ./jenerated-themes/vs-code-theme
+cd ./jenerated-themes/app-themes/vs-code-theme
 vsce package
 ```
 
