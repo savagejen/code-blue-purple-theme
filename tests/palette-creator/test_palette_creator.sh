@@ -65,13 +65,19 @@ print($1)
 "
 }
 
-# palette_body [from] [python...] -> prints {"palette": ...} for the palette
-# (the work in progress, or ?from=<from>), after running the Python
-# statements, which can change it as `p`. Extra JSON fields can be set on `b`.
+# palette_body [slug] [python...] -> prints {"palette": ...} for the
+# work-in-progress palette, or with a slug, for that palette in palettes/
+# after loading it into the work in progress (as "Load from" does). The Python
+# statements can change it as `p`. Extra JSON fields can be set on `b`.
 palette_body() {
-  local query="" script="${2:-}"
-  [ -n "${1:-}" ] && query="?from=$1"
-  curl -s "http://127.0.0.1:$PORT/api/palette$query" | "$PYTHON" -c "
+  local script="${2:-}" response
+  if [ -n "${1:-}" ]; then
+    response="$(curl -s -X POST -H "Content-Type: application/json" \
+      --data-binary "{\"filename\": \"$1-palette.toml\"}" "http://127.0.0.1:$PORT/api/load")"
+  else
+    response="$(curl -s "http://127.0.0.1:$PORT/api/palette")"
+  fi
+  printf '%s' "$response" | "$PYTHON" -c "
 import json, sys
 p = json.load(sys.stdin)['palette']
 b = {}
@@ -170,42 +176,10 @@ test_loads_the_palette_with_its_groups_and_notes() {
   assert_json '[c for g in d["palette"]["groups"] for c in g["colors"] if c["key"] == "term_red"][0]["value"]' "red"
 }
 
-# GIVEN the palettes in palettes/
-# WHEN the page asks for the list to start from
-# THEN it gets each one's slug and name
-test_lists_the_palettes_to_start_from() {
-  start_server
-  get /api/palettes
-  assert_json 'd["palettes"]' "[{'slug': 'blue-purple', 'name': 'Blue Purple'}, {'slug': 'sunset', 'name': 'Sunset'}]"
-}
-
-# GIVEN Sunset in palettes/
-# WHEN the page asks to start from sunset
-# THEN it gets Sunset, marked as coming from its palette file
-test_loads_a_palette_to_start_from() {
-  start_server
-  get "/api/palette?from=sunset"
-  assert_code 200
-  assert_json 'd["palette"]["name"]' "Sunset"
-  assert_json 'd["source"]' "palettes/sunset-palette.toml"
-}
-
-# GIVEN no palette called nope
-# WHEN the page asks to start from nope, or from a path
-# THEN it answers 404 for the unknown palette and 400 for the path
-test_starting_from_an_unknown_or_unsafe_palette() {
-  start_server
-  get "/api/palette?from=nope"
-  assert_code 404
-  get "/api/palette?from=../palettes/sunset"
-  assert_code 400
-  assert_contains "is not a valid slug"
-}
-
 # GIVEN a work-in-progress palette that isn't valid TOML
 # WHEN the page loads it
 # THEN it answers 422 with the error and the file's name, so the page can
-#      offer to start from another palette
+#      offer to load another palette
 test_broken_work_in_progress_palette_is_reported() {
   printf 'name = "Broken\n' >"$SANDBOX/repo/$WIP_REL"
   start_server
@@ -227,8 +201,8 @@ test_saving_unchanged_keeps_the_file_exactly() {
   assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
 }
 
-# GIVEN the page started from Sunset
-# WHEN saving to the work-in-progress file
+# GIVEN Sunset has been loaded into the work in progress
+# WHEN saving the work-in-progress file
 # THEN it's byte for byte the same as Sunset's palette, comments and all
 test_saving_a_palette_started_from_sunset() {
   start_server
@@ -415,7 +389,7 @@ test_save_as_palette_unchanged_doesnt_ask() {
 test_save_as_palette_refuses_unusable_typed_names() {
   start_server
   post /api/save "$(palette_body "" "$FOREST; b['filename'] = '../forest-palette.toml'")"
-  assert_json 'd["error"]' "type just a file name; it's saved in palettes/"
+  assert_json 'd["error"]' "type just a file name, of a file in palettes/"
   assert_missing "$SANDBOX/repo/forest-palette.toml"
   post /api/save "$(palette_body "" "$FOREST; b['filename'] = 'woods.toml'")"
   assert_contains "has to be named forest-palette.toml"
@@ -476,6 +450,134 @@ test_save_as_palette_dialog_refuses_a_misnamed_palette() {
   assert_json 'd["ok"]' "False"
   assert_contains "has to be named forest-palette.toml"
   assert_missing "$SANDBOX/repo/palettes/woods.toml"
+}
+
+# --- Tests: loading a palette ------------------------------------------------
+
+# GIVEN no file dialog
+# WHEN the page asks to load a palette
+# THEN it's asked to pick a name from the palettes in palettes/, and the work
+#      in progress is left alone
+test_load_without_a_dialog_asks_for_a_name() {
+  start_server
+  post /api/load '{}'
+  assert_json 'd["ok"]' "False"
+  assert_json 'd["choose_name"]' "True"
+  assert_json '"blue-purple-palette.toml" in d["palettes"] and "sunset-palette.toml" in d["palettes"]' "True"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+}
+
+# GIVEN no file dialog, and the page has asked for a name
+# WHEN loading sunset-palette.toml
+# THEN the work-in-progress file becomes an exact copy of Sunset's palette,
+#      the page gets Sunset back, and later loads of the work in progress get
+#      Sunset too
+test_load_a_typed_name_replaces_the_work_in_progress() {
+  start_server
+  post /api/load '{"filename": "sunset-palette.toml"}'
+  assert_json 'd["ok"]' "True"
+  assert_json 'd["message"]' "Loaded palettes/sunset-palette.toml into the work-in-progress palette."
+  assert_json 'd["palette"]["name"]' "Sunset"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/sunset-palette.toml"
+  get /api/palette
+  assert_json 'd["palette"]["name"]' "Sunset"
+}
+
+# GIVEN a file dialog
+# WHEN the page asks to load a palette
+# THEN an open dialog (not a save dialog) starts in palettes/, and the file it
+#      returns is loaded
+test_load_opens_the_dialog_in_palettes() {
+  fake_dialog 0 "$SANDBOX/repo/palettes/sunset-palette.toml"
+  start_server
+  post /api/load '{}'
+  assert_json 'd["ok"]' "True"
+  assert_file_contains "$SANDBOX/dialog-args" "$SANDBOX/repo/palettes"
+  assert_file_not_contains "$SANDBOX/dialog-args" "--save"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/sunset-palette.toml"
+}
+
+# GIVEN a file dialog, where a palette outside palettes/ is chosen
+# WHEN loading
+# THEN it's copied into the work in progress, and the message gives its path
+test_load_from_somewhere_else() {
+  mkdir -p "$SANDBOX/My Palettes"
+  sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
+    "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/My Palettes/woods.toml"
+  fake_dialog 0 "$SANDBOX/My Palettes/woods.toml"
+  start_server
+  post /api/load '{}'
+  assert_json 'd["ok"]' "True"
+  assert_json 'd["message"]' "Loaded $SANDBOX/My Palettes/woods.toml into the work-in-progress palette."
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/My Palettes/woods.toml"
+}
+
+# GIVEN a file dialog that's cancelled
+# WHEN loading
+# THEN nothing changes, and the page is told nothing was loaded
+test_load_dialog_cancelled() {
+  fake_dialog 1
+  start_server
+  post /api/load '{}'
+  assert_json 'd["ok"]' "False"
+  assert_json 'd["cancelled"]' "True"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+}
+
+# GIVEN a palette with a syntax error, and one missing a color the templates
+#       need
+# WHEN loading each
+# THEN each is refused with jenerate.py's message, and the work in progress is
+#      left alone
+test_load_refuses_a_palette_jenerate_would_reject() {
+  printf 'name = "Broken\n' >"$SANDBOX/repo/palettes/broken-palette.toml"
+  grep -v '^accent = ' "$SANDBOX/repo/palettes/sunset-palette.toml" |
+    sed -e 's/^name = .*/name = "Holey"/' -e 's/^slug = .*/slug = "holey"/' \
+      >"$SANDBOX/repo/palettes/holey-palette.toml"
+  start_server
+  post /api/load '{"filename": "broken-palette.toml"}'
+  assert_json 'd["ok"]' "False"
+  assert_contains "not a valid palette file"
+  post /api/load '{"filename": "holey-palette.toml"}'
+  assert_json 'd["ok"]' "False"
+  assert_contains "the palette has no color named accent"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+}
+
+# GIVEN no file dialog
+# WHEN typing a name with a folder in it, a file that isn't .toml, or one
+#      that doesn't exist
+# THEN each is refused, saying why, and the work in progress is left alone
+test_load_refuses_unusable_typed_names() {
+  start_server
+  post /api/load '{"filename": "../palettes/sunset-palette.toml"}'
+  assert_json 'd["error"]' "type just a file name, of a file in palettes/"
+  post /api/load '{"filename": "notes.txt"}'
+  assert_json 'd["error"]' "notes.txt: not a palette file (.toml)"
+  post /api/load '{"filename": "nope-palette.toml"}'
+  assert_json 'd["error"]' "nope-palette.toml: not a palette file (.toml)"
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+}
+
+# GIVEN a load request from a page on another origin
+# WHEN serve.py receives it
+# THEN it refuses with 403 and loads nothing
+test_refuses_loads_from_other_origins() {
+  start_server
+  post /api/load '{"filename": "sunset-palette.toml"}' -H "Origin: http://evil.example"
+  assert_code 403
+  assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+}
+
+# GIVEN serve.py is running
+# WHEN asking for the old palette list, or a palette to start from
+# THEN neither exists any more (loading replaced them)
+test_the_old_start_from_endpoints_are_gone() {
+  start_server
+  get /api/palettes
+  assert_code 404
+  get "/api/palette?from=sunset"
+  assert_json 'd["palette"]["name"]' "Blue Purple"
 }
 
 # --- Tests: requests from other websites -------------------------------------

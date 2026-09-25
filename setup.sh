@@ -173,7 +173,7 @@ start_palette_creator() {
   say ""
   say "1. The page starts with your work-in-progress palette"
   say "   (palette-creator/work-in-progress-palette.toml; the first time, a copy"
-  say "   of Blue Purple). To begin from another palette, use \"Start from\"."
+  say "   of Blue Purple). To begin from another palette, use \"Load from...\"."
   say "2. Give it a name and a slug (lowercase words and dashes, like deep-blue-sea)."
   say "3. Change colors with the color pickers, or type #rrggbb or another"
   say "   color's name. The preview updates as you go; hover a color to see"

@@ -17,6 +17,10 @@ after_sandbox() {
   done
   # A gsettings that doesn't work, so no test changes your desktop's theme.
   fake_command gsettings "exit 1"
+  # The tests pick palettes by their place in the menu (Blue Purple is 1,
+  # Sunset is 2), so keep only those two, whatever else is in palettes/.
+  find "$SANDBOX/repo/palettes" -name '*.toml' ! -name 'blue-purple-palette.toml' \
+    ! -name 'sunset-palette.toml' -delete
 }
 
 # fake_os Linux|Darwin -> makes `uname -s` report that OS.

@@ -1,0 +1,68 @@
+# Aurora: the northern lights over a winter night. The backgrounds are the
+# night sky, the text is icy white, and the accents and syntax colors are the
+# aurora itself: its signature green, the teal and blue where it thins, the
+# violet of its upper fringe and the pink of its lower rim.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Aurora"
+slug = "aurora"
+
+[colors]
+# Backgrounds: the night sky, darkest to lightest
+bg_chrome = "#070b12"          # activity bar, title bar, status bar
+bg_minimap = "#0a0f18"
+bg = "#0c121c"                 # editor and terminal
+bg_sidebar = "#101925"
+bg_widget = "#141f2e"          # popups, hovers, notifications
+bg_line_highlight = "#111a26"
+bg_hover = "#1a2638"           # hovered items, inputs
+bg_selected = "#203047"        # inactive selection in lists
+bg_secondary_hover = "#2c3f5a" # hovered secondary buttons
+selection = "#16414c"          # selected text: a teal glow
+
+# Lines
+guide = "#16202e"              # indent guides, rulers
+whitespace = "#1f2c3e"         # rendered whitespace
+border = "#223246"
+
+# Text: icy white, dimmest to brightest
+text_faint = "#4e6379"         # line numbers, ignored files
+text_muted = "#8199af"         # comments, inactive tabs
+text_subtle = "#b9ccd9"        # sidebar text, punctuation
+text = "#e3eff3"
+text_bright = "#ffffff"        # text on the accent color
+
+# Accent: the aurora
+accent = "#1c9a66"             # aurora green (deep enough for white text on buttons)
+accent_hover = "#16804f"       # hovered buttons
+accent_soft = "#b48cff"        # violet upper fringe: keywords, links
+accent_light = "#57d9ee"       # teal-cyan: functions
+accent_pale = "#aef2d4"        # pale green glow: properties
+
+# Syntax and status colors
+red = "#ff6f8a"                # pink-red lower rim: errors, deleted
+orange = "#ffa08a"             # coral: numbers, parameters, attributes
+yellow = "#eee27c"             # yellow-green: warnings, regex
+green = "#5ceb9f"              # bright aurora green: strings, added
+cyan = "#72a9ff"               # blue: classes, types
+magenta = "#f07bd6"            # pink-magenta: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#1a2433"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "#5f95f7"          # deep aurora blue
+term_magenta = "magenta"
+term_cyan = "accent_light"
+term_white = "text"
+term_bright_black = "text_faint"
+term_bright_red = "#ffa3b4"
+term_bright_green = "#9cf5c4"
+term_bright_yellow = "#f6efb0"
+term_bright_blue = "#a3c4ff"
+term_bright_magenta = "#f6b0e6"
+term_bright_cyan = "#9ceaf5"
+term_bright_white = "text_bright"

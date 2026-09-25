@@ -24,8 +24,14 @@ computer.
 
 - **Work in progress:** the page edits `work-in-progress-palette.toml` in
   this folder. It's created from Blue Purple the first time you start
-  `serve.py`, and git ignores it, so your drafts stay yours. To begin from a
-  different palette, choose it under **Start from**.
+  `serve.py`, and git ignores it, so your drafts stay yours.
+- **Load from…:** replaces the work in progress with a palette you choose in
+  your computer's file dialog, which opens in `palettes/` (you can also pick
+  a palette kept elsewhere). It warns you first, since anything in the work
+  in progress that you haven't saved as a palette is lost. The palette is
+  copied exactly, comments and all, and one `jenerate.py` would reject is
+  refused, leaving your work in progress alone. Without a file dialog, the
+  page asks for a file name in `palettes/` instead.
 - **Colors:** each color has a color picker, and a text field that takes a
   `#rrggbb` value or another color's name (like `red`), just as in a palette
   file. A color that refers to another shows what it resolves to.

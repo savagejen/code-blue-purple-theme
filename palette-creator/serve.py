@@ -8,11 +8,11 @@ Usage:
 
 Serves palette-creator.html on 127.0.0.1 (this computer only). The page edits
 work-in-progress-palette.toml, which is created from Blue Purple the first
-time. "Save as palette" opens this computer's save dialog in palettes/
-(zenity or kdialog on Linux, AppleScript on macOS, or Tk), suggesting
-<slug>-palette.toml; without one, the page asks for a file name. Palettes are
-checked with jenerate.py's own rules, and saving keeps the file's comments and
-layout.
+time. "Load from" copies a palette over it, and "Save as palette" saves it as
+a palette; both open this computer's file dialog in palettes/ (zenity or
+kdialog on Linux, AppleScript on macOS, or Tk), and without one the page asks
+for a file name. Palettes are checked with jenerate.py's own rules, and
+saving and loading keep the file's comments and layout.
 
 Set PALETTE_CREATOR_DIALOG=none to always name the file in the page instead
 (the tests do this).
@@ -31,7 +31,7 @@ import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -172,12 +172,12 @@ def check_palette(palette):
     return text
 
 
-# What ask_save_path returns when there's no dialog, or it was cancelled.
+# What ask_path returns when there's no dialog, or it was cancelled.
 NO_DIALOG, CANCELLED = "no dialog", "cancelled"
 
 
 def run_dialog(command):
-    """Run a save dialog command: its chosen path, CANCELLED, or NO_DIALOG
+    """Run a file dialog command: its chosen path, CANCELLED, or NO_DIALOG
     if it couldn't show (no display, say)."""
     try:
         result = subprocess.run(command, capture_output=True, text=True)
@@ -189,27 +189,36 @@ def run_dialog(command):
     return CANCELLED if result.returncode == 1 else NO_DIALOG
 
 
-def ask_save_path(default):
-    """Show this computer's save dialog, starting at `default`. Each dialog
-    asks before replacing an existing file."""
+def ask_path(kind, default):
+    """Show this computer's file dialog: kind "save" starts at the file
+    `default` (and asks before replacing an existing file), kind "open"
+    starts in the folder `default`."""
     if os.environ.get("PALETTE_CREATOR_DIALOG") == "none":
         return NO_DIALOG
+    saving = kind == "save"
+    title = "Save palette as" if saving else "Load a palette"
+    folder = default.parent if saving else default
     if platform.system() == "Darwin" and shutil.which("osascript"):
-        script = (f'POSIX path of (choose file name with prompt "Save palette as" '
-                  f'default location (POSIX file {json.dumps(str(default.parent))}) '
-                  f'default name {json.dumps(default.name)})')
+        where = f"default location (POSIX file {json.dumps(str(folder))})"
+        if saving:
+            script = (f'POSIX path of (choose file name with prompt "{title}" '
+                      f'{where} default name {json.dumps(default.name)})')
+        else:
+            script = f'POSIX path of (choose file with prompt "{title}" {where})'
         return run_dialog(["osascript", "-e", script])
     if shutil.which("zenity"):
-        chosen = run_dialog(["zenity", "--file-selection", "--save",
-                             "--confirm-overwrite", "--title=Save palette as",
-                             f"--filename={default}",
-                             "--file-filter=Palettes (*.toml) | *.toml"])
+        command = ["zenity", "--file-selection", f"--title={title}",
+                   "--file-filter=Palettes (*.toml) | *.toml"]
+        # A trailing slash makes zenity open in the folder.
+        command += (["--save", "--confirm-overwrite", f"--filename={default}"]
+                    if saving else [f"--filename={folder}/"])
+        chosen = run_dialog(command)
         if chosen != NO_DIALOG:
             return chosen
     if shutil.which("kdialog"):
-        chosen = run_dialog(["kdialog", "--title", "Save palette as",
-                             "--getsavefilename", str(default),
-                             "Palettes (*.toml)"])
+        option = "--getsavefilename" if saving else "--getopenfilename"
+        chosen = run_dialog(["kdialog", "--title", title, option,
+                             str(default), "Palettes (*.toml)"])
         if chosen != NO_DIALOG:
             return chosen
     try:
@@ -218,14 +227,25 @@ def ask_save_path(default):
         root = tkinter.Tk()
         root.withdraw()
         root.attributes("-topmost", True)
-        name = filedialog.asksaveasfilename(
-            parent=root, title="Save palette as", initialdir=default.parent,
-            initialfile=default.name, defaultextension=".toml",
-            filetypes=[("Palettes", "*.toml")])
+        options = dict(parent=root, title=title, initialdir=folder,
+                       filetypes=[("Palettes", "*.toml")])
+        if saving:
+            name = filedialog.asksaveasfilename(
+                initialfile=default.name, defaultextension=".toml", **options)
+        else:
+            name = filedialog.askopenfilename(**options)
         root.destroy()
     except Exception:  # no tkinter, or no display for it
         return NO_DIALOG
     return Path(name) if name else CANCELLED
+
+
+def typed_path(filename):
+    """A file name typed into the page, which can only name a file in
+    palettes/."""
+    if not isinstance(filename, str) or not filename or Path(filename).name != filename:
+        raise PaletteError("type just a file name, of a file in palettes/")
+    return jenerate.PALETTES / filename
 
 
 def check_save_path(path, slug):
@@ -254,16 +274,13 @@ def save_palette(palette, target, filename=None, overwrite=False):
     slug = palette["slug"]
     default = jenerate.PALETTES / f"{slug}-palette.toml"
     if filename is None:
-        path = ask_save_path(default)
+        path = ask_path("save", default)
         if path == CANCELLED:
             return {"cancelled": True, "message": "Not saved."}
         if path == NO_DIALOG:
             return {"choose_name": True, "default": default.name}
     else:
-        # A name typed into the page can only go in palettes/.
-        if not isinstance(filename, str) or Path(filename).name != filename:
-            raise PaletteError("type just a file name; it's saved in palettes/")
-        path = jenerate.PALETTES / filename
+        path = typed_path(filename)
         if path.exists() and not overwrite and path.read_text() != text:
             return {"exists": True,
                     "message": f"{path.relative_to(jenerate.ROOT)} already exists"}
@@ -278,15 +295,29 @@ def save_palette(palette, target, filename=None, overwrite=False):
                        f"./jenerate.py {generate}"}
 
 
-def list_palettes():
-    palettes = []
-    for path in sorted(jenerate.PALETTES.glob("*-palette.toml")):
-        try:
-            data = jenerate_check(jenerate.read_palette_file, path)
-        except PaletteError:
-            continue
-        palettes.append({"slug": data["slug"], "name": data["name"]})
-    return palettes
+def load_palette(filename=None):
+    """Replace the work-in-progress palette with a palette file, copied as
+    written, and describe it. The file comes from the open dialog; without
+    one, from `filename` (a name in palettes/) once the page has asked for it.
+    A palette jenerate.py would reject leaves the work in progress alone."""
+    if filename is None:
+        path = ask_path("open", jenerate.PALETTES)
+        if path == CANCELLED:
+            return {"cancelled": True, "message": "Nothing loaded."}
+        if path == NO_DIALOG:
+            return {"choose_name": True,
+                    "palettes": [p.name for p in sorted(jenerate.PALETTES.glob("*.toml"))]}
+    else:
+        path = typed_path(filename)
+    if path.suffix != ".toml" or not path.is_file():
+        raise PaletteError(f"{path.name}: not a palette file (.toml)")
+    check_palette(read_palette(path))
+
+    WIP.write_text(path.read_text())
+    shown = (path.relative_to(jenerate.ROOT)
+             if path.resolve().is_relative_to(jenerate.ROOT) else path)
+    return {"palette": read_palette(WIP),
+            "message": f"Loaded {shown} into the work-in-progress palette."}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -320,31 +351,16 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == "/":
             self.send(HTTPStatus.OK, PAGE.read_bytes(), "text/html")
-        elif url.path == "/api/palettes":
-            self.send(HTTPStatus.OK, {"palettes": list_palettes()})
         elif url.path == "/api/palette":
-            self.get_palette(parse_qs(url.query).get("from", [None])[0])
+            self.get_palette()
         else:
             self.send(HTTPStatus.NOT_FOUND, {"error": "not found"})
 
-    def get_palette(self, slug):
-        """Send the work-in-progress palette, or with ?from=<slug> one from
-        palettes/ to start from."""
-        if slug is None:
-            path, source = WIP, WIP.relative_to(jenerate.ROOT)
-        else:
-            try:
-                jenerate_check(jenerate.check_slug, slug, "palette")
-            except PaletteError as error:
-                self.send(HTTPStatus.BAD_REQUEST, {"error": str(error)})
-                return
-            path = jenerate.PALETTES / f"{slug}-palette.toml"
-            source = path.relative_to(jenerate.ROOT)
-            if not path.is_file():
-                self.send(HTTPStatus.NOT_FOUND, {"error": f"no palette {slug!r}"})
-                return
+    def get_palette(self):
+        """Send the work-in-progress palette."""
+        source = WIP.relative_to(jenerate.ROOT)
         try:
-            palette = read_palette(path)
+            palette = read_palette(WIP)
         except PaletteError as error:
             self.send(HTTPStatus.UNPROCESSABLE_ENTITY,
                       {"error": str(error), "source": str(source)})
@@ -365,7 +381,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             body = json.loads(self.rfile.read(length))
-            palette = body["palette"]
+            if not isinstance(body, dict):
+                raise TypeError
+            palette = body.get("palette")
+            if self.path in ("/api/check", "/api/save") and palette is None:
+                raise KeyError
         except (json.JSONDecodeError, KeyError, TypeError):
             self.send(HTTPStatus.BAD_REQUEST, {"error": "send {\"palette\": ...}"})
             return
@@ -380,6 +400,10 @@ class Handler(BaseHTTPRequestHandler):
                                       body.get("overwrite") is True)
                 result["ok"] = not any(result.get(k) for k in
                                        ("exists", "cancelled", "choose_name"))
+            elif self.path == "/api/load":
+                result = load_palette(body.get("filename"))
+                result["ok"] = not any(result.get(k) for k in
+                                       ("cancelled", "choose_name"))
             else:
                 self.send(HTTPStatus.NOT_FOUND, {"error": "not found"})
                 return

@@ -259,10 +259,8 @@
   <label class="field">Slug (used in file names)
     <input id="slug" size="16" autocomplete="off" spellcheck="false">
   </label>
-  <label class="field">Start from
-    <select id="start"></select>
-  </label>
   <div class="actions">
+    <button id="load" title="Replace the work-in-progress palette with a palette file you choose">Load from…</button>
     <button id="save" class="primary" title="Save to palette-creator/work-in-progress-palette.toml">Save</button>
     <button id="publish" title="Choose where to save it, starting in palettes/ as &lt;slug&gt;-palette.toml">Save as palette…</button>
   </div>
@@ -648,34 +646,45 @@ function load(newPalette, message) {
   check();
 }
 
-async function loadPalette(from) {
-  const response = await fetch(from ? `/api/palette?from=${encodeURIComponent(from)}` : "/api/palette");
+// Loads the work-in-progress palette from serve.py.
+async function loadWorkInProgress() {
+  const response = await fetch("/api/palette");
   const result = await response.json();
   if (!response.ok) {
-    setStatus(`${result.source ? result.source + ": " : ""}${result.error}. Choose a palette under "Start from".`, "bad");
-    return false;
-  }
-  load(result.palette, from ? `Started from ${result.source}. Save writes to the work-in-progress file.`
-                            : `Editing ${result.source}`);
-  if (from) markDirty(true);
-  return true;
-}
-
-async function loadPaletteList() {
-  const { palettes } = await (await fetch("/api/palettes")).json();
-  const select = $("start");
-  select.replaceChildren(new Option("Work in progress", ""));
-  for (const p of palettes) select.append(new Option(p.name, p.slug));
-}
-
-$("start").addEventListener("change", async (event) => {
-  const choice = event.target.value;
-  if (dirty && !confirm("Discard your unsaved changes?")) {
-    event.target.value = "";
+    setStatus(`${result.source ? result.source + ": " : ""}${result.error}. Use "Load from…" to load a palette instead.`, "bad");
     return;
   }
-  await loadPalette(choice || null);
-  event.target.value = "";
+  load(result.palette, `Editing ${result.source}`);
+}
+
+// Replaces the work-in-progress palette with a palette file. serve.py opens
+// this computer's file dialog; if it has none, this page asks for a file name
+// in palettes/.
+async function loadFrom(filename = undefined) {
+  try {
+    if (filename === undefined) {
+      setStatus("Choose a palette in the file dialog (it may open behind this window).");
+    }
+    const result = await post("/api/load", { filename });
+    if (result.choose_name) {
+      const name = prompt(`Load which palette from the palettes folder?\n\n${result.palettes.join("\n")}`,
+                          result.palettes[0] ?? "");
+      if (name === null) return setStatus("Nothing loaded.");
+      return loadFrom(name.trim());
+    }
+    if (result.cancelled) return setStatus(result.message);
+    if (!result.ok) return setStatus(result.error, "bad");
+    load(result.palette, result.message);
+  } catch {
+    setStatus("Can't reach serve.py. Is it still running?", "bad");
+  }
+}
+
+$("load").addEventListener("click", () => {
+  const warning = dirty
+    ? "You have unsaved changes. Loading a palette replaces the work-in-progress palette with it, so your changes will be lost.\n\nLoad a palette anyway?"
+    : "Loading a palette replaces the work-in-progress palette (work-in-progress-palette.toml) with it. Anything in it that you haven't saved as a palette will be lost.\n\nLoad a palette?";
+  if (confirm(warning)) loadFrom();
 });
 
 $("name").addEventListener("input", (event) => {
@@ -698,8 +707,7 @@ window.addEventListener("beforeunload", (event) => {
 });
 
 buildTerminal();
-loadPaletteList();
-loadPalette(null);
+loadWorkInProgress();
 </script>
 </body>
 </html>
