@@ -33,6 +33,7 @@ text_muted = "#8199af"         # comments, inactive tabs
 text_subtle = "#b9ccd9"        # sidebar text, punctuation
 text = "#e3eff3"
 text_bright = "#ffffff"        # text on the accent color
+text_strong = "text_bright"    # emphasized text: active tabs, selected items
 
 # Accent: the aurora
 accent = "#1c9a66"             # aurora green (deep enough for white text on buttons)

@@ -1,0 +1,50 @@
+# Colors that published palettes don't use: exact hex codes too iconic to
+# publish. Nearby shades are fine; only these exact codes are refused.
+# End users are still welcome to make use of these in their local palettes.
+#
+# The pre-commit hook (.githooks/pre-commit) and the tests (tests/hooks/)
+# check every palette in palettes/ against this list.
+#
+# One color per line, as #rrggbb (any case). Lines starting with "# " are
+# comments.
+
+
+#E20074
+#0ABAB5
+#351C15
+#E60000
+#E0218A
+#1877F2
+#E50914
+#1DB954
+#4D148C
+#FF6600
+#FF671E
+#004B87
+#CC0000
+#F96302
+#367C2B
+#FFDE00
+#4A154B
+#4285F4
+#EA4335
+#FBBC05
+#34A853
+#F25022
+#7FBA00
+#00A4EF
+#FFB900
+#EB001B
+#F79E1B
+#1A1F71
+#00704A
+#FF9900
+#9146FF
+#F40009
+#FFB500
+#0A66C2
+#E60023
+#25D366
+#FFFC00
+#FF5A5F
+#0061FF

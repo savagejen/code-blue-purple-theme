@@ -980,6 +980,65 @@ test_templates_can_choose_by_scheme() {
   assert_file_equals "$(slack_theme daylight)" "light|day"
 }
 
+# GIVEN a palette whose text_strong (#123456) differs from its text_bright
+#       (#ffffff)
+# WHEN generating it
+# THEN every app uses text_strong for emphasized text on ordinary backgrounds
+#      (active tabs, selected items, bold terminal text) and text_bright for
+#      text on the accent color
+test_text_strong_and_text_bright_have_separate_roles() {
+  write_palette "$SANDBOX/repo/palettes/split-palette.toml" "Split" "split"
+  sed -i -e 's/^text_strong = .*/text_strong = "#123456"/' -e 's/^text_bright = .*/text_bright = "#ffffff"/' \
+    "$SANDBOX/repo/palettes/split-palette.toml"
+  run_jenerate split
+  assert_status 0
+  assert_file_contains "$(vscode_theme split)" '"tab.activeForeground": "#123456"'
+  assert_file_contains "$(vscode_theme split)" '"list.activeSelectionForeground": "#123456"'
+  assert_file_contains "$(vscode_theme split)" '"button.foreground": "#ffffff"'
+  assert_file_contains "$(firefox_theme split)/manifest.json" '"tab_text": "#123456"'
+  assert_file_contains "$(chromium_theme split)/manifest.json" '"tab_text": [18, 52, 86]'
+  assert_file_contains "$(obsidian_theme split)/theme.css" "--tab-text-color-focused-active: #123456;"
+  assert_file_contains "$(obsidian_theme split)/theme.css" "--text-on-accent: #ffffff;"
+  assert_file_contains "$(vim_scheme split)" "hi TabLineSel       guifg=#123456"
+  assert_file_contains "$(vim_scheme split)" "hi WildMenu         guifg=#ffffff"
+  assert_file_contains "$(tilix_scheme split)" '"bold-color": "#123456"'
+  result="$(grep -A1 -F '[ForegroundIntense]' "$(kde_theme split)/Jenerated-split.colorscheme" | tail -n 1)"
+  [ "$result" = "Color=18,52,86" ] || fail "expected Konsole's intense foreground to be text_strong, got '$result'"
+  assert_file_contains "$(jetbrains_theme split)/jenerated-split.xml" '"MATCHED_BRACE_ATTRIBUTES"><value><option name="FOREGROUND" value="123456"/>'
+  gtk="$(gtk3_theme split)/gtk-3.0/gtk.css"
+  result="$(grep -A1 -F 'notebook > header tab:checked, notebook > header tab:checked:backdrop {' "$gtk" | tail -n 1)"
+  [ "$result" = "  color: #123456;" ] || fail "expected GTK3's active tab text to be text_strong, got '$result'"
+  assert_file_contains "$gtk" "@define-color theme_selected_fg_color #ffffff;"
+}
+
+# GIVEN every palette in palettes/
+# WHEN measuring the contrast of text_strong against the editor background
+#      (bg) and inactive selections (bg_selected)
+# THEN both are at least 4.5:1, so active tabs and selected items are
+#      readable, on dark and light palettes alike
+test_text_strong_is_readable_in_every_palette() {
+  OUTPUT="$("$PYTHON" -c '
+import glob, os, sys, tomllib
+def luminance(value):
+    channels = [int(value[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    r, g, b = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+for path in sorted(glob.glob(sys.argv[1] + "/palettes/*-palette.toml")):
+    colors = tomllib.load(open(path, "rb"))["colors"]
+    def resolve(key):
+        value = colors[key]
+        while not value.startswith("#"):
+            value = colors[value]
+        return value
+    for background in ("bg", "bg_selected"):
+        light, dark = sorted((luminance(resolve("text_strong")), luminance(resolve(background))), reverse=True)
+        ratio = (light + 0.05) / (dark + 0.05)
+        if ratio < 4.5:
+            print(f"{os.path.basename(path)}: text_strong on {background} is only {ratio:.1f}:1")
+' "$SANDBOX/repo")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
 # GIVEN a light palette, and GTK3's Python bindings
 # WHEN generating it and loading its GTK3 theme with GTK's own parser
 # THEN GTK reports no errors (including in the light Adwaita it imports)

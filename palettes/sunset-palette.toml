@@ -32,6 +32,7 @@ text_muted = "#a07f95"         # comments, inactive tabs
 text_subtle = "#e0c6c8"        # sidebar text, punctuation
 text = "#fbe9df"
 text_bright = "#ffffff"        # text on the accent color
+text_strong = "text_bright"    # emphasized text: active tabs, selected items
 
 # Accent
 accent = "#d1751f"             # cursor, focus, buttons, badges

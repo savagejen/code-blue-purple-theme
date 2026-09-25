@@ -25,7 +25,7 @@
 @define-color theme_unfocused_base_color {{bg}};
 @define-color theme_unfocused_text_color {{text}};
 @define-color theme_unfocused_selected_bg_color {{bg_selected}};
-@define-color theme_unfocused_selected_fg_color {{text_bright}};
+@define-color theme_unfocused_selected_fg_color {{text_strong}};
 @define-color insensitive_bg_color {{bg_sidebar}};
 @define-color insensitive_fg_color {{text_faint}};
 @define-color insensitive_base_color {{bg}};
@@ -97,7 +97,7 @@ textview text selection, textview text selection:backdrop,
 entry selection, entry selection:backdrop,
 label selection, label selection:backdrop {
   background-color: {{selection}};
-  color: {{text_bright}};
+  color: {{text_strong}};
 }
 
 .view:selected, .view:selected:backdrop,
@@ -107,7 +107,7 @@ row:selected, row:selected:backdrop,
 flowboxchild:selected, flowboxchild:selected:backdrop {
   background-color: alpha({{accent}}, 0.35);
   background-image: image(alpha({{accent}}, 0.35));
-  color: {{text_bright}};
+  color: {{text_strong}};
 }
 
 row:hover:not(:selected),
@@ -168,7 +168,7 @@ button:active, button:active:backdrop,
 button:checked, button:checked:backdrop {
   background-color: {{bg_secondary_hover}};
   background-image: image({{bg_secondary_hover}});
-  color: {{text_bright}};
+  color: {{text_strong}};
 }
 
 button:disabled, button:disabled:backdrop {
@@ -245,7 +245,7 @@ notebook > header tab:hover {
 }
 
 notebook > header tab:checked, notebook > header tab:checked:backdrop {
-  color: {{text_bright}};
+  color: {{text_strong}};
   background-color: {{bg}};
   background-image: image({{bg}});
 }

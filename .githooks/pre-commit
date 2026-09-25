@@ -1,0 +1,36 @@
+#!/bin/sh
+# Refuses a commit while any palette in palettes/ uses a color listed in
+# palettes/avoid-these.txt: exact colors too iconic to publish.
+#
+# Turn it on once per clone:  git config core.hooksPath .githooks
+
+cd "$(dirname "$0")/.." || exit 1
+list=palettes/avoid-these.txt
+[ -f "$list" ] || exit 0
+
+# Every hex code in the palettes, as "file:line:#rrggbb", matched against the
+# list's entries (case doesn't matter).
+found="$(
+  for file in palettes/*.toml; do
+    [ -f "$file" ] || continue
+    grep -n -o -i -E '#[0-9a-f]{6}' "$file" | sed "s|^|$file:|"
+  done | awk '
+    FNR == NR {
+      if ($0 !~ /^#[0-9A-Fa-f]/) next
+      avoid[toupper(substr($1, 2))] = 1
+      next
+    }
+    {
+      n = split($0, part, ":")
+      hex = toupper(substr(part[n], 2))
+      if (hex in avoid) print "  " part[1] ":" part[2] "  " part[n]
+    }
+  ' "$list" -
+)"
+
+if [ -n "$found" ]; then
+  printf 'These palettes use colors listed in %s:\n\n%s\n\n' "$list" "$found" >&2
+  printf 'Those exact colors are too iconic to publish. Nudge each one to a\n' >&2
+  printf 'nearby shade (one digit off is enough) before committing.\n' >&2
+  exit 1
+fi

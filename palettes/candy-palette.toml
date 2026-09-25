@@ -1,0 +1,69 @@
+# A light palette of sweets: vanilla cream and strawberry-frosting
+# backgrounds, dark chocolate text, a cherry-red accent, and syntax colors in
+# deep hard-candy shades of grape, blueberry, orange, lemon, mint, bubblegum
+# and blue raspberry.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Candy"
+slug = "candy"
+
+[colors]
+# Backgrounds: vanilla and frosting, from the editor to the chrome
+bg_chrome = "#f8d9e4"          # activity bar, title bar, status bar
+bg_minimap = "#fcf1f5"
+bg = "#fffaf4"                 # editor and terminal: vanilla cream
+bg_sidebar = "#fdedf2"         # strawberry milk
+bg_widget = "#ffffff"          # popups, hovers, notifications
+bg_line_highlight = "#fdf0f3"
+bg_hover = "#f9e2ea"           # hovered items, inputs
+bg_selected = "#f3d2df"        # inactive selection in lists
+bg_secondary_hover = "#ebc1d2" # hovered secondary buttons
+selection = "#c3dbf9"          # selected text: blue raspberry
+
+# Lines
+guide = "#f0dce5"              # indent guides, rulers
+whitespace = "#e5cdd8"         # rendered whitespace
+border = "#eacfdb"
+
+# Text: chocolate, faintest to darkest
+text_faint = "#b39aa6"         # line numbers, ignored files
+text_muted = "#7a5d6e"         # comments, inactive tabs
+text_subtle = "#5c4250"        # sidebar text, punctuation
+text = "#3b2330"               # dark chocolate
+text_bright = "#ffffff"        # text on the accent color
+text_strong = "text"           # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#c72448"             # cherry: cursor, focus, buttons, badges
+accent_hover = "#b21f42"       # hovered buttons
+accent_soft = "#7a3cb0"        # grape: keywords, links
+accent_light = "#2b68c0"       # blueberry: functions
+accent_pale = "#9c3f7c"        # plum: properties
+
+# Syntax and status colors: hard-candy shades
+red = "#c62638"                # cherry: errors, deleted
+orange = "#a84f09"             # orange drop: numbers, parameters, attributes
+yellow = "#856400"             # lemon: warnings, regex
+green = "#247537"              # mint leaf: strings, added
+cyan = "#0e7482"               # blue raspberry: classes, types
+magenta = "#bf2f8a"            # bubblegum: constants, search matches
+
+# Terminal (ANSI) colors, for a light background
+term_black = "text"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "#cdb9c3"
+term_bright_black = "text_muted"
+term_bright_red = "#e0405a"
+term_bright_green = "#2f9447"
+term_bright_yellow = "#a47c00"
+term_bright_blue = "#4583d6"
+term_bright_magenta = "#d64ea3"
+term_bright_cyan = "#1592a3"
+term_bright_white = "#e8dbe1"

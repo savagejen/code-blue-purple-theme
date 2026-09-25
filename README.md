@@ -116,6 +116,13 @@ version, Obsidian and Vim tell the app which it is, and Chromium picks
 matching search logos for the new tab page. The other apps just use the
 palette's colors.
 
+Two text colors matter most for light palettes: `text_bright` is text on the
+accent color (buttons, badges, selected menu items), and `text_strong` is
+emphasized text on ordinary backgrounds (the active tab, the selected file).
+On a dark palette both are usually white, so `text_strong = "text_bright"`;
+on a light palette `text_bright` stays light for the accent, and
+`text_strong` is dark, often just `"text"`.
+
 Templates can use `{{scheme}}` (`dark` or `light`), and
 `{{scheme: "text for dark" | "text for light"}}`. A template whose dark and
 light versions differ too much for that can have `{scheme}` in its path in
@@ -161,6 +168,13 @@ explains any that a palette breaks:
   background (`bg`) doesn't make that clear. See
   [Light and dark palettes](#light-and-dark-palettes).
 
+The palettes published here stay clear of the exact colors listed in
+[palettes/avoid-these.txt](palettes/avoid-these.txt): colors too iconic to
+publish. A nearby shade is fine, and you're welcome to use these colors in
+your own palettes. A git hook refuses commits while a palette in `palettes/`
+uses one; turn it on once per clone with
+`git config core.hooksPath .githooks`. The tests check it too.
+
 ## Adding an app
 
 1. Create a folder for the app with a template (`<something>.tmpl`) that uses
@@ -176,9 +190,9 @@ explains any that a palette breaks:
 ## Running the tests
 
 Tests live in [tests/](tests/), with one folder per script (`tests/setup/`
-for `setup.sh`, `tests/jenerate/` for `jenerate.py`, and
-`tests/palette-creator/` for the Palette Creator's `serve.py`). Run them all
-with:
+for `setup.sh`, `tests/jenerate/` for `jenerate.py`,
+`tests/palette-creator/` for the Palette Creator's `serve.py`, and
+`tests/hooks/` for the git hooks in `.githooks/`). Run them all with:
 
 ```bash
 tests/run.sh

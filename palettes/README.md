@@ -90,3 +90,16 @@ orange, rose, gold and orchid, and warm peach-cream text.
 ![The Sunset palette in the Palette Creator's preview](Screenshots/sunset.png)
 
 Editor `#171523` · Sidebar `#1F2A51` · Accent `#d1751f` · Text `#fbe9df`
+
+## Candy
+
+`candy`
+
+A light palette of sweets: vanilla cream and strawberry-frosting
+backgrounds, dark chocolate text, a cherry-red accent, and syntax colors in
+deep hard-candy shades of grape, blueberry, orange, lemon, mint, bubblegum and
+blue raspberry.
+
+![The Candy palette in the Palette Creator's preview](Screenshots/candy.png)
+
+Editor `#fffaf4` · Sidebar `#fdedf2` · Accent `#c72448` · Text `#3b2330`

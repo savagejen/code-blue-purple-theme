@@ -157,7 +157,7 @@
   .file.nested { padding-left: 34px; border-left: 1px solid var(--c-guide, var(--missing)); margin-left: 24px; padding-left: 10px; }
   .file.hover { background: var(--c-bg_hover, var(--missing)); }
   .file.selected { background: var(--c-bg_selected, var(--missing)); color: var(--c-text, var(--missing)); }
-  .file.focus { background: color-mix(in srgb, var(--c-accent, var(--missing)) 20%, transparent); color: var(--c-text_bright, var(--missing)); }
+  .file.focus { background: color-mix(in srgb, var(--c-accent, var(--missing)) 20%, transparent); color: var(--c-text_strong, var(--missing)); }
   .file.added { color: var(--c-green, var(--missing)); }
   .file.modified { color: var(--c-accent, var(--missing)); }
   .file.deleted { color: var(--c-red, var(--missing)); text-decoration: line-through; }
@@ -166,7 +166,7 @@
   .mainarea { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; }
   .tabs { display: flex; background: var(--c-bg_chrome, var(--missing)); }
   .tab { padding: 7px 14px; font-size: 12px; border-right: 1px solid var(--c-bg_chrome, var(--missing)); }
-  .tab.active { background: var(--c-bg, var(--missing)); color: var(--c-text_bright, var(--missing)); box-shadow: inset 0 2px var(--c-accent, var(--missing)); }
+  .tab.active { background: var(--c-bg, var(--missing)); color: var(--c-text_strong, var(--missing)); box-shadow: inset 0 2px var(--c-accent, var(--missing)); }
   .tab.inactive { background: var(--c-bg_sidebar, var(--missing)); color: var(--c-text_muted, var(--missing)); }
   .editor { position: relative; display: grid; grid-template-columns: 52px 1fr 60px; font-family: var(--mono); line-height: 20px; overflow: hidden; }
   .gutter { text-align: right; padding: 6px 12px 6px 0; color: var(--c-text_faint, var(--missing)); user-select: none; }
@@ -303,7 +303,7 @@
             <h3 data-c="text">EXPLORER</h3>
             <div class="file" data-c="text_subtle">▾ src</div>
             <div class="file nested" data-c="guide text_subtle">theme.py</div>
-            <div class="file nested focus" data-c="accent text_bright">preview.py</div>
+            <div class="file nested focus" data-c="accent text_strong">preview.py</div>
             <div class="file nested hover" data-c="bg_hover">colors.py</div>
             <div class="file selected" data-c="bg_selected text">README.md</div>
             <div class="file added" data-c="green">new_file.py</div>
@@ -315,7 +315,7 @@
 
           <div class="mainarea">
             <div class="tabs" data-c="bg_chrome">
-              <span class="tab active" data-c="bg text_bright accent">preview.py</span>
+              <span class="tab active" data-c="bg text_strong accent">preview.py</span>
               <span class="tab inactive" data-c="bg_sidebar text_muted">theme.py</span>
             </div>
 
