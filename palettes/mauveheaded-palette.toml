@@ -1,0 +1,67 @@
+# Mauveheaded: dusky mauve everything.
+# The backgrounds come from mauve surfaces, the text is pale mauve, and the accents and syntax colors are
+# mauve, rose and lavender, with dusty sage, peach, champagne and dusk blue.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Mauveheaded"
+slug = "mauveheaded"
+
+[colors]
+# Backgrounds: dusky mauves, darkest to lightest
+bg_chrome = "#140f15"          # activity bar, title bar, status bar
+bg_minimap = "#1a141b"
+bg = "#1e1720"                 # editor and terminal
+bg_sidebar = "#251e29"         # Dusk's embeds and profile panel
+bg_widget = "#2a222e"          # popups, hovers, notifications
+bg_line_highlight = "#261e29"
+bg_hover = "#322b36"           # Dusk's buttons; hovered items, inputs
+bg_selected = "#3a3140"        # inactive selection in lists
+bg_secondary_hover = "#4d4254" # hovered secondary buttons
+selection = "#5b3e62"          # selected text in the editor
+
+# Lines
+guide = "#2c2430"              # indent guides, rulers
+whitespace = "#3a3140"         # rendered whitespace
+border = "#3e3444"
+
+# Text: pale mauve, dimmest to brightest
+text_faint = "#6a5c72"         # line numbers, ignored files
+text_muted = "#a08fa8"         # comments, inactive tabs
+text_subtle = "#cdbfd4"        # sidebar text, punctuation
+text = "#ece1f0"
+text_bright = "#ffffff"        # text on the accent color
+
+# Accent: mauve, rose and lavender
+accent = "#b070c2"             # mauve: cursor, focus, buttons, badges
+accent_hover = "#9d5fae"       # hovered buttons
+accent_soft = "#e88fc2"        # rose: keywords, links
+accent_light = "#b6a6f2"       # lavender: functions
+accent_pale = "#f2c7de"        # pale pink: properties
+
+# Syntax and status colors: dusty, with a touch of pink
+red = "#f2808f"                # dusty rose-red: errors, deleted
+orange = "#eaa27f"             # dusk peach: numbers, parameters, attributes
+yellow = "#ecd293"             # champagne: warnings, regex
+green = "#9fd3aa"              # sage: strings, added
+cyan = "#8ec2dc"               # dusk blue: classes, types
+magenta = "#d98fe0"            # orchid: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#2c2430"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "#919df0"          # periwinkle
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "text"
+term_bright_black = "text_faint"
+term_bright_red = "#ffa6b1"
+term_bright_green = "#c2e8c9"
+term_bright_yellow = "#f7e4b8"
+term_bright_blue = "#bcc3ff"
+term_bright_magenta = "#ecb8f0"
+term_bright_cyan = "#b8def0"
+term_bright_white = "text_bright"

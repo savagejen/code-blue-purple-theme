@@ -1,0 +1,70 @@
+# Dioxazine: shades of dioxazine purple (PV23), the dark, bluish, red-shade
+# violet pigment. The backgrounds are its near-black masstone, the text its
+# tints with white (up to a pale wisteria), the accent its intense glaze, and
+# the syntax colors its red undertone, its blue side and its pale tints.
+# Strings, errors and warnings keep a mint, raspberry and pale gold, shifted
+# toward violet, so "added", "error" and "warning" stay recognizable.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Dioxazine"
+slug = "dioxazine"
+
+[colors]
+# Backgrounds: the paint's masstone, darkest to lightest
+bg_chrome = "#0e0a16"          # activity bar, title bar, status bar
+bg_minimap = "#120d1b"
+bg = "#161020"                 # editor and terminal
+bg_sidebar = "#1c1528"
+bg_widget = "#221a30"          # popups, hovers, notifications
+bg_line_highlight = "#1e1629"
+bg_hover = "#2a2140"           # hovered items, inputs
+bg_selected = "#33284d"        # inactive selection in lists
+bg_secondary_hover = "#43365f" # hovered secondary buttons
+selection = "#40297a"          # selected text: a deep glaze
+
+# Lines
+guide = "#251d35"              # indent guides, rulers
+whitespace = "#30264a"         # rendered whitespace
+border = "#352a4f"
+
+# Text: tints with white, dimmest to brightest
+text_faint = "#5f5682"         # line numbers, ignored files
+text_muted = "#9189b5"         # comments, inactive tabs
+text_subtle = "#c4bedd"        # sidebar text, punctuation
+text = "#e9e5f5"
+text_bright = "#ffffff"        # text on the accent color
+
+# Accent: the glaze, the undertones and the tints
+accent = "#956bf3"             # glaze violet: cursor, focus, buttons, badges
+accent_hover = "#7547dc"       # hovered buttons
+accent_soft = "#c68cf7"        # orchid: keywords, links
+accent_light = "#a2a9ff"       # periwinkle: functions
+accent_pale = "#d8cff8"        # pale wisteria: properties
+
+# Syntax and status colors
+red = "#f5728f"                # raspberry: errors, deleted
+orange = "#f3a5bc"             # rose-violet: numbers, parameters, attributes
+yellow = "#ecd69c"             # pale gold: warnings, regex
+green = "#93dab9"              # cool mint: strings, added
+cyan = "#88b5f2"               # cornflower: classes, types
+magenta = "#e68ad8"            # red-violet: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#261d38"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "#7f8cf5"          # blue-violet
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "text"
+term_bright_black = "text_faint"
+term_bright_red = "#ffa3b5"
+term_bright_green = "#bdeed6"
+term_bright_yellow = "#f7e7bf"
+term_bright_blue = "#b3bbff"
+term_bright_magenta = "#f2b8ea"
+term_bright_cyan = "#b8d4f8"
+term_bright_white = "text_bright"

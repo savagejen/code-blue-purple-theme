@@ -1,0 +1,68 @@
+# Anodized titanium: gunmetal grey backgrounds with the rainbow sheen of
+# anodized metal (violet, magenta, teal, gold, copper and blue) for the
+# accents and syntax. Colors sampled from photos of anodized hardware and
+# cutlery, brightened where needed for contrast.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Anodized"
+slug = "anodized"
+
+[colors]
+# Backgrounds: gunmetal, anodized violet and gold, darkest to lightest
+bg_chrome = "#141619"          # activity bar, title bar, status bar
+bg_minimap = "#18191d"
+bg = "#22152e"                 # editor and terminal: dark anodized violet
+bg_sidebar = "#302c15"         # dark pale gold, from the buckle
+bg_widget = "#282b31"          # popups, hovers, notifications
+bg_line_highlight = "#281b34"  # the current line: a lighter violet
+bg_hover = "#2e3238"           # hovered items, inputs
+bg_selected = "#363a42"        # inactive selection in lists
+bg_secondary_hover = "#464b54" # hovered secondary buttons
+selection = "#1c4a47"          # selected text: a deep anodized teal
+
+# Lines
+guide = "#2b2e34"              # indent guides, rulers
+whitespace = "#353941"         # rendered whitespace
+border = "#3a3e46"
+
+# Text: cool steel, dimmest to brightest
+text_faint = "#5f6570"         # line numbers, ignored files
+text_muted = "#8d939e"         # comments, inactive tabs
+text_subtle = "#c4c9d0"        # sidebar text, punctuation
+text = "#e7eaee"
+text_bright = "#ffffff"        # text on the accent color
+
+# Accent: around the anodized spectrum
+accent = "#a96ae3"             # violet: cursor, focus, buttons, badges
+accent_hover = "#9150cc"       # hovered buttons
+accent_soft = "#f266c1"        # hot magenta: keywords, links
+accent_light = "#3dd6c3"       # teal: functions
+accent_pale = "#f0c870"        # gold: properties
+
+# Syntax and status colors
+red = "#f2707f"                # rose: errors, deleted
+orange = "#e3975c"             # copper: numbers, parameters, attributes
+yellow = "#f2d06b"             # gold: warnings, regex
+green = "#5fd38c"              # anodized green: strings, added
+cyan = "#55b2dc"               # steel blue: classes, types
+magenta = "#c98ae6"            # lilac: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#2a2d33"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "#7393ea"          # anodized blue
+term_magenta = "accent_soft"
+term_cyan = "accent_light"
+term_white = "text"
+term_bright_black = "text_faint"
+term_bright_red = "#ff9aa5"
+term_bright_green = "#95e8b4"
+term_bright_yellow = "#ffe39a"
+term_bright_blue = "#a6b9ff"
+term_bright_magenta = "#f7a0db"
+term_bright_cyan = "#8ce9dd"
+term_bright_white = "text_bright"
