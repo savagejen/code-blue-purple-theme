@@ -20,12 +20,14 @@ make_sandbox() {
   SANDBOX="$(mktemp -d "$TMP_BASE/jenerated-tests.XXXXXX")"
   mkdir -p "$SANDBOX/repo" "$SANDBOX/home" "$SANDBOX/bin"
   # Tracked files plus new ones that aren't ignored: the repository as it
-  # would be committed, without anyone's locally generated palettes.
-  while IFS= read -r file; do
-    [ -f "$REPO/$file" ] || continue
-    mkdir -p "$SANDBOX/repo/$(dirname "$file")"
-    cp -p "$REPO/$file" "$SANDBOX/repo/$file"
-  done < <(git -C "$REPO" ls-files --cached --others --exclude-standard)
+  # would be committed, without anyone's locally generated palettes. (Files
+  # deleted but still tracked are skipped.) One tar copies them all, which is
+  # much faster than copying file by file.
+  git -C "$REPO" ls-files -z --cached --others --exclude-standard |
+    while IFS= read -r -d '' file; do
+      [ -f "$REPO/$file" ] && printf '%s\0' "$file"
+    done |
+    (cd "$REPO" && tar --null -T - -cf -) | tar -xf - -C "$SANDBOX/repo"
 }
 
 # fake_command name body -> puts a script called `name` in $SANDBOX/bin.

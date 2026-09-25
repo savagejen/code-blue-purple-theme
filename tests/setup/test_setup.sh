@@ -15,6 +15,8 @@ after_sandbox() {
   for tool in pbcopy wl-copy xclip xsel; do
     fake_command "$tool" "cat > \"$SANDBOX/clipboard\""
   done
+  # A gsettings that doesn't work, so no test changes your desktop's theme.
+  fake_command gsettings "exit 1"
 }
 
 # fake_os Linux|Darwin -> makes `uname -s` report that OS.
@@ -60,7 +62,7 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # GIVEN a Linux system
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      JetBrains apps, Ptyxis and Tilix
+#      JetBrains apps, Ptyxis, Tilix and GTK3 apps
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
@@ -73,12 +75,13 @@ test_app_menu_on_linux_includes_the_terminals() {
   assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
   assert_contains "8) Ptyxis (Ubuntu terminal)"
   assert_contains "9) Tilix (terminal)"
+  assert_contains "10) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi and
-#      JetBrains apps, but not Ptyxis or Tilix
+#      JetBrains apps, but not Ptyxis, Tilix or GTK3 apps
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
@@ -91,6 +94,7 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
   assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
   assert_not_contains "Ptyxis"
   assert_not_contains "Tilix"
+  assert_not_contains "GTK3"
 }
 
 # GIVEN the palettes in palettes/
@@ -772,6 +776,61 @@ test_jetbrains_without_a_way_to_zip() {
   run_setup "1\n7\n1\n"
   assert_status 1
   assert_contains "couldn't make the .jar (that needs python3 or zip)"
+}
+
+# --- Tests: GTK3 apps ---------------------------------------------------------
+
+GTK3_THEMES=".local/share/themes"
+
+# fake_gsettings current-theme -> fakes a working gsettings: `get` prints the
+# theme, and `set` records its arguments in $SANDBOX/gsettings-set.
+fake_gsettings() {
+  fake_command gsettings "case \"\$1\" in
+  get) echo \"'$1'\" ;;
+  set) printf '%s\n' \"\$*\" >\"$SANDBOX/gsettings-set\" ;;
+esac"
+}
+
+# GIVEN a Linux system without GNOME's settings tool
+# WHEN choosing GTK3 apps and Blue Purple
+# THEN the theme is linked into ~/.local/share/themes as Jenerated-blue-purple,
+#      and it explains how to turn it on
+test_gtk3_links_the_theme() {
+  fake_os Linux
+  run_setup "1\n10\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
+  assert_exists "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple/gtk-3.0/gtk.css"
+  assert_contains "gsettings set org.gnome.desktop.interface gtk-theme Jenerated-blue-purple"
+  assert_contains "GTK_THEME=Jenerated-blue-purple"
+}
+
+# GIVEN GNOME's settings tool, with Yaru-dark as the GTK3 theme
+# WHEN choosing GTK3 apps and Sunset, and answering yes to switching
+# THEN the GTK3 theme is set to Jenerated-sunset, and it says how to switch
+#      back to Yaru-dark
+test_gtk3_switches_the_theme_when_asked() {
+  fake_os Linux
+  fake_gsettings Yaru-dark
+  run_setup "1\n10\n2\ny\n"
+  assert_status 0
+  assert_contains "Your GTK3 theme is 'Yaru-dark'."
+  assert_file_equals "$SANDBOX/gsettings-set" "set org.gnome.desktop.interface gtk-theme Jenerated-sunset"
+  assert_contains "gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'"
+  assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-sunset" "$SANDBOX/repo/app-themes/gtk3-theme/sunset"
+}
+
+# GIVEN GNOME's settings tool
+# WHEN choosing GTK3 apps and answering no to switching
+# THEN the theme is installed but the setting is left alone
+test_gtk3_leaves_the_theme_setting_when_declined() {
+  fake_os Linux
+  fake_gsettings Yaru-dark
+  run_setup "1\n10\n1\nn\n"
+  assert_status 0
+  assert_missing "$SANDBOX/gsettings-set"
+  assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
+  assert_contains "Legacy Applications"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

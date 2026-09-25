@@ -201,8 +201,9 @@ APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim" "Firefox" "Vivaldi"
   "JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)")
 APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains")
 if [ "$OS" = "Linux" ]; then
-  APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)")
-  APP_IDS+=("ptyxis" "tilix")
+  APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)"
+    "GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)")
+  APP_IDS+=("ptyxis" "tilix" "gtk3")
 fi
 
 choose "Which app do you want to theme?" "${APPS[@]}"
@@ -540,6 +541,42 @@ install_jetbrains() {
   say "After changing the palette, run ./setup.sh again and install the new .jar."
 }
 
+# The GNOME setting for the GTK3 theme, or nothing without gsettings.
+gtk_theme_setting() {
+  command -v gsettings >/dev/null 2>&1 &&
+    gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null
+}
+
+install_gtk3() {
+  local themes="${XDG_DATA_HOME:-$HOME/.local/share}/themes"
+  local theme="Jenerated-$SLUG"
+  local current
+
+  step "Installing the GTK3 theme"
+  mkdir -p "$themes"
+  install_link "$themes/$theme" "$ROOT/app-themes/gtk3-theme/$SLUG"
+
+  current="$(gtk_theme_setting || true)"
+  if [ -n "$current" ]; then
+    say ""
+    say "Your GTK3 theme is $current."
+    if ask_yes "Switch every GTK3 app to $theme now?"; then
+      gsettings set org.gnome.desktop.interface gtk-theme "$theme"
+      step "Done! GTK3 apps use $theme now (reopen any that were open)."
+      say "To switch back:"
+      say "    gsettings set org.gnome.desktop.interface gtk-theme $current"
+      return
+    fi
+  fi
+
+  step "Done! To turn the theme on:"
+  say "- For every GTK3 app on GNOME: in GNOME Tweaks, under Appearance, choose"
+  say "  \"$theme\" for Legacy Applications, or run"
+  say "      gsettings set org.gnome.desktop.interface gtk-theme $theme"
+  say "- On Xfce: Settings -> Appearance -> Style -> \"$theme\"."
+  say "- To try it in one app: GTK_THEME=$theme gimp (or any GTK3 app)."
+}
+
 install_tilix() {
   local schemes="$HOME/.config/tilix/schemes"
 
@@ -598,6 +635,7 @@ case "$APP" in
   vivaldi) install_vivaldi ;;
   jetbrains) install_jetbrains ;;
   tilix) install_tilix ;;
+  gtk3) install_gtk3 ;;
 esac
 
 say ""

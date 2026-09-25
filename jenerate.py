@@ -51,6 +51,8 @@ TARGETS = [
     ("app-themes/jetbrains-theme/plugin.xml.tmpl", "app-themes/jetbrains-theme/{slug}/META-INF/plugin.xml"),
     ("app-themes/jetbrains-theme/theme.json.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.theme.json"),
     ("app-themes/jetbrains-theme/editor-scheme.xml.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.xml"),
+    ("app-themes/gtk3-theme/gtk.css.tmpl", "app-themes/gtk3-theme/{slug}/gtk-3.0/gtk.css"),
+    ("app-themes/gtk3-theme/index.theme.tmpl", "app-themes/gtk3-theme/{slug}/index.theme"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code

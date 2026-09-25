@@ -49,6 +49,7 @@ vim_scheme() { printf '%s' "$SANDBOX/repo/app-themes/vim-theme/colors/jenerated-
 firefox_theme() { printf '%s' "$SANDBOX/repo/app-themes/firefox-theme/$1"; }
 vivaldi_theme() { printf '%s' "$SANDBOX/repo/app-themes/vivaldi-theme/$1"; }
 jetbrains_theme() { printf '%s' "$SANDBOX/repo/app-themes/jetbrains-theme/$1"; }
+gtk3_theme() { printf '%s' "$SANDBOX/repo/app-themes/gtk3-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -177,6 +178,8 @@ test_generates_every_app_theme() {
   assert_exists "$(jetbrains_theme sunset)/META-INF/plugin.xml"
   assert_exists "$(jetbrains_theme sunset)/jenerated-sunset.theme.json"
   assert_exists "$(jetbrains_theme sunset)/jenerated-sunset.xml"
+  assert_exists "$(gtk3_theme sunset)/gtk-3.0/gtk.css"
+  assert_exists "$(gtk3_theme sunset)/index.theme"
 }
 
 # GIVEN the Sunset palette
@@ -188,7 +191,8 @@ test_fills_in_every_placeholder() {
     "$(obsidian_theme sunset)/theme.css" "$(obsidian_theme sunset)/manifest.json" \
     "$(tilix_scheme sunset)" "$(vim_scheme sunset)" "$(firefox_theme sunset)/manifest.json" \
     "$(vivaldi_theme sunset)/settings.json" "$(jetbrains_theme sunset)/META-INF/plugin.xml" \
-    "$(jetbrains_theme sunset)/jenerated-sunset.theme.json" "$(jetbrains_theme sunset)/jenerated-sunset.xml"; do
+    "$(jetbrains_theme sunset)/jenerated-sunset.theme.json" "$(jetbrains_theme sunset)/jenerated-sunset.xml" \
+    "$(gtk3_theme sunset)/gtk-3.0/gtk.css" "$(gtk3_theme sunset)/index.theme"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -279,7 +283,8 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/firefox-theme/blue-purple/manifest.json app-themes/vivaldi-theme/blue-purple/settings.json \
     app-themes/jetbrains-theme/blue-purple/META-INF/plugin.xml \
     app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.theme.json \
-    app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.xml; do
+    app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.xml \
+    app-themes/gtk3-theme/blue-purple/gtk-3.0/gtk.css app-themes/gtk3-theme/blue-purple/index.theme; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -672,6 +677,55 @@ test_remove_deletes_the_jetbrains_theme() {
   assert_contains "Removed app-themes/jetbrains-theme/sunset/META-INF/plugin.xml"
   assert_missing "$(jetbrains_theme sunset)"
   assert_exists "$SANDBOX/repo/app-themes/jetbrains-theme/plugin.xml.tmpl"
+}
+
+# --- Tests: GTK3 apps ---------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the GTK3 theme builds on GTK's dark Adwaita, uses Sunset's colors, and
+#      is named after the palette, with its folder name as the theme name
+test_gtk3_theme_uses_the_palette() {
+  run_jenerate sunset
+  css="$(gtk3_theme sunset)/gtk-3.0/gtk.css"
+  assert_file_contains "$css" '@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");'
+  assert_file_contains "$css" "@define-color theme_selected_bg_color $(color accent);"
+  assert_file_contains "$css" "background-image: image($(color bg_chrome));"
+  assert_file_contains "$css" "button.suggested-action, button.suggested-action:backdrop {"
+  assert_file_contains "$(gtk3_theme sunset)/index.theme" "Name=Jenerated Sunset"
+  assert_file_contains "$(gtk3_theme sunset)/index.theme" "GtkTheme=Jenerated-sunset"
+}
+
+# GIVEN the Sunset palette, and GTK3's Python bindings
+# WHEN generating it and loading its CSS with GTK's own parser
+# THEN GTK reports no errors (including in the Adwaita theme it imports)
+test_gtk3_theme_parses_in_gtk() {
+  "$PYTHON" -c 'import gi; gi.require_version("Gtk", "3.0"); from gi.repository import Gtk' 2>/dev/null || return 0
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import sys, gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, GLib
+provider, errors = Gtk.CssProvider(), []
+provider.connect("parsing-error", lambda p, s, e: errors.append(f"line {s.get_start_line() + 1}: {e.message}"))
+try:
+    provider.load_from_path(sys.argv[1])
+except GLib.Error as e:
+    errors.append(e.message)
+print("\n".join(errors) or "no errors")
+' "$(gtk3_theme sunset)/gtk-3.0/gtk.css" 2>&1)"
+  assert_contains "no errors"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its GTK3 theme folder is deleted, including gtk-3.0 inside it
+test_remove_deletes_the_gtk3_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/gtk3-theme/sunset/gtk-3.0/gtk.css"
+  assert_missing "$(gtk3_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/gtk3-theme/gtk.css.tmpl"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------
