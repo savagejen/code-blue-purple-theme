@@ -43,7 +43,7 @@ run_setup() {
   local answers="$1"
   shift
   OUTPUT="$(cd "${RUN_FROM:-$SANDBOX}" && printf '%b' "$answers" |
-    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= \
+    HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= XDG_CACHE_HOME= \
       bash "${SETUP:-$SANDBOX/repo/setup.sh}" "$@" 2>&1)"
   STATUS=$?
 }
@@ -224,7 +224,7 @@ test_palette_creator_choice_starts_the_server() {
   run_setup "2\n"
   assert_status 0
   assert_contains "Starting the Palette Creator"
-  assert_contains '"Save as palette" opens a save'
+  assert_contains '"Save as palette..." opens a save'
   assert_contains "press Ctrl+C here to stop it"
   assert_contains "stub server running"
   assert_not_contains "Which app"
@@ -1244,6 +1244,60 @@ test_prep_commit_needs_python() {
   assert_status 1
   assert_contains "--prep-commit needs Python 3.11 or later"
   assert_same_file "$SANDBOX/repo/app-themes/vs-code-theme/package.json" "$SANDBOX/before.json"
+}
+
+# --- Tests: updating the palette screenshots --------------------------------
+
+# GIVEN no Python 3.11 or later
+# WHEN running setup.sh --update-screenshots
+# THEN it exits with status 1, saying it needs Python
+test_update_screenshots_needs_python() {
+  fake_no_python
+  run_setup "" --update-screenshots
+  assert_status 1
+  assert_contains "--update-screenshots needs Python 3.11 or later"
+}
+
+# GIVEN Python but no Node.js
+# WHEN running setup.sh --update-screenshots
+# THEN it exits with status 1, saying it needs Node.js and npm, without
+#      changing any screenshot
+test_update_screenshots_needs_node() {
+  local python
+  python="$(find_python)"
+  mkdir -p "$SANDBOX/minbin"
+  for tool in bash dirname uname "$python"; do
+    ln -s "$(command -v "$tool")" "$SANDBOX/minbin/$tool"
+  done
+  cp "$SANDBOX/repo/palettes/Screenshots/blue-purple.png" "$SANDBOX/before.png"
+  OUTPUT="$(cd "$SANDBOX" && HOME="$SANDBOX/home" PATH="$SANDBOX/minbin" XDG_CACHE_HOME= \
+    "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" --update-screenshots 2>&1)"
+  STATUS=$?
+  assert_status 1
+  assert_contains "--update-screenshots needs Node.js and npm (for Playwright)"
+  assert_same_file "$SANDBOX/repo/palettes/Screenshots/blue-purple.png" "$SANDBOX/before.png"
+}
+
+# GIVEN fake node and npm (node writes a placeholder screenshot per palette)
+# WHEN running setup.sh --update-screenshots
+# THEN it runs the screenshot script: every palette gets a new screenshot,
+#      and the README is checked
+test_update_screenshots_runs_the_screenshot_script() {
+  fake_command npm "prefix=''
+while [ \$# -gt 0 ]; do [ \"\$1\" = --prefix ] && prefix=\"\$2\"; shift; done
+mkdir -p \"\$prefix/node_modules/playwright\" \"\$prefix/node_modules/.bin\"
+printf '#!/bin/sh\nexit 0\n' >\"\$prefix/node_modules/.bin/playwright\"
+chmod +x \"\$prefix/node_modules/.bin/playwright\""
+  fake_command node "out=\"\$3\"; shift 3
+for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
+  run_setup "" --update-screenshots
+  assert_status 0
+  assert_contains "Updating the palette screenshots"
+  for file in "$SANDBOX"/repo/palettes/*-palette.toml; do
+    assert_file_equals "$SANDBOX/repo/palettes/Screenshots/$(basename "$file" -palette.toml).png" "new png"
+  done
+  assert_contains "palettes/README.md"
+  assert_not_contains "Which app"
 }
 
 # GIVEN an option setup.sh doesn't know

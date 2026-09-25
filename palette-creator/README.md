@@ -22,10 +22,16 @@ computer.
 
 ## Design a palette
 
-- **Work in progress:** the page edits `work-in-progress-palette.toml` in
-  this folder. It's created from Blue Purple the first time you start
-  `serve.py`, and git ignores it, so your drafts stay yours.
-- **Load from…:** replaces the work in progress with a palette you choose in
+- **Your draft:** the page edits `work-in-progress-palette.toml` in this
+  folder, and saves it automatically as you go (whenever the palette is
+  valid; if it isn't, the draft is kept as it was until you fix it). It's
+  created from Blue Purple the first time you start `serve.py`, and git
+  ignores it, so your drafts stay yours.
+- **Description:** the comment at the top of the palette file: what the
+  palette is and where its colors come from. Blank lines separate
+  paragraphs. It's wrapped to fit the file when saved, and the file's usual
+  note about how colors are written stays after it.
+- **Load from…:** replaces your draft with a palette you choose in
   your computer's file dialog, which opens in `palettes/` (you can also pick
   a palette kept elsewhere). It warns you first, since anything in the work
   in progress that you haven't saved as a palette is lost. The palette is
@@ -45,7 +51,6 @@ computer.
 
 ## Save it
 
-- **Save** writes the work-in-progress file.
 - **Save as palette…** opens your computer's save dialog in `palettes/`,
   suggesting `<slug>-palette.toml` (for example `sunset-palette.toml`). Keep
   that name: `jenerate.py` finds palettes in `palettes/` by their slug, so it

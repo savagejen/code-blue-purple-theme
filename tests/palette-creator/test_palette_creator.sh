@@ -168,6 +168,7 @@ test_loads_the_palette_with_its_groups_and_notes() {
   assert_code 200
   assert_json 'd["source"]' "$WIP_REL"
   assert_json 'd["palette"]["header"][0]' "Dark blue/purple with high contrast text and a near-black 'midnight'"
+  assert_json 'd["palette"]["description"]' "Dark blue/purple with high contrast text and a near-black 'midnight' background."
   assert_json 'd["palette"]["slug"]' "blue-purple"
   assert_json '[g["title"] for g in d["palette"]["groups"]][0]' "Backgrounds, darkest to lightest"
   assert_json 'len(d["palette"]["groups"])' "6"
@@ -233,6 +234,92 @@ test_saving_an_invalid_palette_changes_nothing() {
   assert_json 'd["ok"]' "False"
   assert_json 'd["error"]' "color \`accent\` = 'blurple' is not a #rrggbb value or the name of another color"
   assert_same_file "$SANDBOX/repo/$WIP_REL" "$SANDBOX/repo/palettes/blue-purple-palette.toml"
+}
+
+# --- Tests: the description --------------------------------------------------
+
+# The color note that ends every palette's header comment.
+COLOR_NOTE='# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).'
+
+# header_of file -> prints a palette file's header comment (the lines before
+# its name).
+header_of() {
+  sed '/^name = /,$d' "$1" | sed '$d'
+}
+
+# GIVEN the work-in-progress palette
+# WHEN changing its description and saving
+# THEN the header comment becomes the new description, then a blank comment
+#      line, then the color note, and the rest of the file is unchanged
+test_changing_the_description_rewrites_the_header() {
+  start_server
+  post /api/save "$(palette_body "" 'p["description"] = "A new description."')"
+  assert_json 'd["ok"]' "True"
+  expected="# A new description.
+#
+$COLOR_NOTE"
+  [ "$(header_of "$SANDBOX/repo/$WIP_REL")" = "$expected" ] ||
+    fail "unexpected header: $(header_of "$SANDBOX/repo/$WIP_REL")"
+  diff <(sed -n '/^name = /,$p' "$SANDBOX/repo/$WIP_REL") \
+    <(sed -n '/^name = /,$p' "$SANDBOX/repo/palettes/blue-purple-palette.toml") >/dev/null ||
+    fail "expected everything after the header to be unchanged"
+}
+
+# GIVEN a long description with two paragraphs, typed with Windows line
+#       endings
+# WHEN saving
+# THEN each paragraph is wrapped to fit 78 columns, the paragraphs are
+#      separated by a blank comment line, and loading it gives the
+#      description back
+test_long_descriptions_are_wrapped_by_paragraph() {
+  start_server
+  post /api/save "$(palette_body "" 'p["description"] = "A long first paragraph that goes on well past the width of one line in a palette file, so it has to wrap.\r\n\r\nA second paragraph."')"
+  assert_json 'd["ok"]' "True"
+  long="$(header_of "$SANDBOX/repo/$WIP_REL" | awk 'length > 78' | wc -l | tr -d ' ')"
+  [ "$long" = "0" ] || fail "expected every header line to fit 78 columns"
+  expected="# A long first paragraph that goes on well past the width of one line in a
+# palette file, so it has to wrap.
+#
+# A second paragraph.
+#
+$COLOR_NOTE"
+  [ "$(header_of "$SANDBOX/repo/$WIP_REL")" = "$expected" ] ||
+    fail "unexpected header: $(header_of "$SANDBOX/repo/$WIP_REL")"
+  get /api/palette
+  assert_json 'd["palette"]["description"]' "A long first paragraph that goes on well past the width of one line in a palette file, so it has to wrap.
+
+A second paragraph."
+}
+
+# GIVEN the work-in-progress palette
+# WHEN emptying its description and saving
+# THEN the header comment is just the color note
+test_an_empty_description_leaves_the_color_note() {
+  start_server
+  post /api/save "$(palette_body "" 'p["description"] = ""')"
+  assert_json 'd["ok"]' "True"
+  [ "$(header_of "$SANDBOX/repo/$WIP_REL")" = "$COLOR_NOTE" ] ||
+    fail "unexpected header: $(header_of "$SANDBOX/repo/$WIP_REL")"
+}
+
+# GIVEN a description with a tab in it
+# WHEN checking the palette
+# THEN it's refused, saying why
+test_descriptions_cant_have_control_characters() {
+  start_server
+  post /api/check "$(palette_body "" 'p["description"] = "Tab\there"')"
+  assert_json 'd["error"]' "the description can't contain tabs or other control characters"
+}
+
+# GIVEN Sunset loaded into the work in progress
+# WHEN saving it as a palette with a new description
+# THEN the saved palette has the new description
+test_save_as_palette_keeps_the_description() {
+  start_server
+  post /api/save "$(palette_body sunset 'p["description"] = "Sunset, described again."; b["target"] = "palette"; b["filename"] = "sunset-palette.toml"; b["overwrite"] = True')"
+  assert_json 'd["ok"]' "True"
+  assert_file_contains "$SANDBOX/repo/palettes/sunset-palette.toml" "# Sunset, described again."
 }
 
 # --- Tests: checking ---------------------------------------------------------

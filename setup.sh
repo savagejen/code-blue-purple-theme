@@ -152,10 +152,30 @@ jenerate.write_vscode_package(["blue-purple"])
   fi
 }
 
+# --- Update the palette screenshots (for maintainers) ------------------------
+# ./setup.sh --update-screenshots retakes palettes/Screenshots/<slug>.png for
+# every palette (from the Palette Creator's preview, with Playwright) and
+# updates palettes/README.md: new palettes get a section, and existing ones
+# get their key colors refreshed. See palette-creator/screenshots.py. Needs
+# Python 3.11 or later, Node.js and npm. Deliberately left out of the usage
+# and README.
+
+update_screenshots() {
+  [ -n "$PYTHON" ] || die "--update-screenshots needs Python 3.11 or later"
+  command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 ||
+    die "--update-screenshots needs Node.js and npm (for Playwright)"
+  step "Updating the palette screenshots"
+  "$PYTHON" palette-creator/screenshots.py
+}
+
 case "${1:-}" in
   "") ;;
   --prep-commit)
     prep_commit
+    exit 0
+    ;;
+  --update-screenshots)
+    update_screenshots
     exit 0
     ;;
   *) die "unknown option: $1 (run ./setup.sh with no options)" ;;
@@ -178,7 +198,7 @@ start_palette_creator() {
   say "3. Change colors with the color pickers, or type #rrggbb or another"
   say "   color's name. The preview updates as you go; hover a color to see"
   say "   where it's used, or click the preview to find a color."
-  say "4. \"Save\" keeps your work in progress. \"Save as palette\" opens a save"
+  say "4. Your draft saves itself as you go. \"Save as palette...\" opens a save"
   say "   dialog in palettes/; keep the suggested name, <slug>-palette.toml, so"
   say "   jenerate.py and ./setup.sh can find it."
   say "5. When you're done, press Ctrl+C here to stop it, then run ./setup.sh"

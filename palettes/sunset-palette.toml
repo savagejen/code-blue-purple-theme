@@ -1,6 +1,6 @@
 # A sunset sky, top to horizon: backgrounds run from blue-black through warm
-# aubergine to plum-rose, with accents in sunset orange, rose, gold and
-# orchid, and warm peach-cream text.
+# aubergine to plum-rose, with a dusk-blue sidebar, accents in sunset orange,
+# rose, gold and orchid, and warm peach-cream text.
 #
 # Every color is a #rrggbb hex value, or the name of another color in this
 # file. Templates add transparency themselves (e.g. {{accent}}33).

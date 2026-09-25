@@ -43,6 +43,13 @@
   }
   header h1 { margin: 0 8px 0 0; font-size: 18px; align-self: center; }
   label.field { display: grid; gap: 2px; font-size: 12px; color: var(--ui-muted); }
+  .field.description { flex: 1 1 260px; max-width: 520px; }
+  .field textarea {
+    font: inherit; font-size: 13px; resize: vertical; min-height: 34px;
+    background: var(--ui-field); border: 1px solid var(--ui-line);
+    border-radius: 6px; padding: 5px 8px;
+  }
+  .field textarea:focus { outline: 2px solid var(--ui-focus); outline-offset: 1px; }
   .field input, .field select, .row input[type=text] {
     background: var(--ui-field);
     border: 1px solid var(--ui-line);
@@ -259,10 +266,13 @@
   <label class="field">Slug (used in file names)
     <input id="slug" size="16" autocomplete="off" spellcheck="false">
   </label>
+  <label class="field description">Description (the comment at the top of the palette file)
+    <textarea id="description" rows="2" spellcheck="true"
+              placeholder="What the palette is, and where its colors come from"></textarea>
+  </label>
   <div class="actions">
-    <button id="load" title="Replace the work-in-progress palette with a palette file you choose">Load from…</button>
-    <button id="save" class="primary" title="Save to palette-creator/work-in-progress-palette.toml">Save</button>
-    <button id="publish" title="Choose where to save it, starting in palettes/ as &lt;slug&gt;-palette.toml">Save as palette…</button>
+    <button id="load" title="Replace your draft with a palette file you choose">Load from…</button>
+    <button id="publish" class="primary" title="Choose where to save it, starting in palettes/ as &lt;slug&gt;-palette.toml">Save as palette…</button>
   </div>
   <div id="status" role="status" aria-live="polite"></div>
 </header>
@@ -390,7 +400,7 @@ const ANSI = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "whi
 // The palette being edited: {header, name, slug, groups: [{title, colors: [{key, value, note}]}]}
 let palette = null;
 let dirty = false;
-let checkTimer = null;
+let saveTimer = null;
 let checkRun = 0;
 
 const $ = (id) => document.getElementById(id);
@@ -571,15 +581,17 @@ function markDirty(value) {
   document.title = (dirty ? "• " : "") + "Palette Creator";
 }
 
+// After each change, saves the draft (work-in-progress-palette.toml) once
+// typing pauses, if jenerate.py would accept the palette.
 function changed() {
   markDirty(true);
   const invalid = applyColors();
-  clearTimeout(checkTimer);
+  clearTimeout(saveTimer);
   if (invalid) {
-    setStatus(`${invalid} color${invalid > 1 ? "s" : ""} can't be used yet`, "bad");
+    setStatus(`${invalid} color${invalid > 1 ? "s" : ""} can't be used yet; the draft is kept as it was until then.`, "bad");
     return;
   }
-  checkTimer = setTimeout(check, 300);
+  saveTimer = setTimeout(saveDraft, 500);
 }
 
 async function post(path, body) {
@@ -591,20 +603,37 @@ async function post(path, body) {
   return response.json();
 }
 
-// Asks serve.py whether jenerate.py would accept the palette.
+// Saves the draft, or says why it can't be saved yet.
+async function saveDraft() {
+  const run = ++checkRun;
+  try {
+    const result = await post("/api/save", { palette, target: "wip" });
+    if (run !== checkRun) return;
+    if (result.ok) {
+      markDirty(false);
+      setStatus("Looks good. Draft saved.", "ok");
+    } else {
+      setStatus(`${result.error}. The draft is kept as it was until this is fixed.`, "bad");
+    }
+  } catch {
+    setStatus("Can't reach serve.py. Is it still running?", "bad");
+  }
+}
+
+// Asks serve.py whether jenerate.py would accept the palette, without saving.
 async function check() {
   const run = ++checkRun;
   try {
     const result = await post("/api/check", { palette });
     if (run !== checkRun) return;
-    if (result.ok) setStatus(dirty ? "Looks good. Unsaved changes." : "Looks good.", "ok");
+    if (result.ok) setStatus("Looks good.", "ok");
     else setStatus(result.error, "bad");
   } catch {
     setStatus("Can't reach serve.py. Is it still running?", "bad");
   }
 }
 
-// Saves the palette. For "palette", serve.py opens this computer's save
+// Saves the palette as a palette file: serve.py opens this computer's save
 // dialog; if it has none, this page asks for a file name in palettes/.
 async function save(target, filename = undefined, overwrite = false) {
   try {
@@ -626,7 +655,6 @@ async function save(target, filename = undefined, overwrite = false) {
       setStatus(result.error, "bad");
       return;
     }
-    if (target === "wip") markDirty(false);
     setStatus(result.message, "ok");
   } catch {
     setStatus("Can't reach serve.py. Is it still running?", "bad");
@@ -636,9 +664,13 @@ async function save(target, filename = undefined, overwrite = false) {
 // --- Loading ------------------------------------------------------------------------
 
 function load(newPalette, message) {
+  // A draft save still waiting would put the old palette back.
+  clearTimeout(saveTimer);
+  checkRun++;
   palette = newPalette;
   $("name").value = palette.name;
   $("slug").value = palette.slug;
+  $("description").value = palette.description ?? "";
   buildColorList();
   applyColors();
   markDirty(false);
@@ -681,10 +713,13 @@ async function loadFrom(filename = undefined) {
 }
 
 $("load").addEventListener("click", () => {
-  const warning = dirty
-    ? "You have unsaved changes. Loading a palette replaces the work-in-progress palette with it, so your changes will be lost.\n\nLoad a palette anyway?"
-    : "Loading a palette replaces the work-in-progress palette (work-in-progress-palette.toml) with it. Anything in it that you haven't saved as a palette will be lost.\n\nLoad a palette?";
-  if (confirm(warning)) loadFrom();
+  const warning = "Loading a palette replaces your draft (work-in-progress-palette.toml) with it. Anything in the draft that you haven't saved as a palette will be lost."
+    + (dirty ? "\n\nYou also have changes that haven't been saved to the draft yet." : "")
+    + "\n\nLoad a palette?";
+  if (confirm(warning)) {
+    clearTimeout(saveTimer);
+    loadFrom();
+  }
 });
 
 $("name").addEventListener("input", (event) => {
@@ -700,7 +735,10 @@ $("slug").addEventListener("input", (event) => {
   }
   changed();
 });
-$("save").addEventListener("click", () => save("wip"));
+$("description").addEventListener("input", (event) => {
+  palette.description = event.target.value;
+  changed();
+});
 $("publish").addEventListener("click", () => save("palette"));
 window.addEventListener("beforeunload", (event) => {
   if (dirty) event.preventDefault();

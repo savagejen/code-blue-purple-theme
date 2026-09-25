@@ -1,7 +1,8 @@
-# Anodized titanium: gunmetal grey backgrounds with the rainbow sheen of
-# anodized metal (violet, magenta, teal, gold, copper and blue) for the
-# accents and syntax. Colors sampled from photos of anodized hardware and
-# cutlery, brightened where needed for contrast.
+# Anodized titanium: a gunmetal frame around a dark anodized violet editor and
+# a gold-anodized sidebar, with the rainbow sheen of anodized metal (violet,
+# magenta, teal, gold, copper and blue) for the accents and syntax. Colors
+# sampled from photos of anodized hardware and cutlery, brightened where
+# needed for contrast.
 #
 # Every color is a #rrggbb hex value, or the name of another color in this
 # file. Templates add transparency themselves (e.g. {{accent}}33).

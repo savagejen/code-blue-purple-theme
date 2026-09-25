@@ -27,6 +27,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -48,6 +49,12 @@ COLOR_LINE = re.compile(
 COLOR_KEY = re.compile(r"[A-Za-z0-9_]+")
 # Notes line up in a column, as in the palettes in palettes/.
 NOTE_COLUMN = 30
+# The note that ends each palette's header comment. It isn't part of the
+# description the page edits, and a rebuilt header always ends with it.
+COLOR_NOTE = ["Every color is a #rrggbb hex value, or the name of another color in this",
+              "file. Templates add transparency themselves (e.g. {{accent}}33)."]
+# Header comment lines are wrapped to fit 78 columns with their "# ".
+HEADER_WIDTH = 76
 MAX_BODY = 1_000_000
 
 
@@ -69,9 +76,47 @@ def jenerate_check(function, *args, path=None):
         raise PaletteError(message) from None
 
 
+def header_paragraphs(header):
+    """Split header comment lines into paragraphs (lists of lines)."""
+    paragraphs, current = [], []
+    for line in header + [""]:
+        if line.strip():
+            current.append(line.strip())
+        elif current:
+            paragraphs.append(current)
+            current = []
+    return paragraphs
+
+
+def description_from_header(header):
+    """The header comment as the page's description: each paragraph on one
+    line, paragraphs separated by a blank line, without the color note."""
+    return "\n\n".join(" ".join(p) for p in header_paragraphs(header)
+                        if not " ".join(p).startswith(COLOR_NOTE[0][:30]))
+
+
+def header_from_description(description):
+    """Header comment lines for a description: its paragraphs wrapped to the
+    palettes' usual width, then the color note."""
+    if not isinstance(description, str):
+        raise PaletteError("the description must be text")
+    description = description.replace("\r\n", "\n").replace("\r", "\n")
+    if any(not c.isprintable() and c != "\n" for c in description):
+        raise PaletteError("the description can't contain tabs or other "
+                           "control characters")
+    header = []
+    for paragraph in re.split(r"\n\s*\n", description.strip()):
+        if paragraph.strip():
+            header += textwrap.wrap(" ".join(paragraph.split()), HEADER_WIDTH,
+                                    break_long_words=False, break_on_hyphens=False)
+            header.append("")
+    return header + COLOR_NOTE
+
+
 def read_palette(path):
-    """Read a palette file into the page's form: its header comments, name,
-    slug, and colors in titled groups, each with its value and note."""
+    """Read a palette file into the page's form: its header comments (and
+    their description), name, slug, and colors in titled groups, each with
+    its value and note."""
     data = jenerate_check(jenerate.read_palette_file, path)
     colors = data["colors"]
     header, groups, seen = [], [], set()
@@ -108,8 +153,8 @@ def read_palette(path):
     if rest:
         groups.append({"title": "", "colors": rest})
     groups = [g for g in groups if g["colors"]]
-    return {"header": header, "name": data["name"], "slug": data["slug"],
-            "groups": groups}
+    return {"header": header, "description": description_from_header(header),
+            "name": data["name"], "slug": data["slug"], "groups": groups}
 
 
 def one_line(text, what):
@@ -125,6 +170,10 @@ def write_palette(palette):
     palettes in palettes/."""
     try:
         header = [one_line(h, "A header comment") for h in palette["header"]]
+        # Keep the header exactly as written unless the description changed.
+        description = palette.get("description")
+        if description is not None and description != description_from_header(header):
+            header = header_from_description(description)
         name, slug = palette["name"], palette["slug"]
         groups = palette["groups"]
         if not isinstance(name, str) or not isinstance(slug, str):

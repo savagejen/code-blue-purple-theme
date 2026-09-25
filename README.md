@@ -25,6 +25,10 @@ Each app has its own folder with a template and install instructions:
 - [Vivaldi](app-themes/vivaldi-theme/)
 - [VS Code](app-themes/vs-code-theme/)
 
+## Themes
+
+A few premade palettes are included and can be previewed from [palettes/README.md](palettes/README.md)
+
 ## Getting started
 
 The quickest way is the setup script. Clone the repository and run it; it
@@ -169,10 +173,3 @@ or installed themes. The `jenerate.py` tests need Python 3.11 or later and are
 skipped without it, as are the Palette Creator tests, which also need
 `curl`. Shared helpers are in `tests/lib.sh`.
 
-## Themes
-
-These palettes are included:
-
-- **Blue Purple** (`blue-purple`): dark blue/purple with a near-black
-  'midnight' background.
-- **Sunset** (`sunset`): dusky plum with a warm coral-orange accent.
