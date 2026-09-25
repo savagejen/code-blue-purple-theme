@@ -14,7 +14,8 @@ generated; nothing else is touched. Each template's {{name}} placeholders are
 replaced with the palette's colors (plus its `name` and `slug`), and the result
 is written next to the template. Each color is also available as RGB and HSL
 numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 242",
-and {{accent_h}}, {{accent_s}} and {{accent_l}} are "235", "86" and "65".
+{{accent_h}}, {{accent_s}} and {{accent_l}} are "235", "86" and "65", and
+{{accent_hex}} is "5865F2" (without the #).
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
 """
@@ -47,6 +48,9 @@ TARGETS = [
     ("app-themes/obsidian-theme/manifest.json.tmpl", "app-themes/obsidian-theme/{slug}/manifest.json"),
     ("app-themes/firefox-theme/manifest.json.tmpl", "app-themes/firefox-theme/{slug}/manifest.json"),
     ("app-themes/vivaldi-theme/settings.json.tmpl", "app-themes/vivaldi-theme/{slug}/settings.json"),
+    ("app-themes/jetbrains-theme/plugin.xml.tmpl", "app-themes/jetbrains-theme/{slug}/META-INF/plugin.xml"),
+    ("app-themes/jetbrains-theme/theme.json.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.theme.json"),
+    ("app-themes/jetbrains-theme/editor-scheme.xml.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.xml"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
@@ -107,12 +111,12 @@ def read_palette_file(path):
         if not isinstance(data.get(key), str):
             sys.exit(f"{path}: missing top-level `{key}` string")
     # The name is written into the themes as is, so it mustn't be able to
-    # break out of a JSON string or an INI line. It also names the Obsidian
-    # theme's folder, so no slashes.
+    # break out of a JSON string, an XML file or an INI line. It also names
+    # the Obsidian theme's folder, so no slashes.
     name = data["name"]
-    if any(c in '"\\/' or not c.isprintable() for c in name):
+    if any(c in '"\\/<>&' or not c.isprintable() for c in name):
         sys.exit(f"{path}: `name` can't contain quotes, slashes, "
-                 f"backslashes or line breaks")
+                 f"backslashes, <, >, & or line breaks")
     if not name.strip() or name != name.strip():
         sys.exit(f"{path}: `name` can't be empty or start or end with spaces")
     slug = check_slug(data["slug"], path)
@@ -135,6 +139,7 @@ def color_formats(key, value):
     r, g, b = (int(value[i:i + 2], 16) for i in (1, 3, 5))
     h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
     return {
+        f"{key}_hex": value[1:],
         f"{key}_rgb": f"{r}, {g}, {b}",
         f"{key}_h": str(round(h * 360) % 360),
         f"{key}_s": str(round(s * 100)),
@@ -206,9 +211,16 @@ def output_path(output, slug):
 
 
 def slug_folders(slug):
-    """The folders made just for this palette's files, like app-themes/obsidian-theme/sunset."""
-    return {output_path(output, slug).parent for _, output in TARGETS
-            if "{slug}" in str(Path(output).parent)}
+    """The folders made just for this palette's files, like
+    app-themes/obsidian-theme/sunset, deepest first (so each is empty by the
+    time its parent is removed)."""
+    folders = set()
+    for _, output in TARGETS:
+        folder = Path(output).parent
+        while "{slug}" in str(folder):
+            folders.add(ROOT / str(folder).format(slug=slug))
+            folder = folder.parent
+    return sorted(folders, key=lambda f: len(f.parts), reverse=True)
 
 
 def read_vscode_theme(path):

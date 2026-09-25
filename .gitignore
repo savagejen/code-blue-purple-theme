@@ -10,6 +10,8 @@ app-themes/firefox-theme/*/
 app-themes/firefox-theme/*.xpi
 app-themes/vivaldi-theme/*/
 app-themes/vivaldi-theme/*.zip
+app-themes/jetbrains-theme/*/
+app-themes/jetbrains-theme/*.jar
 *.vsix
 
 # Your palette draft in the Palette Creator.
@@ -26,6 +28,9 @@ palette-creator/work-in-progress-palette.toml
 !app-themes/obsidian-theme/blue-purple/
 !app-themes/firefox-theme/blue-purple/
 !app-themes/vivaldi-theme/blue-purple/
+!app-themes/jetbrains-theme/blue-purple/
+!app-themes/vivaldi-theme/jenerated-blue-purple.zip
+!app-themes/jetbrains-theme/jenerated-blue-purple.jar
 
 # Python bytecode (from importing jenerate.py)
 __pycache__/

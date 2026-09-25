@@ -25,9 +25,11 @@ The files are generated from `settings.json.tmpl` by
 
 ## Install
 
-Vivaldi imports themes as a `.zip` holding the theme's `settings.json`. The
-easiest way is `./setup.sh` from the repository root: choose Vivaldi, and it
-makes `app-themes/vivaldi-theme/jenerated-<slug>.zip`. To make it by hand:
+Vivaldi imports themes as a `.zip` holding the theme's `settings.json`.
+Blue Purple's is included, ready to import:
+[jenerated-blue-purple.zip](jenerated-blue-purple.zip). For other palettes,
+the easiest way is `./setup.sh` from the repository root: choose Vivaldi, and
+it makes `app-themes/vivaldi-theme/jenerated-<slug>.zip`. To make it by hand:
 
 ```bash
 cd app-themes/vivaldi-theme/blue-purple

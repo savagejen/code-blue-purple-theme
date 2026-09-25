@@ -60,7 +60,7 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # GIVEN a Linux system
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      Ptyxis and Tilix
+#      JetBrains apps, Ptyxis and Tilix
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
@@ -70,14 +70,15 @@ test_app_menu_on_linux_includes_the_terminals() {
   assert_contains "4) Vim / Neovim"
   assert_contains "5) Firefox"
   assert_contains "6) Vivaldi"
-  assert_contains "7) Ptyxis (Ubuntu terminal)"
-  assert_contains "8) Tilix (terminal)"
+  assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
+  assert_contains "8) Ptyxis (Ubuntu terminal)"
+  assert_contains "9) Tilix (terminal)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox and Vivaldi,
-#      but not Ptyxis or Tilix
+# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi and
+#      JetBrains apps, but not Ptyxis or Tilix
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
@@ -87,6 +88,7 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
   assert_contains "4) Vim / Neovim"
   assert_contains "5) Firefox"
   assert_contains "6) Vivaldi"
+  assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
   assert_not_contains "Ptyxis"
   assert_not_contains "Tilix"
 }
@@ -151,7 +153,7 @@ test_theme_menu_stops_on_an_unreadable_palette() {
 # WHEN they're typed at the app menu
 # THEN each one asks again, and a valid answer then carries on
 test_invalid_choices_ask_again() {
-  run_setup "1\n\nabc\n0\n9\n-1\n2\n1\n"
+  run_setup "1\n\nabc\n0\n99\n-1\n2\n1\n"
   assert_status 0
   count="$(printf '%s\n' "$OUTPUT" | grep -c 'Please enter a number between 1 and')"
   [ "$count" -eq 5 ] || fail "expected 5 re-prompts, got $count"
@@ -277,7 +279,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blurple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "1\n8\n1\n"
+  run_setup "1\n9\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blurple' is not a #rrggbb value"
@@ -295,7 +297,7 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "1\n8\n2\n"
+  run_setup "1\n9\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
   assert_exists "$repo/app-themes/tilix-theme/sunset.json"
@@ -434,7 +436,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "1\n7\n1\n"
+  run_setup "1\n8\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -446,8 +448,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "1\n7\n1\n"
-  run_setup "1\n7\n1\n"
+  run_setup "1\n8\n1\n"
+  run_setup "1\n8\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -463,7 +465,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "1\n8\n1\n"
+  run_setup "1\n9\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
@@ -475,7 +477,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "1\n8\n2\n"
+  run_setup "1\n9\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
@@ -489,7 +491,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "1\n8\n1\n"
+  run_setup "1\n9\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -499,8 +501,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "1\n8\n1\n"
-  run_setup "1\n8\n1\n"
+  run_setup "1\n9\n1\n"
+  run_setup "1\n9\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -512,7 +514,7 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "1\n8\n1\nn\n"
+  run_setup "1\n9\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
 }
@@ -715,7 +717,7 @@ test_vivaldi_packages_with_zip_without_python() {
   run_setup "1\n6\n1\n"
   assert_status 0
   assert_file_contains "$SANDBOX/zip-ran" "$SANDBOX/repo/$VIVALDI_DIR/jenerated-blue-purple.zip"
-  assert_file_contains "$SANDBOX/zip-ran" "$SANDBOX/repo/$VIVALDI_DIR/blue-purple/settings.json"
+  assert_file_contains "$SANDBOX/zip-ran" "-r"
 }
 
 # GIVEN neither python3 nor zip working
@@ -727,6 +729,49 @@ test_vivaldi_without_a_way_to_zip() {
   run_setup "1\n6\n1\n"
   assert_status 1
   assert_contains "couldn't make the .zip (that needs python3 or zip)"
+}
+
+# --- Tests: JetBrains apps ---------------------------------------------------
+
+JETBRAINS_DIR="app-themes/jetbrains-theme"
+
+# GIVEN the Sunset palette
+# WHEN choosing JetBrains apps and Sunset
+# THEN the theme is packaged as a plugin .jar holding its descriptor, UI theme
+#      and editor scheme, each pointing at files in the .jar, and it explains
+#      installing it from disk
+test_jetbrains_packages_the_plugin() {
+  run_setup "1\n7\n2\n"
+  assert_status 0
+  jar="$SANDBOX/repo/$JETBRAINS_DIR/jenerated-sunset.jar"
+  assert_exists "$jar"
+  result="$("$(find_python)" -c '
+import json, sys, zipfile, xml.etree.ElementTree as ET
+z = zipfile.ZipFile(sys.argv[1])
+names = sorted(z.namelist())
+plugin = ET.fromstring(z.read("META-INF/plugin.xml"))
+theme_path = plugin.find("extensions/themeProvider").get("path").lstrip("/")
+theme = json.loads(z.read(theme_path))
+scheme_path = theme["editorScheme"].lstrip("/")
+print(names, theme_path in names, scheme_path in names, theme["name"])
+' "$jar")"
+  [ "$result" = "['META-INF/plugin.xml', 'jenerated-sunset.theme.json', 'jenerated-sunset.xml'] True True Jenerated Sunset" ] ||
+    fail "unexpected .jar contents: $result"
+  assert_contains '"Install Plugin from Disk..."'
+  assert_contains "IntelliJ IDEA, Android Studio, PyCharm, WebStorm, PhpStorm, GoLand,"
+  assert_contains "$jar"
+  assert_contains '"Jenerated Sunset" as the theme'
+}
+
+# GIVEN neither python3 nor zip working
+# WHEN choosing JetBrains apps and Blue Purple
+# THEN it exits with status 1, saying what's needed
+test_jetbrains_without_a_way_to_zip() {
+  fake_no_python
+  fake_command zip "exit 1"
+  run_setup "1\n7\n1\n"
+  assert_status 1
+  assert_contains "couldn't make the .jar (that needs python3 or zip)"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------
@@ -1030,6 +1075,67 @@ test_prep_commit_regenerates_blue_purple_from_changed_templates() {
   run_setup "" --prep-commit
   assert_status 0
   assert_file_equals "$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt" "#5865F2|Blue Purple"
+}
+
+EXAMPLE_ZIP="app-themes/vivaldi-theme/jenerated-blue-purple.zip"
+EXAMPLE_JAR="app-themes/jetbrains-theme/jenerated-blue-purple.jar"
+
+# package_matches_folder package folder -> fails unless the package holds
+# exactly the folder's files, with the same contents.
+package_matches_folder() {
+  "$(find_python)" -c '
+import os, sys, zipfile
+package, folder = sys.argv[1:]
+z = zipfile.ZipFile(package)
+files = {os.path.relpath(os.path.join(d, n), folder): open(os.path.join(d, n), "rb").read()
+         for d, _, names in os.walk(folder) for n in names}
+sys.exit(0 if {i: z.read(i) for i in z.namelist()} == files else 1)
+' "$1" "$2" || fail "expected $1 to hold exactly the files in $2"
+}
+
+# GIVEN the Vivaldi and JetBrains templates have changed
+# WHEN running setup.sh --prep-commit
+# THEN the example packages are rebuilt from Blue Purple's regenerated files
+test_prep_commit_rebuilds_the_example_packages() {
+  sed 's/"radius": 6/"radius": 9/' "$SANDBOX/repo/app-themes/vivaldi-theme/settings.json.tmpl" >"$SANDBOX/vivaldi.tmpl"
+  cp "$SANDBOX/vivaldi.tmpl" "$SANDBOX/repo/app-themes/vivaldi-theme/settings.json.tmpl"
+  sed 's/"author": "Jenerated Themes"/"author": "Someone Else"/' "$SANDBOX/repo/app-themes/jetbrains-theme/theme.json.tmpl" >"$SANDBOX/theme.tmpl"
+  cp "$SANDBOX/theme.tmpl" "$SANDBOX/repo/app-themes/jetbrains-theme/theme.json.tmpl"
+  run_setup "" --prep-commit
+  assert_status 0
+  assert_contains "Rebuilt $EXAMPLE_ZIP"
+  assert_contains "Rebuilt $EXAMPLE_JAR"
+  package_matches_folder "$SANDBOX/repo/$EXAMPLE_ZIP" "$SANDBOX/repo/app-themes/vivaldi-theme/blue-purple"
+  package_matches_folder "$SANDBOX/repo/$EXAMPLE_JAR" "$SANDBOX/repo/app-themes/jetbrains-theme/blue-purple"
+  unzip_text="$("$(find_python)" -c 'import sys, zipfile; print(zipfile.ZipFile(sys.argv[1]).read("settings.json").decode())' "$SANDBOX/repo/$EXAMPLE_ZIP")"
+  case "$unzip_text" in
+    *'"radius": 9'*) ;;
+    *) fail "expected the rebuilt Vivaldi example to have the template's change" ;;
+  esac
+}
+
+# GIVEN the example packages have been deleted
+# WHEN running setup.sh --prep-commit
+# THEN they're made again
+test_prep_commit_restores_deleted_example_packages() {
+  rm -f "$SANDBOX/repo/$EXAMPLE_ZIP" "$SANDBOX/repo/$EXAMPLE_JAR"
+  run_setup "" --prep-commit
+  assert_status 0
+  package_matches_folder "$SANDBOX/repo/$EXAMPLE_ZIP" "$SANDBOX/repo/app-themes/vivaldi-theme/blue-purple"
+  package_matches_folder "$SANDBOX/repo/$EXAMPLE_JAR" "$SANDBOX/repo/app-themes/jetbrains-theme/blue-purple"
+}
+
+# GIVEN the repository's example packages
+# WHEN running setup.sh --prep-commit, twice
+# THEN the packages are byte for byte the same as the repository's each time,
+#      so git only sees them change when their contents do
+test_prep_commit_example_packages_are_reproducible() {
+  run_setup "" --prep-commit
+  assert_same_file "$SANDBOX/repo/$EXAMPLE_ZIP" "$REPO/$EXAMPLE_ZIP"
+  assert_same_file "$SANDBOX/repo/$EXAMPLE_JAR" "$REPO/$EXAMPLE_JAR"
+  run_setup "" --prep-commit
+  assert_same_file "$SANDBOX/repo/$EXAMPLE_ZIP" "$REPO/$EXAMPLE_ZIP"
+  assert_same_file "$SANDBOX/repo/$EXAMPLE_JAR" "$REPO/$EXAMPLE_JAR"
 }
 
 # GIVEN no Python 3.11 or later

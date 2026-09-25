@@ -308,7 +308,7 @@ for c in colors.values():
 test_check_reports_bad_names_and_slugs() {
   start_server
   post /api/check "$(palette_body "" 'p["name"] = "Evil\"Name"')"
-  assert_json 'd["error"]' "\`name\` can't contain quotes, slashes, backslashes or line breaks"
+  assert_json 'd["error"]' "\`name\` can't contain quotes, slashes, backslashes, <, >, & or line breaks"
   post /api/check "$(palette_body "" 'p["slug"] = "Not-A-Slug"')"
   assert_contains "'Not-A-Slug' is not a valid slug"
 }

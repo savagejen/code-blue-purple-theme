@@ -79,15 +79,49 @@ find_python() {
   done
 }
 
+# zip_folder folder zip -> writes a .zip of everything in the folder (paths
+# inside it relative to the folder), with python3 or zip. Returns 1 if
+# neither works. With python3 the .zip is reproducible: the same files always
+# make the same bytes (every entry gets a fixed date), so the committed
+# example packages only change when their contents do.
+zip_folder() {
+  rm -f "$2"
+  if command -v python3 >/dev/null 2>&1 && python3 -c '
+import os, sys, zipfile
+folder, target = sys.argv[1:]
+with zipfile.ZipFile(target, "w") as z:
+    for dirpath, dirs, files in os.walk(folder):
+        dirs.sort()
+        for name in sorted(files):
+            path = os.path.join(dirpath, name)
+            entry = zipfile.ZipInfo(os.path.relpath(path, folder), (1980, 1, 1, 0, 0, 0))
+            entry.compress_type = zipfile.ZIP_DEFLATED
+            entry.external_attr = 0o644 << 16
+            with open(path, "rb") as f:
+                z.writestr(entry, f.read())
+' "$1" "$2" 2>/dev/null; then
+    return 0
+  fi
+  command -v zip >/dev/null 2>&1 && (cd "$1" && zip -q -r "$2" .) 2>/dev/null
+}
+
 # --- Prepare for a commit (for maintainers) --------------------------------
 # ./setup.sh --prep-commit puts the generated files git tracks back to the
 # committed defaults, so local palettes don't end up in a commit:
 # Blue Purple's files are regenerated (restored if removed, updated if a
 # template changed), and package.json is rebuilt listing only Blue Purple
-# (keeping any change to package.json.tmpl). Other generated themes stay on
-# disk; they're ignored by git. Deliberately left out of the usage and README.
+# (keeping any change to package.json.tmpl). The example packages made from
+# Blue Purple (EXAMPLE_PACKAGES) are rebuilt from its regenerated files.
+# Other generated themes stay on disk; they're ignored by git. Deliberately
+# left out of the usage and README.
 
 PYTHON="$(find_python)"
+
+# Committed, ready-to-install packages of Blue Purple: "folder package" pairs.
+EXAMPLE_PACKAGES=(
+  "app-themes/vivaldi-theme/blue-purple app-themes/vivaldi-theme/jenerated-blue-purple.zip"
+  "app-themes/jetbrains-theme/blue-purple app-themes/jetbrains-theme/jenerated-blue-purple.jar"
+)
 
 prep_commit() {
   [ -n "$PYTHON" ] || die "--prep-commit needs Python 3.11 or later"
@@ -102,6 +136,13 @@ import jenerate
 jenerate.add(["blue-purple"])
 jenerate.write_vscode_package(["blue-purple"])
 '
+  local pair folder package
+  for pair in "${EXAMPLE_PACKAGES[@]}"; do
+    folder="${pair% *}"
+    package="${pair#* }"
+    zip_folder "$ROOT/$folder" "$ROOT/$package" || die "couldn't rebuild $package"
+    say "Rebuilt $package"
+  done
   say "The generated files git tracks now match the Blue Purple defaults."
   if [ -n "$others" ]; then
     say ""
@@ -156,8 +197,9 @@ choose "What would you like to do?" \
 
 # --- Pick an app -------------------------------------------------------------
 
-APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim" "Firefox" "Vivaldi")
-APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi")
+APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim" "Firefox" "Vivaldi"
+  "JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)")
+APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains")
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)")
   APP_IDS+=("ptyxis" "tilix")
@@ -454,28 +496,14 @@ install_firefox() {
   fi
 }
 
-# zip_file file zip -> writes a .zip holding just the file, with python3 or
-# zip. Returns 1 if neither works.
-zip_file() {
-  rm -f "$2"
-  if command -v python3 >/dev/null 2>&1 && python3 -c '
-import os, sys, zipfile
-with zipfile.ZipFile(sys.argv[2], "w", zipfile.ZIP_DEFLATED) as z:
-    z.write(sys.argv[1], os.path.basename(sys.argv[1]))
-' "$1" "$2" 2>/dev/null; then
-    return 0
-  fi
-  command -v zip >/dev/null 2>&1 && zip -q -j "$2" "$1" 2>/dev/null
-}
-
 install_vivaldi() {
-  local settings="$ROOT/app-themes/vivaldi-theme/$SLUG/settings.json"
+  local folder="$ROOT/app-themes/vivaldi-theme/$SLUG"
   local theme_zip="$ROOT/app-themes/vivaldi-theme/jenerated-$SLUG.zip"
 
   step "Packaging the Vivaldi theme"
   # Vivaldi imports a theme as a .zip holding its settings.json.
-  zip_file "$settings" "$theme_zip" ||
-    die "couldn't make the .zip (that needs python3 or zip); zip $settings by hand"
+  zip_folder "$folder" "$theme_zip" ||
+    die "couldn't make the .zip (that needs python3 or zip); zip $folder/settings.json by hand"
   say "Made $theme_zip"
 
   step "Done! To turn the theme on:"
@@ -486,6 +514,30 @@ install_vivaldi() {
   say "   within 30 seconds, or the preview expires and nothing is installed."
   say "After changing the palette, run ./setup.sh again and import the new .zip:"
   say "Vivaldi offers it as an update to the theme you installed."
+}
+
+install_jetbrains() {
+  local folder="$ROOT/app-themes/jetbrains-theme/$SLUG"
+  local jar="$ROOT/app-themes/jetbrains-theme/jenerated-$SLUG.jar"
+
+  step "Packaging the JetBrains theme"
+  # The theme is a small plugin: its folder, zipped as a .jar.
+  zip_folder "$folder" "$jar" ||
+    die "couldn't make the .jar (that needs python3 or zip); zip the contents of $folder by hand"
+  say "Made $jar"
+
+  step "Done! To turn the theme on:"
+  say "It works in the JetBrains apps built on the IntelliJ Platform (2023.1 or"
+  say "later): IntelliJ IDEA, Android Studio, PyCharm, WebStorm, PhpStorm, GoLand,"
+  say "RubyMine, CLion, Rider, DataGrip, DataSpell and RustRover. (Not Fleet,"
+  say "which has its own theme format.) In the app:"
+  say "1. Open Settings -> Plugins, click the gear icon, and choose"
+  say "   \"Install Plugin from Disk...\"."
+  say "2. Choose $jar"
+  say "   and restart the app if it asks."
+  say "3. Open Settings -> Appearance & Behavior -> Appearance, and choose"
+  say "   \"Jenerated $NAME\" as the theme. Its editor colors come with it."
+  say "After changing the palette, run ./setup.sh again and install the new .jar."
 }
 
 install_tilix() {
@@ -544,6 +596,7 @@ case "$APP" in
   vim) install_vim ;;
   firefox) install_firefox ;;
   vivaldi) install_vivaldi ;;
+  jetbrains) install_jetbrains ;;
   tilix) install_tilix ;;
 esac
 

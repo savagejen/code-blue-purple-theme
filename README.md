@@ -14,6 +14,7 @@ install it in any app without running anything.
 Each app has its own folder with a template and install instructions:
 
 - [Firefox](app-themes/firefox-theme/)
+- [JetBrains apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)](app-themes/jetbrains-theme/)
 - [Obsidian](app-themes/obsidian-theme/)
 - [Ptyxis (Ubuntu terminal)](app-themes/ptyxis-theme/)
 - [Slack](app-themes/slack-theme/)
@@ -76,8 +77,10 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
   file with `{{color_name}}` placeholders where the colors go. A template can
   add transparency after a placeholder, for example `{{accent}}33`. For apps
   that need them, each color is also available as RGB and HSL numbers:
-  `{{accent_rgb}}` gives `88, 101, 242`, and `{{accent_h}}`, `{{accent_s}}`
-  and `{{accent_l}}` give `235`, `86` and `65`.
+  `{{accent_rgb}}` gives `88, 101, 242`, `{{accent_h}}`, `{{accent_s}}` and
+  `{{accent_l}}` give `235`, `86` and `65`, and `{{accent_hex}}` gives
+  `5865F2` (without the `#`). `{{uuid}}` is an ID made from the palette's
+  slug, the same every time, for apps that identify themes by UUID.
 - **`jenerate.py`** fills in every template for each palette you name and
   writes the results next to the templates, named after the palette's slug.
   Themes you generated earlier are kept. For VS Code it also rebuilds
@@ -95,8 +98,8 @@ Don't edit generated files by hand; change the palette or template and run
 
 The templates currently assume a dark palette: the VS Code theme template
 sets `"type": "dark"` (`package.json` follows each theme's type), and the
-Ptyxis, Tilix, Obsidian, Vim, Firefox and Vivaldi themes only have a dark
-variant.
+Ptyxis, Tilix, Obsidian, Vim, Firefox, Vivaldi and JetBrains themes only have
+a dark variant.
 
 ## Changing colors
 
@@ -131,8 +134,8 @@ explains any that a palette breaks:
 - A palette in `palettes/` must be named `<slug>-palette.toml`. (A palette
   kept elsewhere and passed by path can be named anything.)
 - The `name` can't be empty, start or end with spaces, or contain double
-  quotes, slashes, backslashes or line breaks. (It also names the Obsidian
-  theme's folder.)
+  quotes, slashes, backslashes, `<`, `>`, `&` or line breaks. (It's written
+  into JSON and XML files, and also names the Obsidian theme's folder.)
 - Every color is a quoted string: `"#rrggbb"` or another color's name.
 
 ## Adding an app

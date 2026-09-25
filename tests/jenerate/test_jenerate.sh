@@ -30,6 +30,8 @@ run_jenerate() {
 write_palette() {
   local path="$1" name="$2" slug="$3"
   shift 3
+  # & and | mean something in a sed replacement, so escape them.
+  name="$(printf '%s' "$name" | sed 's/[&|]/\\&/g')"
   sed -e "s|^name = .*|name = \"$name\"|" -e "s|^slug = .*|slug = \"$slug\"|" \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$path"
   for line in "$@"; do
@@ -46,6 +48,7 @@ tilix_scheme() { printf '%s' "$SANDBOX/repo/app-themes/tilix-theme/$1.json"; }
 vim_scheme() { printf '%s' "$SANDBOX/repo/app-themes/vim-theme/colors/jenerated-$1.vim"; }
 firefox_theme() { printf '%s' "$SANDBOX/repo/app-themes/firefox-theme/$1"; }
 vivaldi_theme() { printf '%s' "$SANDBOX/repo/app-themes/vivaldi-theme/$1"; }
+jetbrains_theme() { printf '%s' "$SANDBOX/repo/app-themes/jetbrains-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -171,6 +174,9 @@ test_generates_every_app_theme() {
   assert_exists "$(vim_scheme sunset)"
   assert_exists "$(firefox_theme sunset)/manifest.json"
   assert_exists "$(vivaldi_theme sunset)/settings.json"
+  assert_exists "$(jetbrains_theme sunset)/META-INF/plugin.xml"
+  assert_exists "$(jetbrains_theme sunset)/jenerated-sunset.theme.json"
+  assert_exists "$(jetbrains_theme sunset)/jenerated-sunset.xml"
 }
 
 # GIVEN the Sunset palette
@@ -181,7 +187,8 @@ test_fills_in_every_placeholder() {
   for file in "$(vscode_theme sunset)" "$(ptyxis_palette sunset)" "$(slack_theme sunset)" \
     "$(obsidian_theme sunset)/theme.css" "$(obsidian_theme sunset)/manifest.json" \
     "$(tilix_scheme sunset)" "$(vim_scheme sunset)" "$(firefox_theme sunset)/manifest.json" \
-    "$(vivaldi_theme sunset)/settings.json"; do
+    "$(vivaldi_theme sunset)/settings.json" "$(jetbrains_theme sunset)/META-INF/plugin.xml" \
+    "$(jetbrains_theme sunset)/jenerated-sunset.theme.json" "$(jetbrains_theme sunset)/jenerated-sunset.xml"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -269,7 +276,10 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/ptyxis-theme/blue-purple.palette app-themes/slack-theme/blue-purple.txt \
     app-themes/obsidian-theme/blue-purple/theme.css app-themes/obsidian-theme/blue-purple/manifest.json \
     app-themes/tilix-theme/blue-purple.json app-themes/vim-theme/colors/jenerated-blue-purple.vim \
-    app-themes/firefox-theme/blue-purple/manifest.json app-themes/vivaldi-theme/blue-purple/settings.json; do
+    app-themes/firefox-theme/blue-purple/manifest.json app-themes/vivaldi-theme/blue-purple/settings.json \
+    app-themes/jetbrains-theme/blue-purple/META-INF/plugin.xml \
+    app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.theme.json \
+    app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.xml; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -401,6 +411,15 @@ test_referenced_colors_get_formats_too() {
   run_jenerate refs
   assert_status 0
   assert_file_equals "$(slack_theme refs)" "$(color_rgb red)"
+}
+
+# GIVEN a template using {{accent_hex}}
+# WHEN generating Sunset
+# THEN it's Sunset's accent without the #
+test_colors_are_available_without_the_hash() {
+  render_colors accent_hex
+  expected="$(color accent | tr -d '#')"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_hex '$expected', got '$RENDERED'"
 }
 
 # GIVEN a template using {{uuid}}
@@ -604,6 +623,55 @@ test_remove_deletes_the_vivaldi_theme() {
   assert_contains "Removed app-themes/vivaldi-theme/sunset/settings.json"
   assert_missing "$(vivaldi_theme sunset)"
   assert_exists "$SANDBOX/repo/app-themes/vivaldi-theme/settings.json.tmpl"
+}
+
+# --- Tests: JetBrains apps ---------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the plugin descriptor and editor scheme are valid XML and the UI theme
+#      valid JSON, the theme builds on the New UI dark theme and names its
+#      editor scheme, and all three use the palette's name and colors
+test_jetbrains_theme_uses_the_palette() {
+  run_jenerate sunset
+  folder="$(jetbrains_theme sunset)"
+  result="$("$PYTHON" -c '
+import json, sys, xml.etree.ElementTree as ET
+folder = sys.argv[1]
+plugin = ET.parse(folder + "/META-INF/plugin.xml").getroot()
+theme = json.load(open(folder + "/jenerated-sunset.theme.json"))
+scheme = ET.parse(folder + "/jenerated-sunset.xml").getroot()
+def attr(name, part):
+    return scheme.find(f"attributes/option[@name=\"{name}\"]/value/option[@name=\"{part}\"]").get("value")
+caret = scheme.find("colors/option[@name=\"CARET_COLOR\"]").get("value")
+print(plugin.findtext("name"), plugin.findtext("id"), plugin.find("extensions/themeProvider").get("path"))
+print(theme["name"], theme["parentTheme"], theme["editorScheme"], scheme.get("name"), scheme.get("parent_scheme"))
+c = theme["colors"]
+print(c["Gray1"], c["Gray2"], c["Blue6"], c["Green1"], c["Red7"])
+print(caret, attr("TEXT", "BACKGROUND"), attr("DEFAULT_STRING", "FOREGROUND"), attr("CONSOLE_RED_OUTPUT", "FOREGROUND"))
+' "$folder")"
+  hex() { color "$1" | tr -d '#'; }
+  expected="Jenerated Sunset com.github.savagejen.jenerated-themes.sunset /jenerated-sunset.theme.json
+Jenerated Sunset ExperimentalDark /jenerated-sunset.xml Jenerated Sunset Darcula
+$(color bg) $(color bg_sidebar) $(color accent) $(color green)1A $(color red)
+$(hex accent) $(hex bg) $(hex green) $(hex term_red)"
+  [ "$result" = "$expected" ] || fail "expected JetBrains theme values:
+$expected
+got:
+$result"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its whole JetBrains theme folder is deleted, including the META-INF
+#      folder inside it, and the templates are kept
+test_remove_deletes_the_jetbrains_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_status 0
+  assert_contains "Removed app-themes/jetbrains-theme/sunset/META-INF/plugin.xml"
+  assert_missing "$(jetbrains_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/jetbrains-theme/plugin.xml.tmpl"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------
@@ -1076,7 +1144,7 @@ test_name_cannot_contain_a_quote() {
   } >"$SANDBOX/repo/palettes/evil-palette.toml"
   run_jenerate evil
   assert_status 1
-  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes, <, >, & or line breaks"
   assert_missing "$(vscode_theme evil)"
 }
 
@@ -1087,7 +1155,7 @@ test_name_cannot_contain_a_line_break() {
   write_palette "$SANDBOX/repo/palettes/evil-palette.toml" 'Evil\\nBackground=#ff0000' "evil"
   run_jenerate evil
   assert_status 1
-  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes, <, >, & or line breaks"
   assert_missing "$(ptyxis_palette evil)"
 }
 
@@ -1098,7 +1166,20 @@ test_name_cannot_contain_a_backslash() {
   write_palette "$SANDBOX/repo/palettes/evil-palette.toml" 'Evil\\\\' "evil"
   run_jenerate evil
   assert_status 1
-  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes, <, >, & or line breaks"
+}
+
+# GIVEN palettes whose names contain &, < or >
+# WHEN generating each
+# THEN every one is refused, since the name goes into XML files
+test_name_cannot_contain_xml_characters() {
+  for name in "Night & Day" "A<B" "A>B"; do
+    write_palette "$SANDBOX/repo/palettes/evil-palette.toml" "$name" "evil"
+    run_jenerate evil
+    assert_status 1
+    assert_contains "\`name\` can't contain quotes, slashes, backslashes, <, >, & or line breaks"
+    assert_missing "$(jetbrains_theme evil)"
+  done
 }
 
 # GIVEN a palette whose name contains a slash
@@ -1109,7 +1190,7 @@ test_name_cannot_contain_a_slash() {
   write_palette "$SANDBOX/repo/palettes/evil-palette.toml" 'Night/Day' "evil"
   run_jenerate evil
   assert_status 1
-  assert_contains "\`name\` can't contain quotes, slashes, backslashes or line breaks"
+  assert_contains "\`name\` can't contain quotes, slashes, backslashes, <, >, & or line breaks"
 }
 
 # GIVEN palettes whose names are empty, only spaces, or start or end with a
