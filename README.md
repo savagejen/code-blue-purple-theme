@@ -13,11 +13,13 @@ install it in any app without running anything.
 
 Each app has its own folder with a template and install instructions:
 
+- [Firefox](app-themes/firefox-theme/)
 - [Obsidian](app-themes/obsidian-theme/)
 - [Ptyxis (Ubuntu terminal)](app-themes/ptyxis-theme/)
 - [Slack](app-themes/slack-theme/)
 - [Tilix (terminal)](app-themes/tilix-theme/)
 - [Vim and Neovim](app-themes/vim-theme/)
+- [Vivaldi](app-themes/vivaldi-theme/)
 - [VS Code](app-themes/vs-code-theme/)
 
 ## Getting started
@@ -93,7 +95,8 @@ Don't edit generated files by hand; change the palette or template and run
 
 The templates currently assume a dark palette: the VS Code theme template
 sets `"type": "dark"` (`package.json` follows each theme's type), and the
-Ptyxis, Tilix, Obsidian and Vim themes only have a dark variant.
+Ptyxis, Tilix, Obsidian, Vim, Firefox and Vivaldi themes only have a dark
+variant.
 
 ## Changing colors
 

@@ -59,7 +59,8 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 
 # GIVEN a Linux system
 # WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Ptyxis and Tilix
+# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
+#      Ptyxis and Tilix
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
@@ -67,14 +68,16 @@ test_app_menu_on_linux_includes_the_terminals() {
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
   assert_contains "4) Vim / Neovim"
-  assert_contains "5) Ptyxis (Ubuntu terminal)"
-  assert_contains "6) Tilix (terminal)"
+  assert_contains "5) Firefox"
+  assert_contains "6) Vivaldi"
+  assert_contains "7) Ptyxis (Ubuntu terminal)"
+  assert_contains "8) Tilix (terminal)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack, Obsidian and Vim, but not Ptyxis or
-#      Tilix
+# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox and Vivaldi,
+#      but not Ptyxis or Tilix
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
@@ -82,6 +85,8 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
   assert_contains "2) Slack"
   assert_contains "3) Obsidian"
   assert_contains "4) Vim / Neovim"
+  assert_contains "5) Firefox"
+  assert_contains "6) Vivaldi"
   assert_not_contains "Ptyxis"
   assert_not_contains "Tilix"
 }
@@ -272,7 +277,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blurple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "1\n6\n1\n"
+  run_setup "1\n8\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blurple' is not a #rrggbb value"
@@ -290,7 +295,7 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "1\n6\n2\n"
+  run_setup "1\n8\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
   assert_exists "$repo/app-themes/tilix-theme/sunset.json"
@@ -429,7 +434,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "1\n5\n1\n"
+  run_setup "1\n7\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -441,8 +446,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "1\n5\n1\n"
-  run_setup "1\n5\n1\n"
+  run_setup "1\n7\n1\n"
+  run_setup "1\n7\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -458,7 +463,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "1\n6\n1\n"
+  run_setup "1\n8\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
@@ -470,7 +475,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "1\n6\n2\n"
+  run_setup "1\n8\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
@@ -484,7 +489,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "1\n6\n1\n"
+  run_setup "1\n8\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -494,8 +499,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "1\n6\n1\n"
-  run_setup "1\n6\n1\n"
+  run_setup "1\n8\n1\n"
+  run_setup "1\n8\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -507,7 +512,7 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "1\n6\n1\nn\n"
+  run_setup "1\n8\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
 }
@@ -575,6 +580,153 @@ test_vim_asks_before_replacing_a_copy() {
   run_setup "1\n4\n1\nn\n"
   assert_status 1
   assert_exists "$SANDBOX/home/$VIM_PACK/colors/keep-me.vim"
+}
+
+# --- Tests: Firefox ----------------------------------------------------------
+
+FIREFOX_DIR="app-themes/firefox-theme"
+
+# xpi_manifest xpi expression -> prints a Python expression over the .xpi's
+# manifest (as `m`), or its file list (as `names`).
+xpi_manifest() {
+  "$(find_python)" -c "
+import json, sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+names = z.namelist()
+m = json.loads(z.read('manifest.json'))
+print($2)
+" "$1"
+}
+
+# wait_for file -> waits up to two seconds for a file (from a command setup.sh
+# started in the background).
+wait_for() {
+  for _ in $(seq 40); do
+    [ -e "$1" ] && return 0
+    "$(find_python)" -c 'import time; time.sleep(0.05)'
+  done
+}
+
+# GIVEN a Linux system
+# WHEN choosing Firefox and Sunset, and not opening Firefox
+# THEN Sunset's theme is packaged as an .xpi holding just its manifest, with
+#      a date-based version, and it explains trying and keeping the theme
+test_firefox_packages_the_theme() {
+  fake_os Linux
+  fake_command firefox "touch \"$SANDBOX/firefox-ran\""
+  run_setup "1\n5\n2\nn\n"
+  assert_status 0
+  xpi="$SANDBOX/repo/$FIREFOX_DIR/jenerated-sunset.xpi"
+  assert_exists "$xpi"
+  [ "$(xpi_manifest "$xpi" 'names')" = "['manifest.json']" ] || fail "expected the .xpi to hold only manifest.json"
+  [ "$(xpi_manifest "$xpi" 'm["name"], m["browser_specific_settings"]["gecko"]["id"]')" = \
+    "Jenerated Sunset jenerated-sunset@jenerated-themes" ] || fail "unexpected .xpi name or id"
+  version="$(xpi_manifest "$xpi" 'm["version"]')"
+  printf '%s' "$version" | grep -Eq '^20[0-9]{2}\.[1-9][0-9]{2,3}\.(0|[1-9][0-9]{0,3})$' ||
+    fail "expected a date-based version without leading zeros, got $version"
+  assert_contains "$SANDBOX/repo/$FIREFOX_DIR/sunset/manifest.json"
+  assert_contains "https://addons.mozilla.org/developers/addon/submit/distribution"
+  assert_contains "upload $xpi"
+  assert_missing "$SANDBOX/firefox-ran"
+}
+
+# GIVEN a Linux system with Firefox
+# WHEN choosing Firefox and answering yes to opening it
+# THEN Firefox is started on its add-on debugging page
+test_firefox_opens_the_debugging_page() {
+  fake_os Linux
+  fake_command firefox "printf '%s' \"\$*\" >\"$SANDBOX/firefox-ran\""
+  run_setup "1\n5\n1\ny\n"
+  assert_status 0
+  wait_for "$SANDBOX/firefox-ran"
+  assert_file_equals "$SANDBOX/firefox-ran" "about:debugging#/runtime/this-firefox"
+}
+
+# GIVEN a Mac
+# WHEN choosing Firefox and answering yes to opening it
+# THEN it opens the page with `open -a Firefox`
+test_firefox_on_macos_uses_open() {
+  fake_os Darwin
+  fake_command open "printf '%s' \"\$*\" >\"$SANDBOX/open-ran\""
+  run_setup "1\n5\n1\ny\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/open-ran" "-a Firefox about:debugging#/runtime/this-firefox"
+}
+
+# GIVEN a Mac where Firefox can't be opened
+# WHEN choosing Firefox and answering yes to opening it
+# THEN it says so, and still explains how to load the theme
+test_firefox_that_cant_be_found_is_explained() {
+  fake_os Darwin
+  fake_command open "exit 1"
+  run_setup "1\n5\n1\ny\n"
+  assert_status 0
+  assert_contains "Couldn't find Firefox"
+  assert_contains "Load Temporary Add-on"
+}
+
+# GIVEN no working python3
+# WHEN choosing Firefox and Blue Purple
+# THEN it can't package the theme, but still explains how to try it, without
+#      the steps for keeping it
+test_firefox_without_python_can_still_be_tried() {
+  fake_os Linux
+  fake_no_python
+  run_setup "1\n5\n1\nn\n"
+  assert_status 0
+  assert_contains "Couldn't package it"
+  assert_contains "$SANDBOX/repo/$FIREFOX_DIR/blue-purple/manifest.json"
+  assert_not_contains "addons.mozilla.org"
+  assert_missing "$SANDBOX/repo/$FIREFOX_DIR/jenerated-blue-purple.xpi"
+}
+
+# --- Tests: Vivaldi ----------------------------------------------------------
+
+VIVALDI_DIR="app-themes/vivaldi-theme"
+
+# GIVEN the Sunset palette
+# WHEN choosing Vivaldi and Sunset
+# THEN it's packaged as a .zip holding just its settings.json, as Vivaldi
+#      imports it, and it explains how to import it
+test_vivaldi_packages_the_theme() {
+  run_setup "1\n6\n2\n"
+  assert_status 0
+  theme_zip="$SANDBOX/repo/$VIVALDI_DIR/jenerated-sunset.zip"
+  assert_exists "$theme_zip"
+  result="$("$(find_python)" -c '
+import json, sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+s = json.loads(z.read("settings.json"))
+print(z.namelist(), s["name"])
+' "$theme_zip")"
+  [ "$result" = "['settings.json'] Jenerated Sunset" ] ||
+    fail "unexpected .zip contents: $result"
+  assert_contains '"Import Theme..."'
+  assert_contains "$theme_zip"
+  assert_contains "within 30 seconds"
+}
+
+# GIVEN no working python3, but the zip command
+# WHEN choosing Vivaldi and Blue Purple
+# THEN it packages the theme with zip instead
+test_vivaldi_packages_with_zip_without_python() {
+  fake_no_python
+  fake_command zip "printf '%s\n' \"\$@\" >\"$SANDBOX/zip-ran\""
+  run_setup "1\n6\n1\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/zip-ran" "$SANDBOX/repo/$VIVALDI_DIR/jenerated-blue-purple.zip"
+  assert_file_contains "$SANDBOX/zip-ran" "$SANDBOX/repo/$VIVALDI_DIR/blue-purple/settings.json"
+}
+
+# GIVEN neither python3 nor zip working
+# WHEN choosing Vivaldi and Blue Purple
+# THEN it exits with status 1, saying what's needed
+test_vivaldi_without_a_way_to_zip() {
+  fake_no_python
+  fake_command zip "exit 1"
+  run_setup "1\n6\n1\n"
+  assert_status 1
+  assert_contains "couldn't make the .zip (that needs python3 or zip)"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

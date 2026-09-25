@@ -156,8 +156,8 @@ choose "What would you like to do?" \
 
 # --- Pick an app -------------------------------------------------------------
 
-APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim")
-APP_IDS=("vscode" "slack" "obsidian" "vim")
+APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim" "Firefox" "Vivaldi")
+APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi")
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)")
   APP_IDS+=("ptyxis" "tilix")
@@ -390,6 +390,104 @@ install_vim() {
   say "16 colors, which the Ptyxis and Tilix themes set to the same palette."
 }
 
+# open_firefox url -> opens the URL in Firefox without waiting for it, or
+# returns 1 if Firefox can't be found.
+open_firefox() {
+  if [ "$OS" = "Darwin" ]; then
+    open -a Firefox "$1" >/dev/null 2>&1
+  elif command -v firefox >/dev/null 2>&1; then
+    (firefox "$1" >/dev/null 2>&1 &)
+  else
+    return 1
+  fi
+}
+
+# package_firefox_theme folder xpi -> zips the theme's manifest.json into an
+# .xpi for Mozilla to sign, with a version made from the date and time, since
+# each upload needs a new version. Returns 1 without a working python3.
+package_firefox_theme() {
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 -c '
+import json, sys, time, zipfile
+folder, xpi = sys.argv[1:]
+manifest = json.load(open(folder + "/manifest.json"))
+now = time.localtime()
+manifest["version"] = (f"{now.tm_year}.{now.tm_mon * 100 + now.tm_mday}."
+                       f"{now.tm_hour * 100 + now.tm_min}")
+with zipfile.ZipFile(xpi, "w", zipfile.ZIP_DEFLATED) as z:
+    z.writestr("manifest.json", json.dumps(manifest, indent=2) + "\n")
+' "$1" "$2" 2>/dev/null
+}
+
+install_firefox() {
+  local folder="$ROOT/app-themes/firefox-theme/$SLUG"
+  local xpi="$ROOT/app-themes/firefox-theme/jenerated-$SLUG.xpi"
+
+  step "Packaging the Firefox theme"
+  if package_firefox_theme "$folder" "$xpi"; then
+    say "Made $xpi, for keeping the theme (see below)."
+  else
+    xpi=""
+    say "Couldn't package it (that needs python3), but you can still try it."
+  fi
+
+  say ""
+  if ask_yes "Open Firefox's add-on debugging page, to try the theme now?"; then
+    open_firefox "about:debugging#/runtime/this-firefox" ||
+      say "Couldn't find Firefox; open about:debugging#/runtime/this-firefox in it."
+  fi
+
+  step "Done! To try the theme (until Firefox restarts):"
+  say "1. In Firefox, on about:debugging (\"This Firefox\"), click"
+  say "   \"Load Temporary Add-on…\"."
+  say "2. Choose $folder/manifest.json"
+  if [ -n "$xpi" ]; then
+    say ""
+    say "To keep it: Firefox only keeps add-ons signed by Mozilla, and signing"
+    say "your own theme is free."
+    say "1. Go to https://addons.mozilla.org/developers/addon/submit/distribution"
+    say "   and sign in with a Mozilla account."
+    say "2. Choose \"On your own\", and upload $xpi"
+    say "3. Download the signed file it gives you, and open it in Firefox"
+    say "   (File -> Open File, or drag it onto a Firefox window)."
+    say "Run ./setup.sh again after changing the palette, for a new version."
+  fi
+}
+
+# zip_file file zip -> writes a .zip holding just the file, with python3 or
+# zip. Returns 1 if neither works.
+zip_file() {
+  rm -f "$2"
+  if command -v python3 >/dev/null 2>&1 && python3 -c '
+import os, sys, zipfile
+with zipfile.ZipFile(sys.argv[2], "w", zipfile.ZIP_DEFLATED) as z:
+    z.write(sys.argv[1], os.path.basename(sys.argv[1]))
+' "$1" "$2" 2>/dev/null; then
+    return 0
+  fi
+  command -v zip >/dev/null 2>&1 && zip -q -j "$2" "$1" 2>/dev/null
+}
+
+install_vivaldi() {
+  local settings="$ROOT/app-themes/vivaldi-theme/$SLUG/settings.json"
+  local theme_zip="$ROOT/app-themes/vivaldi-theme/jenerated-$SLUG.zip"
+
+  step "Packaging the Vivaldi theme"
+  # Vivaldi imports a theme as a .zip holding its settings.json.
+  zip_file "$settings" "$theme_zip" ||
+    die "couldn't make the .zip (that needs python3 or zip); zip $settings by hand"
+  say "Made $theme_zip"
+
+  step "Done! To turn the theme on:"
+  say "1. In Vivaldi, open Settings -> Themes, and click \"Import Theme...\" at the"
+  say "   bottom."
+  say "2. Choose $theme_zip"
+  say "3. Vivaldi previews the theme and asks whether to install it. Accept"
+  say "   within 30 seconds, or the preview expires and nothing is installed."
+  say "After changing the palette, run ./setup.sh again and import the new .zip:"
+  say "Vivaldi offers it as an update to the theme you installed."
+}
+
 install_tilix() {
   local schemes="$HOME/.config/tilix/schemes"
 
@@ -444,6 +542,8 @@ case "$APP" in
   slack) install_slack ;;
   obsidian) install_obsidian ;;
   vim) install_vim ;;
+  firefox) install_firefox ;;
+  vivaldi) install_vivaldi ;;
   tilix) install_tilix ;;
 esac
 

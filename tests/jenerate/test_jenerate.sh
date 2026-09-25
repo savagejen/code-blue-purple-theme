@@ -44,6 +44,8 @@ slack_theme() { printf '%s' "$SANDBOX/repo/app-themes/slack-theme/$1.txt"; }
 obsidian_theme() { printf '%s' "$SANDBOX/repo/app-themes/obsidian-theme/$1"; }
 tilix_scheme() { printf '%s' "$SANDBOX/repo/app-themes/tilix-theme/$1.json"; }
 vim_scheme() { printf '%s' "$SANDBOX/repo/app-themes/vim-theme/colors/jenerated-$1.vim"; }
+firefox_theme() { printf '%s' "$SANDBOX/repo/app-themes/firefox-theme/$1"; }
+vivaldi_theme() { printf '%s' "$SANDBOX/repo/app-themes/vivaldi-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -167,6 +169,8 @@ test_generates_every_app_theme() {
   assert_exists "$(obsidian_theme sunset)/manifest.json"
   assert_exists "$(tilix_scheme sunset)"
   assert_exists "$(vim_scheme sunset)"
+  assert_exists "$(firefox_theme sunset)/manifest.json"
+  assert_exists "$(vivaldi_theme sunset)/settings.json"
 }
 
 # GIVEN the Sunset palette
@@ -176,7 +180,8 @@ test_fills_in_every_placeholder() {
   run_jenerate sunset
   for file in "$(vscode_theme sunset)" "$(ptyxis_palette sunset)" "$(slack_theme sunset)" \
     "$(obsidian_theme sunset)/theme.css" "$(obsidian_theme sunset)/manifest.json" \
-    "$(tilix_scheme sunset)" "$(vim_scheme sunset)"; do
+    "$(tilix_scheme sunset)" "$(vim_scheme sunset)" "$(firefox_theme sunset)/manifest.json" \
+    "$(vivaldi_theme sunset)/settings.json"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -263,7 +268,8 @@ test_blue_purple_matches_the_committed_files() {
   for rel in app-themes/vs-code-theme/themes/jenerated-blue-purple-color-theme.json \
     app-themes/ptyxis-theme/blue-purple.palette app-themes/slack-theme/blue-purple.txt \
     app-themes/obsidian-theme/blue-purple/theme.css app-themes/obsidian-theme/blue-purple/manifest.json \
-    app-themes/tilix-theme/blue-purple.json app-themes/vim-theme/colors/jenerated-blue-purple.vim; do
+    app-themes/tilix-theme/blue-purple.json app-themes/vim-theme/colors/jenerated-blue-purple.vim \
+    app-themes/firefox-theme/blue-purple/manifest.json app-themes/vivaldi-theme/blue-purple/settings.json; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -397,6 +403,23 @@ test_referenced_colors_get_formats_too() {
   assert_file_equals "$(slack_theme refs)" "$(color_rgb red)"
 }
 
+# GIVEN a template using {{uuid}}
+# WHEN generating Sunset twice, and Blue Purple
+# THEN it's a UUID, the same both times for Sunset, and different for Blue
+#      Purple
+test_uuid_is_stable_for_each_palette() {
+  printf '%s\n' '{{uuid}}' >"$SANDBOX/repo/app-themes/slack-theme/slack-theme.txt.tmpl"
+  run_jenerate sunset
+  first="$(cat "$(slack_theme sunset)")"
+  run_jenerate sunset
+  second="$(cat "$(slack_theme sunset)")"
+  run_jenerate blue-purple
+  other="$(cat "$(slack_theme blue-purple)")"
+  printf '%s' "$first" | grep -Eq '^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' || fail "expected a UUID, got '$first'"
+  [ "$first" = "$second" ] || fail "expected the same UUID each time, got '$first' then '$second'"
+  [ "$first" != "$other" ] || fail "expected Blue Purple's UUID to differ from Sunset's"
+}
+
 # GIVEN a palette with grey, white, black and #ff0001 (a hue just under 360)
 # WHEN generating it with a template of their RGB and HSL forms
 # THEN each value is right, and #ff0001's hue is 0, not 360
@@ -496,6 +519,91 @@ test_remove_deletes_the_vim_scheme() {
   assert_contains "Removed app-themes/vim-theme/colors/jenerated-sunset.vim"
   assert_missing "$(vim_scheme sunset)"
   assert_exists "$(vim_scheme blue-purple)"
+}
+
+# --- Tests: Firefox ----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the Firefox theme is valid JSON, named after the palette, with an add-on
+#      id from the slug, dark, and using Sunset's colors, including the
+#      translucent accent as RGB
+test_firefox_theme_uses_the_palette() {
+  run_jenerate sunset
+  manifest="$(firefox_theme sunset)/manifest.json"
+  assert_valid_json "$manifest"
+  result="$("$PYTHON" -c '
+import json, sys
+m = json.load(open(sys.argv[1]))
+c = m["theme"]["colors"]
+print(m["name"], m["browser_specific_settings"]["gecko"]["id"], m["theme"]["properties"]["color_scheme"])
+print(c["frame"], c["toolbar"], c["tab_line"], c["toolbar_field_highlight"])
+' "$manifest")"
+  expected="Jenerated Sunset jenerated-sunset@jenerated-themes dark
+$(color bg_chrome) $(color bg) $(color accent) rgba($(color_rgb accent), 0.4)"
+  [ "$result" = "$expected" ] || fail "expected Firefox theme values '$expected', got '$result'"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Firefox theme folder is deleted, and the template is kept
+test_remove_deletes_the_firefox_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/firefox-theme/sunset/manifest.json"
+  assert_missing "$(firefox_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/firefox-theme/manifest.json.tmpl"
+}
+
+# --- Tests: Vivaldi ----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the Vivaldi theme is valid JSON, named after the palette, with the
+#      palette's UUID as its id, using Sunset's colors, and not taking its
+#      accent from websites
+test_vivaldi_theme_uses_the_palette() {
+  run_jenerate sunset
+  settings="$(vivaldi_theme sunset)/settings.json"
+  assert_valid_json "$settings"
+  result="$("$PYTHON" -c '
+import json, sys
+s = json.load(open(sys.argv[1]))
+print(s["name"], s["accentFromPage"])
+print(s["colorAccentBg"], s["colorBg"], s["colorFg"], s["colorHighlightBg"], s["colorWindowBg"])
+print(s["id"])
+' "$settings")"
+  expected="Jenerated Sunset False
+$(color bg_chrome) $(color bg) $(color text) $(color accent) $(color bg_minimap)"
+  [ "$(printf '%s\n' "$result" | head -n 2)" = "$expected" ] ||
+    fail "expected Vivaldi theme values '$expected', got '$result'"
+  printf '%s\n' "$result" | tail -n 1 | grep -Eq '^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' ||
+    fail "expected the id to be a UUID, got '$(printf '%s\n' "$result" | tail -n 1)'"
+}
+
+# GIVEN the fields in a theme exported by Vivaldi (a theme with other fields,
+#       or a non-UUID id, is refused on import with "format errors")
+# WHEN generating Sunset
+# THEN the Vivaldi theme has exactly those fields
+test_vivaldi_theme_has_the_fields_vivaldi_exports() {
+  run_jenerate sunset
+  fields="$("$PYTHON" -c '
+import json, sys
+print(" ".join(sorted(json.load(open(sys.argv[1])))))
+' "$(vivaldi_theme sunset)/settings.json")"
+  expected="accentFromPage accentOnWindow accentSaturationLimit alpha backgroundImage backgroundPosition blur colorAccentBg colorBg colorFg colorHighlightBg colorPosition colorWindowBg contrast dimBlurred engineVersion id name preferSystemAccent radius simpleScrollbar transparencyTabBar transparencyTabs url version"
+  [ "$fields" = "$expected" ] || fail "expected Vivaldi's fields '$expected', got '$fields'"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Vivaldi theme folder is deleted, and the template is kept
+test_remove_deletes_the_vivaldi_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/vivaldi-theme/sunset/settings.json"
+  assert_missing "$(vivaldi_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/vivaldi-theme/settings.json.tmpl"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------

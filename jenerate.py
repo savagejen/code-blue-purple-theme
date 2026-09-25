@@ -15,6 +15,8 @@ replaced with the palette's colors (plus its `name` and `slug`), and the result
 is written next to the template. Each color is also available as RGB and HSL
 numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 242",
 and {{accent_h}}, {{accent_s}} and {{accent_l}} are "235", "86" and "65".
+{{uuid}} is an ID made from the slug, the same every time, for apps that
+identify themes by UUID.
 """
 
 import argparse
@@ -23,6 +25,7 @@ import json
 import re
 import sys
 import tomllib
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -42,6 +45,8 @@ TARGETS = [
     ("app-themes/vim-theme/colorscheme.vim.tmpl", "app-themes/vim-theme/colors/jenerated-{slug}.vim"),
     ("app-themes/obsidian-theme/theme.css.tmpl", "app-themes/obsidian-theme/{slug}/theme.css"),
     ("app-themes/obsidian-theme/manifest.json.tmpl", "app-themes/obsidian-theme/{slug}/manifest.json"),
+    ("app-themes/firefox-theme/manifest.json.tmpl", "app-themes/firefox-theme/{slug}/manifest.json"),
+    ("app-themes/vivaldi-theme/settings.json.tmpl", "app-themes/vivaldi-theme/{slug}/settings.json"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
@@ -61,6 +66,8 @@ HEX = re.compile(r"#[0-9a-fA-F]{6}")
 PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
 # Slugs become file names, so they're kept to lowercase words and dashes.
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+# Each palette's {{uuid}} is made from its slug in this namespace.
+UUID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_URL, "https://github.com/savagejen/jenerated-themes")
 
 
 def is_path(arg):
@@ -138,7 +145,7 @@ def color_formats(key, value):
 def load_palette(path):
     """Read a palette and return its template values: every color as
     #rrggbb (with references to other colors followed) and in its other
-    forms (see color_formats), plus `name` and `slug`."""
+    forms (see color_formats), plus `name`, `slug` and `uuid`."""
     data = read_palette_file(path)
     colors = data["colors"]
 
@@ -161,6 +168,7 @@ def load_palette(path):
     values.update((key, resolve(key)) for key in colors)
     values["name"] = data["name"]
     values["slug"] = data["slug"]
+    values["uuid"] = str(uuid.uuid5(UUID_NAMESPACE, data["slug"]))
     return values
 
 
