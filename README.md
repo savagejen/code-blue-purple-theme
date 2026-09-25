@@ -29,7 +29,8 @@ Each app has its own folder with a template and install instructions:
 
 ## Themes
 
-A few premade palettes are included and can be previewed from [palettes/README.md](palettes/README.md)
+A few premade palettes are included and can be previewed in
+[palettes/README.md](palettes/README.md).
 
 ## Getting started
 
@@ -77,33 +78,15 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
 
 ## How it works
 
-- **Palettes** in [palettes/](palettes/) are TOML files with a `name`, a
-  `slug`, and a list of colors named by role (`bg`, `text`, `accent`, `red`,
-  `term_bright_cyan`, ...). A color is a `#rrggbb` value or the name of
-  another color in the same file.
-- **Templates** (the `.tmpl` files in each app's folder) are the app's theme
-  file with `{{color_name}}` placeholders where the colors go. A template can
-  add transparency after a placeholder, for example `{{accent}}33`. For apps
-  that need them, each color is also available as RGB and HSL numbers:
-  `{{accent_rgb}}` gives `88, 101, 243` (and `{{accent_rgb_csv}}` gives
-  `88,101,243`), `{{accent_h}}`, `{{accent_s}}` and `{{accent_l}}` give
-  `235`, `87` and `65`, and `{{accent_hex}}` gives
-  `5865F3` (without the `#`). `{{uuid}}` is an ID made from the palette's
-  slug, the same every time, for apps that identify themes by UUID.
-- **`jenerate.py`** fills in every template for each palette you name and
-  writes the results next to the templates, named after the palette's slug.
-  Themes you generated earlier are kept. For VS Code it also rebuilds
-  `app-themes/vs-code-theme/package.json` from `package.json.tmpl`, listing
-  every generated theme.
+A palette is a small file in [palettes/](palettes/) that names each color by
+its role: the editor background, text, the accent, error red, the terminal's
+colors and so on. `jenerate.py` fills those colors into a template for each
+app, and writes the themes next to the templates, named after the palette.
+Themes you generated earlier are kept.
 
-Generated files are ignored by git (see `.gitignore`), so each person's copy
-holds only the palettes they chose. The exception is Blue Purple: its
-generated files, and an `app-themes/vs-code-theme/package.json` that lists
-only it, are committed as the default. Generating or removing other palettes changes that
-`package.json` in your copy; don't commit that change.
-
-Don't edit generated files by hand; change the palette or template and run
-`jenerate.py` again.
+Generated themes stay out of git, so your copy holds only the palettes you
+chose. Don't edit them by hand; change the palette and run `jenerate.py`
+again.
 
 ## Light and dark palettes
 
@@ -124,20 +107,11 @@ On a dark palette both are usually white, so `text_strong = "text_bright"`;
 on a light palette `text_bright` stays light for the accent, and
 `text_strong` is dark, often just `"text"`.
 
-Templates can use `{{scheme}}` (`dark` or `light`), and
-`{{scheme: "text for dark" | "text for light"}}`. A template whose dark and
-light versions differ too much for that can have `{scheme}` in its path in
-`TARGETS`, like JetBrains' `theme-{scheme}.json.tmpl`.
-
 ## Changing colors
 
 Edit a palette, for example `palettes/sunset-palette.toml`, then run
 `./jenerate.py sunset` to regenerate its themes. Reload the apps that use it
 to see the change.
-
-If you change the Blue Purple palette or any template, run
-`./jenerate.py blue-purple` and commit the regenerated Blue Purple files along
-with your change, so the default stays in sync.
 
 You can also keep a palette outside this repository and pass its path:
 `./jenerate.py ~/my-palettes/forest-palette.toml`.
@@ -145,14 +119,15 @@ You can also keep a palette outside this repository and pass its path:
 ## Adding a palette
 
 The easiest way is the [Palette Creator](palette-creator/): run
-`./palette-creator/serve.py` to design a palette in your browser with a live
-preview, then save it to `palettes/`.
+`./setup.sh` and choose **Design a new palette**, or run
+`./palette-creator/serve.py`. It shows a preview in your browser that
+recolors as you edit. Save the palette to `palettes/`, then generate its
+themes with `./jenerate.py <slug>`.
 
 To write one by hand, copy an existing palette to
 `palettes/<slug>-palette.toml`, change its `name`, `slug` and colors, and run
 `./jenerate.py <slug>`. Every color the templates use must be defined; if one
-is missing, `jenerate.py` stops and names it. Add the palette to
-[Themes](#themes) below.
+is missing, `jenerate.py` stops and names it.
 
 A few rules keep generated files safe and valid; `jenerate.py` checks them and
 explains any that a palette breaks:
@@ -169,39 +144,12 @@ explains any that a palette breaks:
   background (`bg`) doesn't make that clear. See
   [Light and dark palettes](#light-and-dark-palettes).
 
-The palettes published here stay clear of the exact colors listed in
-[palettes/avoid-these.txt](palettes/avoid-these.txt): colors too iconic to
-publish. A nearby shade is fine, and you're welcome to use these colors in
-your own palettes. A git hook refuses commits while a palette in `palettes/`
-uses one; turn it on once per clone with
-`git config core.hooksPath .githooks`. The tests check it too.
+## Contributing
 
-## Adding an app
+To share a palette, add support for an app, or work on the project itself,
+see [CONTRIBUTING.md](CONTRIBUTING.md). It covers how the templates work,
+adding palettes and apps, the tests, screenshots, and the license.
 
-1. Create a folder for the app with a template (`<something>.tmpl`) that uses
-   the palette's color names.
-2. Add a `(template, output)` pair to `TARGETS` in `jenerate.py`. Use
-   `{slug}` in the output path so each palette gets its own file. An app
-   that needs several files per theme can use `{slug}` as a folder, like
-   Obsidian's `app-themes/obsidian-theme/{slug}/theme.css`.
-3. Add the output pattern to `.gitignore` (keeping Blue Purple's files), and
-   a README with install steps.
-4. Add the app to `setup.sh`, and tests for it in `tests/setup/`.
+## License
 
-## Running the tests
-
-Tests live in [tests/](tests/), with one folder per script (`tests/setup/`
-for `setup.sh`, `tests/jenerate/` for `jenerate.py`,
-`tests/palette-creator/` for the Palette Creator's `serve.py`, and
-`tests/hooks/` for the git hooks in `.githooks/`). Run them all with:
-
-```bash
-tests/run.sh
-```
-
-Each test runs against a temporary copy of the repository (and, for
-`setup.sh`, a temporary home folder), so the tests don't touch your generated
-or installed themes. The `jenerate.py` tests need Python 3.11 or later and are
-skipped without it, as are the Palette Creator tests, which also need
-`curl`. Shared helpers are in `tests/lib.sh`.
-
+[MIT](LICENSE).

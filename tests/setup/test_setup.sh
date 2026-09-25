@@ -1404,6 +1404,37 @@ for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
   assert_not_contains "Which app"
 }
 
+# GIVEN fake node and npm (node records the palettes it's asked for)
+# WHEN running setup.sh --update-screenshots=sunset, and again with the
+#      singular --update-screenshot=sunset,blue-purple
+# THEN each runs the screenshot script for just the palettes named
+test_update_screenshots_for_named_palettes() {
+  fake_command npm "prefix=''
+while [ \$# -gt 0 ]; do [ \"\$1\" = --prefix ] && prefix=\"\$2\"; shift; done
+mkdir -p \"\$prefix/node_modules/playwright\" \"\$prefix/node_modules/.bin\"
+printf '#!/bin/sh\nexit 0\n' >\"\$prefix/node_modules/.bin/playwright\"
+chmod +x \"\$prefix/node_modules/.bin/playwright\""
+  fake_command node "out=\"\$3\"; shift 3
+printf '%s\n' \"\$@\" >\"$SANDBOX/node-palettes\"
+for f in \"\$@\"; do printf 'new png' >\"\$out/\${f%-palette.toml}.png\"; done"
+  run_setup "" --update-screenshots=sunset
+  assert_status 0
+  assert_file_equals "$SANDBOX/node-palettes" "sunset-palette.toml"
+  run_setup "" --update-screenshot=sunset,blue-purple
+  assert_status 0
+  assert_file_equals "$SANDBOX/node-palettes" "$(printf 'sunset-palette.toml\nblue-purple-palette.toml')"
+  assert_not_contains "Which app"
+}
+
+# GIVEN setup.sh
+# WHEN running it with --update-screenshots= and no palette after the =
+# THEN it stops, saying how to name one
+test_update_screenshots_with_an_empty_list_is_an_error() {
+  run_setup "" --update-screenshots=
+  assert_status 1
+  assert_contains "name the palettes to screenshot, like --update-screenshots=candy"
+}
+
 # GIVEN an option setup.sh doesn't know
 # WHEN running setup.sh with it
 # THEN it exits with status 1, naming the option, without showing the menu

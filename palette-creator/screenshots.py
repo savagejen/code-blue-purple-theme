@@ -3,10 +3,11 @@
 
 Usage:
     ./palette-creator/screenshots.py                # screenshots, then README
+    ./palette-creator/screenshots.py candy,sunset   # just these palettes' screenshots
     ./palette-creator/screenshots.py --readme-only  # just the README
 
-Screenshots each palette in palettes/ in the Palette Creator's preview, into
-palettes/Screenshots/<slug>.png, using Playwright (screenshots.js). The
+Screenshots each palette in palettes/ (or just the ones named, by slug) in
+the Palette Creator's preview, into palettes/Screenshots/<slug>.png, using Playwright (screenshots.js). The
 Palette Creator runs on a throwaway copy of the repository, so the real
 work-in-progress palette is never touched. Playwright is installed into
 ~/.cache/jenerated-themes/playwright (outside the repository) the first time,
@@ -17,7 +18,8 @@ get one (from their description and key colors), and existing sections get
 their key colors refreshed. Other text is left alone; sections and
 screenshots for palettes that no longer exist are reported, not removed.
 
-./setup.sh --update-screenshots runs this.
+./setup.sh --update-screenshots runs this, and ./setup.sh
+--update-screenshots=candy,sunset runs it for just those palettes.
 """
 
 import argparse
@@ -207,10 +209,25 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--readme-only", action="store_true",
                         help="only update palettes/README.md")
+    parser.add_argument("slugs", nargs="*", metavar="slug",
+                        help="palettes to screenshot, by slug (commas or spaces "
+                             "between several); all of them if none are named")
     args = parser.parse_args()
+    slugs = [s for arg in args.slugs for s in arg.split(",") if s]
+    if args.readme_only and slugs:
+        parser.error("--readme-only updates the README for every palette; "
+                     "leave out the palette names")
     files = palette_files()
+    if slugs:
+        by_slug = {slug_of(f): f for f in files}
+        unknown = [s for s in slugs if s not in by_slug]
+        if unknown:
+            sys.exit(f"No palette in palettes/ called {', '.join(unknown)} "
+                     f"(the palettes are: {', '.join(by_slug)})")
+        files = [by_slug[s] for s in dict.fromkeys(slugs)]
     if not args.readme_only:
         take_screenshots(files)
+    # The README covers every palette, so its key colors stay current.
     update_readme()
 
 

@@ -112,8 +112,9 @@ with zipfile.ZipFile(target, "w") as z:
 # template changed), and package.json is rebuilt listing only Blue Purple
 # (keeping any change to package.json.tmpl). The example packages made from
 # Blue Purple (EXAMPLE_PACKAGES) are rebuilt from its regenerated files.
-# Other generated themes stay on disk; they're ignored by git. Deliberately
-# left out of the usage and README.
+# Other generated themes stay on disk; they're ignored by git. Left out of
+# the usage and README, which are for people installing themes; documented in
+# CONTRIBUTING.md.
 
 PYTHON="$(find_python)"
 
@@ -154,18 +155,19 @@ jenerate.write_vscode_package(["blue-purple"])
 
 # --- Update the palette screenshots (for maintainers) ------------------------
 # ./setup.sh --update-screenshots retakes palettes/Screenshots/<slug>.png for
-# every palette (from the Palette Creator's preview, with Playwright) and
-# updates palettes/README.md: new palettes get a section, and existing ones
-# get their key colors refreshed. See palette-creator/screenshots.py. Needs
-# Python 3.11 or later, Node.js and npm. Deliberately left out of the usage
-# and README.
+# every palette, or --update-screenshots=candy,sunset for just those (from
+# the Palette Creator's preview, with Playwright), and updates
+# palettes/README.md: new palettes get a section, and existing ones get their
+# key colors refreshed. See palette-creator/screenshots.py. Needs
+# Python 3.11 or later, Node.js and npm. Left out of the usage and README,
+# which are for people installing themes; documented in CONTRIBUTING.md.
 
 update_screenshots() {
   [ -n "$PYTHON" ] || die "--update-screenshots needs Python 3.11 or later"
   command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 ||
     die "--update-screenshots needs Node.js and npm (for Playwright)"
   step "Updating the palette screenshots"
-  "$PYTHON" palette-creator/screenshots.py
+  "$PYTHON" palette-creator/screenshots.py "$@"
 }
 
 case "${1:-}" in
@@ -174,8 +176,13 @@ case "${1:-}" in
     prep_commit
     exit 0
     ;;
-  --update-screenshots)
+  --update-screenshots | --update-screenshot)
     update_screenshots
+    exit 0
+    ;;
+  --update-screenshots=* | --update-screenshot=*)
+    [ -n "${1#*=}" ] || die "name the palettes to screenshot, like --update-screenshots=candy"
+    update_screenshots "${1#*=}"
     exit 0
     ;;
   *) die "unknown option: $1 (run ./setup.sh with no options)" ;;

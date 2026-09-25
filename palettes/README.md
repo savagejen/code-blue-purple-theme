@@ -25,20 +25,6 @@ background, with a blue-purple accent.
 
 Editor `#12131c` · Sidebar `#161825` · Accent `#5865F3` · Text `#DBDEE1`
 
-## Anodized
-
-`anodized`
-
-Anodized titanium: a gunmetal frame around a dark anodized violet editor and
-a gold-anodized sidebar, with the rainbow sheen of anodized metal (violet,
-magenta, teal, gold, copper and blue) for the accents and syntax. The colors
-were sampled from photos of anodized hardware and cutlery, and brightened
-where needed for contrast.
-
-![The Anodized palette in the Palette Creator's preview](Screenshots/anodized.png)
-
-Editor `#22152e` · Sidebar `#302c15` · Accent `#a96ae3` · Text `#e7eaee`
-
 ## Aurora
 
 `aurora`
@@ -115,3 +101,30 @@ honey, marmalade, rosehip, rose and misty forest blue.
 ![The Cobalted palette in the Palette Creator's preview](Screenshots/cobalted.png)
 
 Editor `#132a6e` · Sidebar `#102462` · Accent `#8cc3f4` · Text `#f1efe8`
+
+## Anodized
+
+`anodized`
+
+Anodized titanium: a gunmetal frame around a dark anodized violet editor and
+a gold-anodized sidebar, with the rainbow sheen of anodized metal (violet,
+magenta, teal, gold, copper and blue) for the accents and syntax. The colors
+were sampled from photos of anodized hardware and cutlery, and brightened
+where needed for contrast.
+
+![The Anodized palette in the Palette Creator's preview](Screenshots/anodized.png)
+
+Editor `#22152e` · Sidebar `#302c15` · Accent `#a96ae3` · Text `#e7eaee`
+
+## Cyberpunk Midnight
+
+`cyberpunk-midnight`
+
+Cyberpunk as a concept, from the colors its covers and posters share: hot
+pink, acid yellow, deep violet and electric blue, over an almost-black editor
+and violet-black night chrome. Terminal green and amber phosphor carry the
+old-terminal side.
+
+![The Cyberpunk Midnight palette in the Palette Creator's preview](Screenshots/cyberpunk-midnight.png)
+
+Editor `#100f0f` · Sidebar `#07181d` · Accent `#f048ac` · Text `#ebe8f4`

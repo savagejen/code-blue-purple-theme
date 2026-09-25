@@ -1,0 +1,69 @@
+# Cyberpunk as a concept, from the colors its covers and posters share: hot
+# pink, acid yellow, deep violet and electric blue, over an almost-black
+# editor and violet-black night chrome. Terminal green and amber phosphor
+# carry the old-terminal side.
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Cyberpunk Midnight"
+slug = "cyberpunk-midnight"
+
+[colors]
+# Backgrounds: a near-black editor, framed by the violet-black night
+bg_chrome = "#0d0a1a"          # activity bar, title bar, status bar
+bg_minimap = "#111522"
+bg = "#100f0f"                 # editor and terminal
+bg_sidebar = "#07181d"         # teal-black: the contrast to the neon
+bg_widget = "#1b1430"          # popups, hovers, notifications
+bg_line_highlight = "#1a1818"
+bg_hover = "#241a3d"           # hovered items, inputs
+bg_selected = "#2f2154"        # inactive selection in lists
+bg_secondary_hover = "#3d2c6a" # hovered secondary buttons
+selection = "#3f2a82"          # selected text: deep violet
+
+# Lines
+guide = "#211d26"              # indent guides, rulers
+whitespace = "#2c2733"         # rendered whitespace
+border = "#2a2040"
+
+# Text, dimmest to brightest
+text_faint = "#57506a"         # line numbers, ignored files
+text_muted = "#928bab"         # comments, inactive tabs
+text_subtle = "#c0bcd4"        # sidebar text, punctuation
+text = "#ebe8f4"
+text_bright = "#100f0f"        # text on the accent color
+text_strong = "#ffffff"        # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#f048ac"             # hot pink: cursor, focus, buttons, badges
+accent_hover = "#ff6cbf"       # hovered buttons
+accent_soft = "#b77cff"        # neon violet: keywords, links
+accent_light = "#6f94ff"       # electric blue: functions
+accent_pale = "#a5adf5"        # periwinkle: properties
+
+# Syntax and status colors
+red = "#ff4a5e"                # neon red: errors, deleted
+orange = "#ffb000"             # amber phosphor: numbers, parameters, attributes
+yellow = "#cdcd00"             # terminal yellow: warnings, regex
+green = "#00cd00"              # terminal green: strings, added
+cyan = "#3cc8f0"               # sign-light cyan: classes, types
+magenta = "#e640c6"            # magenta: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#26222c"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "accent"
+term_cyan = "cyan"
+term_white = "text_subtle"
+term_bright_black = "text_muted"
+term_bright_red = "#ff8290"
+term_bright_green = "#00ff00"
+term_bright_yellow = "#ffff00"
+term_bright_blue = "#a3b9ff"
+term_bright_magenta = "#ff8fd0"
+term_bright_cyan = "#8adcf5"
+term_bright_white = "text_strong"

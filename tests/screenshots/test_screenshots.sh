@@ -188,6 +188,58 @@ test_full_run_takes_screenshots_and_updates_the_readme() {
   assert_missing "$SANDBOX/repo/palette-creator/work-in-progress-palette.toml"
 }
 
+# GIVEN fake node and npm
+# WHEN taking screenshots of just Sunset, by slug
+# THEN only Sunset's screenshot is retaken, and the others are left alone
+test_named_palette_gets_the_only_screenshot() {
+  fake_playwright
+  cp "$SANDBOX/repo/palettes/Screenshots/blue-purple.png" "$SANDBOX/before.png"
+  run_screenshots sunset
+  assert_status 0
+  assert_file_equals "$SANDBOX/node-palettes" "sunset-palette.toml"
+  assert_file_equals "$SANDBOX/repo/palettes/Screenshots/sunset.png" "new png"
+  assert_same_file "$SANDBOX/repo/palettes/Screenshots/blue-purple.png" "$SANDBOX/before.png"
+}
+
+# GIVEN fake node and npm
+# WHEN taking screenshots of "sunset,blue-purple", then of "sunset" and
+#      "blue-purple" as separate arguments
+# THEN both ways retake just those two, in the order given
+test_several_named_palettes_get_screenshots() {
+  fake_playwright
+  expected="$(printf 'sunset-palette.toml\nblue-purple-palette.toml')"
+  run_screenshots sunset,blue-purple
+  assert_status 0
+  assert_file_equals "$SANDBOX/node-palettes" "$expected"
+  run_screenshots sunset blue-purple
+  assert_status 0
+  assert_file_equals "$SANDBOX/node-palettes" "$expected"
+}
+
+# GIVEN fake node and npm
+# WHEN taking screenshots of a palette that doesn't exist, alongside Sunset
+# THEN it stops, naming the missing one and listing the palettes, before
+#      installing anything or taking any screenshot
+test_unknown_palette_is_named_and_nothing_is_taken() {
+  fake_playwright
+  cp "$SANDBOX/repo/palettes/Screenshots/sunset.png" "$SANDBOX/before.png"
+  run_screenshots sunset,nope
+  assert_status 1
+  assert_contains "No palette in palettes/ called nope (the palettes are: "
+  assert_contains "sunset"
+  assert_missing "$SANDBOX/npm-ran"
+  assert_same_file "$SANDBOX/repo/palettes/Screenshots/sunset.png" "$SANDBOX/before.png"
+}
+
+# GIVEN the screenshot script
+# WHEN asking for --readme-only along with a palette
+# THEN it refuses, since the README update always covers every palette
+test_readme_only_takes_no_palettes() {
+  run_screenshots --readme-only sunset
+  assert_status 2
+  assert_contains "leave out the palette names"
+}
+
 # GIVEN Playwright already installed in ~/.cache
 # WHEN taking screenshots
 # THEN npm isn't run again
