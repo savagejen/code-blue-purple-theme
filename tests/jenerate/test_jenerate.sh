@@ -51,6 +51,7 @@ vivaldi_theme() { printf '%s' "$SANDBOX/repo/app-themes/vivaldi-theme/$1"; }
 jetbrains_theme() { printf '%s' "$SANDBOX/repo/app-themes/jetbrains-theme/$1"; }
 gtk3_theme() { printf '%s' "$SANDBOX/repo/app-themes/gtk3-theme/$1"; }
 chromium_theme() { printf '%s' "$SANDBOX/repo/app-themes/chromium-theme/$1"; }
+kde_theme() { printf '%s' "$SANDBOX/repo/app-themes/kde-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -182,6 +183,9 @@ test_generates_every_app_theme() {
   assert_exists "$(gtk3_theme sunset)/gtk-3.0/gtk.css"
   assert_exists "$(gtk3_theme sunset)/index.theme"
   assert_exists "$(chromium_theme sunset)/manifest.json"
+  assert_exists "$(kde_theme sunset)/Jenerated-sunset.colors"
+  assert_exists "$(kde_theme sunset)/Jenerated-sunset.colorscheme"
+  assert_exists "$(kde_theme sunset)/Jenerated-sunset.theme"
 }
 
 # GIVEN the Sunset palette
@@ -195,7 +199,8 @@ test_fills_in_every_placeholder() {
     "$(vivaldi_theme sunset)/settings.json" "$(jetbrains_theme sunset)/META-INF/plugin.xml" \
     "$(jetbrains_theme sunset)/jenerated-sunset.theme.json" "$(jetbrains_theme sunset)/jenerated-sunset.xml" \
     "$(gtk3_theme sunset)/gtk-3.0/gtk.css" "$(gtk3_theme sunset)/index.theme" \
-    "$(chromium_theme sunset)/manifest.json"; do
+    "$(chromium_theme sunset)/manifest.json" "$(kde_theme sunset)/Jenerated-sunset.colors" \
+    "$(kde_theme sunset)/Jenerated-sunset.colorscheme" "$(kde_theme sunset)/Jenerated-sunset.theme"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -288,7 +293,10 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.theme.json \
     app-themes/jetbrains-theme/blue-purple/jenerated-blue-purple.xml \
     app-themes/gtk3-theme/blue-purple/gtk-3.0/gtk.css app-themes/gtk3-theme/blue-purple/index.theme \
-    app-themes/chromium-theme/blue-purple/manifest.json; do
+    app-themes/chromium-theme/blue-purple/manifest.json \
+    app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colors \
+    app-themes/kde-theme/blue-purple/Jenerated-blue-purple.colorscheme \
+    app-themes/kde-theme/blue-purple/Jenerated-blue-purple.theme; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -429,6 +437,15 @@ test_colors_are_available_without_the_hash() {
   render_colors accent_hex
   expected="$(color accent | tr -d '#')"
   [ "$RENDERED" = "$expected" ] || fail "expected accent_hex '$expected', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_rgb_csv}}
+# WHEN generating Sunset
+# THEN it's Sunset's accent as "r,g,b", without spaces
+test_colors_are_available_as_rgb_without_spaces() {
+  render_colors accent_rgb_csv
+  expected="$(color_rgb accent | tr -d ' ')"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_rgb_csv '$expected', got '$RENDERED'"
 }
 
 # GIVEN a template using {{uuid}}
@@ -768,6 +785,92 @@ test_remove_deletes_the_chromium_theme() {
   assert_contains "Removed app-themes/chromium-theme/sunset/manifest.json"
   assert_missing "$(chromium_theme sunset)"
   assert_exists "$SANDBOX/repo/app-themes/chromium-theme/manifest.json.tmpl"
+}
+
+# --- Tests: KDE Plasma -------------------------------------------------------
+
+# kde_ini file -> prints "section|key=value" for every entry in a KDE config
+# file (a color scheme or Konsole scheme), read with Python's INI parser.
+kde_ini() {
+  "$PYTHON" -c '
+import configparser, sys
+cp = configparser.RawConfigParser(strict=True, comment_prefixes=("#",))
+cp.optionxform = str
+cp.read(sys.argv[1])
+for s in cp.sections():
+    for k, v in cp[s].items():
+        print(f"{s}|{k}={v}")
+' "$1"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the Plasma color scheme is named after the palette, and uses Sunset's
+#      colors, as r,g,b, for windows, views, buttons, selection and title bars
+test_kde_color_scheme_uses_the_palette() {
+  run_jenerate sunset
+  entries="$(kde_ini "$(kde_theme sunset)/Jenerated-sunset.colors")"
+  csv() { color_rgb "$1" | tr -d ' '; }
+  for expected in "General|ColorScheme=Jenerated-sunset" "General|Name=Jenerated Sunset" \
+    "Colors:Window|BackgroundNormal=$(csv bg_sidebar)" "Colors:View|BackgroundNormal=$(csv bg)" \
+    "Colors:View|ForegroundNormal=$(csv text)" "Colors:Button|BackgroundNormal=$(csv bg_hover)" \
+    "Colors:Selection|BackgroundNormal=$(csv accent)" "Colors:Header][Inactive|ForegroundNormal=$(csv text_muted)" \
+    "WM|activeBackground=$(csv bg_chrome)"; do
+    case "$entries" in
+      *"$expected"*) ;;
+      *) fail "expected the color scheme to have $expected" ;;
+    esac
+  done
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the Konsole scheme has the 16 terminal colors (normal, faint and
+#      intense), the background and foreground, and the palette's name
+test_konsole_scheme_uses_the_palette() {
+  run_jenerate sunset
+  entries="$(kde_ini "$(kde_theme sunset)/Jenerated-sunset.colorscheme")"
+  csv() { color_rgb "$1" | tr -d ' '; }
+  count="$(printf '%s\n' "$entries" | grep -c '^Color[0-7]\(Faint\|Intense\)\?|Color=')"
+  [ "$count" = "24" ] || fail "expected 24 terminal colors, got $count"
+  for expected in "Background|Color=$(csv bg)" "Foreground|Color=$(csv text)" \
+    "Color1|Color=$(csv term_red)" "Color1Intense|Color=$(csv term_bright_red)" \
+    "General|Description=Jenerated Sunset"; do
+    case "$entries" in
+      *"$expected"*) ;;
+      *) fail "expected the Konsole scheme to have $expected" ;;
+    esac
+  done
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the Kate theme is valid JSON named after the palette, with the
+#      palette's editor background, keywords and comments
+test_kate_theme_uses_the_palette() {
+  run_jenerate sunset
+  theme="$(kde_theme sunset)/Jenerated-sunset.theme"
+  assert_valid_json "$theme"
+  result="$("$PYTHON" -c '
+import json, sys
+t = json.load(open(sys.argv[1]))
+s = t["text-styles"]
+print(t["metadata"]["name"], t["editor-colors"]["BackgroundColor"], s["Keyword"]["text-color"],
+      s["Keyword"]["bold"], s["Comment"]["text-color"], s["Comment"]["italic"])
+' "$theme")"
+  expected="Jenerated Sunset $(color bg) $(color accent_soft) True $(color text_muted) True"
+  [ "$result" = "$expected" ] || fail "expected Kate theme values '$expected', got '$result'"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its KDE theme folder is deleted, and the templates are kept
+test_remove_deletes_the_kde_themes() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/kde-theme/sunset/Jenerated-sunset.colors"
+  assert_missing "$(kde_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/kde-theme/colors.tmpl"
 }
 
 # --- Tests: Obsidian ---------------------------------------------------------

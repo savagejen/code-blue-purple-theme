@@ -15,8 +15,10 @@ after_sandbox() {
   for tool in pbcopy wl-copy xclip xsel; do
     fake_command "$tool" "cat > \"$SANDBOX/clipboard\""
   done
-  # A gsettings that doesn't work, so no test changes your desktop's theme.
+  # A gsettings and plasma-apply-colorscheme that don't work, so no test
+  # changes your desktop's theme.
   fake_command gsettings "exit 1"
+  fake_command plasma-apply-colorscheme "exit 1"
   # The tests pick palettes by their place in the menu (Blue Purple is 1,
   # Sunset is 2), so keep only those two, whatever else is in palettes/.
   find "$SANDBOX/repo/palettes" -name '*.toml' ! -name 'blue-purple-palette.toml' \
@@ -66,7 +68,7 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # GIVEN a Linux system
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      JetBrains apps, Chromium browsers, Ptyxis, Tilix and GTK3 apps
+#      JetBrains apps, Chromium browsers, Ptyxis, Tilix, GTK3 apps and KDE
 test_app_menu_on_linux_includes_the_terminals() {
   fake_os Linux
   run_setup "1\n2\n1\n"
@@ -81,13 +83,14 @@ test_app_menu_on_linux_includes_the_terminals() {
   assert_contains "9) Ptyxis (Ubuntu terminal)"
   assert_contains "10) Tilix (terminal)"
   assert_contains "11) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
+  assert_contains "12) KDE Plasma (Plasma and KDE apps, Konsole, Kate)"
 }
 
 # GIVEN a Mac
 # WHEN setup.sh starts
 # THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi and
-#      JetBrains apps and Chromium browsers, but not Ptyxis, Tilix or GTK3
-#      apps
+#      JetBrains apps and Chromium browsers, but not Ptyxis, Tilix, GTK3
+#      apps or KDE
 test_app_menu_on_macos_hides_the_linux_terminals() {
   fake_os Darwin
   run_setup "1\n2\n1\n"
@@ -102,6 +105,7 @@ test_app_menu_on_macos_hides_the_linux_terminals() {
   assert_not_contains "Ptyxis"
   assert_not_contains "Tilix"
   assert_not_contains "GTK3"
+  assert_not_contains "KDE"
 }
 
 # GIVEN the palettes in palettes/
@@ -867,6 +871,71 @@ test_chromium_clears_an_old_theme_cache() {
   assert_status 0
   assert_missing "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/Cached Theme.pak"
   assert_exists "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/manifest.json"
+}
+
+# --- Tests: KDE Plasma -------------------------------------------------------
+
+KDE_DATA=".local/share"
+
+# fake_plasma current-scheme -> fakes a working plasma-apply-colorscheme:
+# --list-schemes lists Breeze schemes with the given one current, and
+# applying a scheme records it in $SANDBOX/plasma-applied.
+fake_plasma() {
+  fake_command plasma-apply-colorscheme "if [ \"\$1\" = --list-schemes ]; then
+  echo 'You have the following color schemes on your system:'
+  for s in BreezeClassic BreezeDark BreezeLight; do
+    if [ \"\$s\" = '$1' ]; then echo \" * \$s (current color scheme)\"; else echo \" * \$s\"; fi
+  done
+else
+  printf '%s' \"\$1\" >\"$SANDBOX/plasma-applied\"
+fi"
+}
+
+# GIVEN a Linux system that isn't running Plasma
+# WHEN choosing KDE Plasma and Blue Purple
+# THEN the color scheme, Konsole colors and Kate theme are linked where KDE
+#      looks for them, and it explains how to turn each on
+test_kde_links_the_themes() {
+  fake_os Linux
+  run_setup "1\n12\n1\n"
+  assert_status 0
+  folder="$SANDBOX/repo/app-themes/kde-theme/blue-purple"
+  assert_link "$SANDBOX/home/$KDE_DATA/color-schemes/Jenerated-blue-purple.colors" "$folder/Jenerated-blue-purple.colors"
+  assert_link "$SANDBOX/home/$KDE_DATA/konsole/Jenerated-blue-purple.colorscheme" "$folder/Jenerated-blue-purple.colorscheme"
+  assert_link "$SANDBOX/home/$KDE_DATA/org.kde.syntax-highlighting/themes/Jenerated-blue-purple.theme" "$folder/Jenerated-blue-purple.theme"
+  assert_contains "plasma-apply-colorscheme Jenerated-blue-purple"
+  assert_contains "Edit Current Profile"
+  assert_contains "Configure Kate"
+  assert_not_contains "Switch Plasma"
+}
+
+# GIVEN Plasma, with Breeze Dark as the color scheme
+# WHEN choosing KDE Plasma and Sunset, and answering yes to switching
+# THEN Plasma is switched to Jenerated-sunset, and it says how to switch back
+#      to Breeze Dark
+test_kde_switches_the_color_scheme_when_asked() {
+  fake_os Linux
+  fake_plasma BreezeDark
+  run_setup "1\n12\n2\ny\n"
+  assert_status 0
+  assert_contains "Your Plasma color scheme is BreezeDark."
+  assert_file_equals "$SANDBOX/plasma-applied" "Jenerated-sunset"
+  assert_contains "To switch back: plasma-apply-colorscheme BreezeDark"
+  assert_link "$SANDBOX/home/$KDE_DATA/color-schemes/Jenerated-sunset.colors" \
+    "$SANDBOX/repo/app-themes/kde-theme/sunset/Jenerated-sunset.colors"
+}
+
+# GIVEN Plasma
+# WHEN choosing KDE Plasma and answering no to switching
+# THEN the themes are installed but the color scheme is left alone
+test_kde_leaves_the_color_scheme_when_declined() {
+  fake_os Linux
+  fake_plasma BreezeDark
+  run_setup "1\n12\n1\nn\n"
+  assert_status 0
+  assert_missing "$SANDBOX/plasma-applied"
+  assert_contains "System Settings -> Colors & Themes -> Colors"
+  assert_exists "$SANDBOX/home/$KDE_DATA/color-schemes/Jenerated-blue-purple.colors"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------

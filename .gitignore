@@ -14,6 +14,7 @@ app-themes/jetbrains-theme/*/
 app-themes/jetbrains-theme/*.jar
 app-themes/gtk3-theme/*/
 app-themes/chromium-theme/*/
+app-themes/kde-theme/*/
 *.vsix
 
 # Your palette draft in the Palette Creator.
@@ -33,6 +34,7 @@ palette-creator/work-in-progress-palette.toml
 !app-themes/jetbrains-theme/blue-purple/
 !app-themes/gtk3-theme/blue-purple/
 !app-themes/chromium-theme/blue-purple/
+!app-themes/kde-theme/blue-purple/
 # Chromium caches a theme in its folder when it loads it.
 app-themes/chromium-theme/*/Cached Theme.pak
 !app-themes/vivaldi-theme/jenerated-blue-purple.zip

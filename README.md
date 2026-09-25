@@ -17,6 +17,7 @@ Each app has its own folder with a template and install instructions:
 - [Firefox](app-themes/firefox-theme/)
 - [GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)](app-themes/gtk3-theme/)
 - [JetBrains apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)](app-themes/jetbrains-theme/)
+- [KDE Plasma (Plasma and KDE apps, Konsole, Kate)](app-themes/kde-theme/)
 - [Obsidian](app-themes/obsidian-theme/)
 - [Ptyxis (Ubuntu terminal)](app-themes/ptyxis-theme/)
 - [Slack](app-themes/slack-theme/)
@@ -83,8 +84,9 @@ To remove a palette's themes again, run `./jenerate.py --remove sunset`.
   file with `{{color_name}}` placeholders where the colors go. A template can
   add transparency after a placeholder, for example `{{accent}}33`. For apps
   that need them, each color is also available as RGB and HSL numbers:
-  `{{accent_rgb}}` gives `88, 101, 242`, `{{accent_h}}`, `{{accent_s}}` and
-  `{{accent_l}}` give `235`, `86` and `65`, and `{{accent_hex}}` gives
+  `{{accent_rgb}}` gives `88, 101, 242` (and `{{accent_rgb_csv}}` gives
+  `88,101,242`), `{{accent_h}}`, `{{accent_s}}` and `{{accent_l}}` give
+  `235`, `86` and `65`, and `{{accent_hex}}` gives
   `5865F2` (without the `#`). `{{uuid}}` is an ID made from the palette's
   slug, the same every time, for apps that identify themes by UUID.
 - **`jenerate.py`** fills in every template for each palette you name and
@@ -104,8 +106,8 @@ Don't edit generated files by hand; change the palette or template and run
 
 The templates currently assume a dark palette: the VS Code theme template
 sets `"type": "dark"` (`package.json` follows each theme's type), and the
-Ptyxis, Tilix, Obsidian, Vim, Firefox, Vivaldi, Chromium, JetBrains and GTK3
-themes only have a dark variant.
+Ptyxis, Tilix, Obsidian, Vim, Firefox, Vivaldi, Chromium, JetBrains, GTK3
+and KDE themes only have a dark variant.
 
 ## Changing colors
 

@@ -14,8 +14,8 @@ generated; nothing else is touched. Each template's {{name}} placeholders are
 replaced with the palette's colors (plus its `name` and `slug`), and the result
 is written next to the template. Each color is also available as RGB and HSL
 numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 242",
-{{accent_h}}, {{accent_s}} and {{accent_l}} are "235", "86" and "65", and
-{{accent_hex}} is "5865F2" (without the #).
+{{accent_rgb_csv}} is "88,101,242", {{accent_h}}, {{accent_s}} and {{accent_l}}
+are "235", "86" and "65", and {{accent_hex}} is "5865F2" (without the #).
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
 """
@@ -53,6 +53,9 @@ TARGETS = [
     ("app-themes/jetbrains-theme/editor-scheme.xml.tmpl", "app-themes/jetbrains-theme/{slug}/jenerated-{slug}.xml"),
     ("app-themes/chromium-theme/manifest.json.tmpl", "app-themes/chromium-theme/{slug}/manifest.json"),
     ("app-themes/gtk3-theme/gtk.css.tmpl", "app-themes/gtk3-theme/{slug}/gtk-3.0/gtk.css"),
+    ("app-themes/kde-theme/colors.tmpl", "app-themes/kde-theme/{slug}/Jenerated-{slug}.colors"),
+    ("app-themes/kde-theme/konsole.colorscheme.tmpl", "app-themes/kde-theme/{slug}/Jenerated-{slug}.colorscheme"),
+    ("app-themes/kde-theme/syntax.theme.tmpl", "app-themes/kde-theme/{slug}/Jenerated-{slug}.theme"),
     ("app-themes/gtk3-theme/index.theme.tmpl", "app-themes/gtk3-theme/{slug}/index.theme"),
 ]
 
@@ -144,6 +147,7 @@ def color_formats(key, value):
     return {
         f"{key}_hex": value[1:],
         f"{key}_rgb": f"{r}, {g}, {b}",
+        f"{key}_rgb_csv": f"{r},{g},{b}",
         f"{key}_h": str(round(h * 360) % 360),
         f"{key}_s": str(round(s * 100)),
         f"{key}_l": str(round(l * 100)),

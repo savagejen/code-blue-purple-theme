@@ -223,8 +223,9 @@ APPS=("VS Code" "Slack" "Obsidian" "Vim / Neovim" "Firefox" "Vivaldi"
 APP_IDS=("vscode" "slack" "obsidian" "vim" "firefox" "vivaldi" "jetbrains" "chromium")
 if [ "$OS" = "Linux" ]; then
   APPS+=("Ptyxis (Ubuntu terminal)" "Tilix (terminal)"
-    "GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)")
-  APP_IDS+=("ptyxis" "tilix" "gtk3")
+    "GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
+    "KDE Plasma (Plasma and KDE apps, Konsole, Kate)")
+  APP_IDS+=("ptyxis" "tilix" "gtk3" "kde")
 fi
 
 choose "Which app do you want to theme?" "${APPS[@]}"
@@ -622,6 +623,44 @@ install_chromium() {
   say "Reset to default."
 }
 
+install_kde() {
+  local data="${XDG_DATA_HOME:-$HOME/.local/share}"
+  local folder="$ROOT/app-themes/kde-theme/$SLUG"
+  local scheme="Jenerated-$SLUG"
+  local current="" applied=""
+
+  step "Installing the Plasma color scheme, Konsole colors and Kate theme"
+  mkdir -p "$data/color-schemes" "$data/konsole" "$data/org.kde.syntax-highlighting/themes"
+  install_link "$data/color-schemes/$scheme.colors" "$folder/$scheme.colors"
+  install_link "$data/konsole/$scheme.colorscheme" "$folder/$scheme.colorscheme"
+  install_link "$data/org.kde.syntax-highlighting/themes/$scheme.theme" "$folder/$scheme.theme"
+
+  # On Plasma, offer to switch the color scheme now.
+  if plasma-apply-colorscheme --list-schemes >/dev/null 2>&1; then
+    current="$(plasma-apply-colorscheme --list-schemes 2>/dev/null |
+      sed -n 's/^ *\* *\(.*\) (current color scheme)$/\1/p')"
+    say ""
+    [ -n "$current" ] && say "Your Plasma color scheme is $current."
+    if ask_yes "Switch Plasma to Jenerated $NAME now?"; then
+      plasma-apply-colorscheme "$scheme" && applied=1
+    fi
+  fi
+
+  step "Done! To turn the themes on:"
+  if [ -n "$applied" ]; then
+    say "- Plasma, its window title bars and KDE apps use Jenerated $NAME now."
+    [ -n "$current" ] && say "  To switch back: plasma-apply-colorscheme $current"
+  else
+    say "- Plasma and KDE apps: System Settings -> Colors & Themes -> Colors,"
+    say "  choose \"Jenerated $NAME\" (or run plasma-apply-colorscheme $scheme)."
+  fi
+  say "- Konsole: Settings -> Edit Current Profile -> Appearance, choose"
+  say "  \"Jenerated $NAME\"."
+  say "- Kate and KWrite: Settings -> Configure Kate -> Color Themes, choose"
+  say "  \"Jenerated $NAME\" (restart Kate first if it's open)."
+  say "GTK apps follow Plasma's colors too, through KDE's GTK integration."
+}
+
 install_tilix() {
   local schemes="$HOME/.config/tilix/schemes"
 
@@ -682,6 +721,7 @@ case "$APP" in
   chromium) install_chromium ;;
   tilix) install_tilix ;;
   gtk3) install_gtk3 ;;
+  kde) install_kde ;;
 esac
 
 say ""
