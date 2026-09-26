@@ -17,6 +17,26 @@ app-themes/chromium-theme/*/
 app-themes/kde-theme/*/
 app-themes/decky-theme/*/
 app-themes/godot-theme/*/
+app-themes/zen-theme/*/
+app-themes/gtksourceview-theme/*/
+app-themes/fzf-theme/*/
+app-themes/mpv-theme/*/
+app-themes/tmux-theme/*/
+app-themes/zsh-theme/*/
+app-themes/element-theme/*/
+app-themes/mattermost-theme/*.json
+app-themes/insomnia-theme/*/
+app-themes/sublime-theme/*.sublime-color-scheme
+app-themes/xcode-theme/*.xccolortheme
+app-themes/rstudio-theme/*.rstheme
+app-themes/emacs-theme/*-theme.el
+app-themes/qtcreator-theme/*.xml
+app-themes/spyder-theme/*.ini
+app-themes/unreal-theme/*.json
+app-themes/obs-theme/*.ovt
+app-themes/jellyfin-theme/*.css
+app-themes/libreoffice-theme/*/
+app-themes/libreoffice-theme/*.oxt
 *.vsix
 
 # Your palette draft in the Palette Creator.
@@ -39,6 +59,26 @@ palette-creator/work-in-progress-palette.toml
 !app-themes/kde-theme/blue-purple/
 !app-themes/decky-theme/blue-purple/
 !app-themes/godot-theme/blue-purple/
+!app-themes/zen-theme/blue-purple/
+!app-themes/gtksourceview-theme/blue-purple/
+!app-themes/fzf-theme/blue-purple/
+!app-themes/mpv-theme/blue-purple/
+!app-themes/tmux-theme/blue-purple/
+!app-themes/zsh-theme/blue-purple/
+!app-themes/element-theme/blue-purple/
+!app-themes/mattermost-theme/blue-purple.json
+!app-themes/insomnia-theme/blue-purple/
+!app-themes/sublime-theme/jenerated-blue-purple.sublime-color-scheme
+!app-themes/xcode-theme/jenerated-blue-purple.xccolortheme
+!app-themes/rstudio-theme/jenerated-blue-purple.rstheme
+!app-themes/emacs-theme/jenerated-blue-purple-theme.el
+!app-themes/qtcreator-theme/jenerated-blue-purple.xml
+!app-themes/spyder-theme/jenerated-blue-purple.ini
+!app-themes/unreal-theme/jenerated-blue-purple.json
+!app-themes/obs-theme/jenerated-blue-purple.ovt
+!app-themes/jellyfin-theme/jenerated-blue-purple.css
+!app-themes/libreoffice-theme/blue-purple/
+!app-themes/libreoffice-theme/jenerated-blue-purple.oxt
 # Chromium caches a theme in its folder when it loads it.
 app-themes/chromium-theme/*/Cached Theme.pak
 # CSS Loader saves each theme's settings in its folder.

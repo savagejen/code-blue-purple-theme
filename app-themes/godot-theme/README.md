@@ -54,7 +54,7 @@ ln -s "$theme" ~/.config/godot/text_editor_themes/
 ```
 
 On a Mac the folder is `~/Library/Application Support/Godot/text_editor_themes`,
-and for the Godot Flatpak it's
+and if Godot was installed through Flatpak it's
 `~/.var/app/org.godotengine.Godot/config/godot/text_editor_themes`.
 
 Then, in Godot, open **Editor → Editor Settings** and set:

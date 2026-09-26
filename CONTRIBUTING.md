@@ -55,10 +55,15 @@ What you need:
   after it, for example `{{accent}}33`.
 - For apps that need them, each color is also available as numbers:
   `{{accent_rgb}}` gives `88, 101, 243`, `{{accent_rgb_csv}}` gives
-  `88,101,243`, `{{accent_float}}` gives `0.3451, 0.3961, 0.9529` (each
-  channel from 0 to 1), `{{accent_h}}`, `{{accent_s}}` and `{{accent_l}}` give
-  `235`, `87` and `65`, and `{{accent_hex}}` gives `5865F3` (without the
-  `#`).
+  `88,101,243`, `{{accent_rgb_spaced}}` gives `88 101 243`,
+  `{{accent_float}}` gives `0.3451, 0.3961, 0.9529` (each channel from 0 to
+  1; `{{accent_float_spaced}}` gives the same with spaces instead of
+  commas), `{{accent_linear_r}}`, `{{accent_linear_g}}` and
+  `{{accent_linear_b}}` give each channel in linear light (for apps that
+  store colors that way, like Unreal Engine), `{{accent_h}}`, `{{accent_s}}`
+  and `{{accent_l}}` give `235`, `87` and `65`, `{{accent_hex}}` gives
+  `5865F3` (without the `#`), and `{{accent_int}}` gives `5793267` (the
+  color as one decimal number, as LibreOffice stores colors).
 - `{{name}}` and `{{slug}}` are the palette's name and slug.
 - `{{uuid}}` is an ID made from the palette's slug, the same every time, for
   apps that identify themes by UUID.
@@ -148,10 +153,28 @@ takes.
    Purple's files, like the other apps.
 4. Write a README for the app: what it themes, which palette colors go
    where, and how to install it (with `./setup.sh`, and by hand).
-5. Add the app to the list in the main [README](README.md), and to
-   `setup.sh`: an entry in the app menu (`APPS` and `APP_IDS`; the
-   Linux-only ones are added separately), an `install_<app>` function, and
-   a line in the `case` at the end.
+5. Add the app to the list in the main [README](README.md), under the same
+   category heading as in `setup.sh` (and marked (Linux) or (macOS) if it
+   only runs on one). Add it to `setup.sh` too: an `add_app` line (its id, its
+   name in the menu, its category, and optionally the apps it covers and
+   other search words), an `install_<app>` function, and a line in the
+   `case` at the end.
+
+   `setup.sh` groups apps into categories (`CATEGORY_IDS` and
+   `CATEGORY_NAMES`), so the menu stays short however many apps there are.
+   Put the new app's `add_app` line with the others in its category, in
+   alphabetical order; Linux-only apps go inside an `if [ "$OS" = "Linux" ]`,
+   and macOS-only ones inside an `if [ "$OS" = "Darwin" ]`.
+   An app that doesn't fit a category can use `""`, which puts it on the
+   main app menu. Apps can also be found by typing part of their name, which
+   searches names, ids, category names, and the two optional lists:
+
+   - **covers:** the apps a theme covers that don't fit in its menu name,
+     written as their names and as its README lists them. Searching
+     RustRover finds the JetBrains theme, and search results show this list
+     under the theme's name.
+   - **words:** other words someone might search for, such as "chat" for
+     Slack. They aren't shown.
 6. Add tests: in `tests/jenerate/` for the generated files (that they exist,
    use the palette's colors, are valid for the app's format, and are removed
    with the palette), and in `tests/setup/` for the install. Add the new

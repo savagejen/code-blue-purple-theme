@@ -14,10 +14,14 @@ generated; nothing else is touched. Each template's {{name}} placeholders are
 replaced with the palette's colors (plus its `name` and `slug`), and the result
 is written next to the template. Each color is also available as RGB and HSL
 numbers, for apps whose themes need them: {{accent_rgb}} is "88, 101, 243",
-{{accent_rgb_csv}} is "88,101,243", {{accent_float}} is "0.3451, 0.3961,
-0.9529" (each channel from 0 to 1), {{accent_h}}, {{accent_s}} and
-{{accent_l}} are "235", "87" and "65", and {{accent_hex}} is "5865F3"
-(without the #).
+{{accent_rgb_csv}} is "88,101,243", {{accent_rgb_spaced}} is "88 101 243",
+{{accent_float}} is "0.3451, 0.3961, 0.9529" (each channel from 0 to 1;
+{{accent_float_spaced}} is the same with spaces instead of commas), {{accent_linear_r}}, {{accent_linear_g}} and
+{{accent_linear_b}} are its channels in linear light (for apps that store
+colors that way, such as Unreal Engine), {{accent_h}}, {{accent_s}} and
+{{accent_l}} are "235", "87" and "65", {{accent_hex}} is "5865F3"
+(without the #), and {{accent_int}} is "5793267" (0xrrggbb as a decimal
+number, as LibreOffice stores colors).
 {{uuid}} is an ID made from the slug, the same every time, for apps that
 identify themes by UUID.
 
@@ -70,6 +74,34 @@ TARGETS = [
     ("app-themes/decky-theme/shared.css.tmpl", "app-themes/decky-theme/{slug}/shared.css"),
     ("app-themes/godot-theme/text-editor.tet.tmpl", "app-themes/godot-theme/{slug}/Jenerated-{slug}.tet"),
     ("app-themes/godot-theme/editor-settings.cfg.tmpl", "app-themes/godot-theme/{slug}/editor-settings.cfg"),
+    ("app-themes/zen-theme/userChrome.css.tmpl", "app-themes/zen-theme/{slug}/userChrome.css"),
+    ("app-themes/zen-theme/userContent.css.tmpl", "app-themes/zen-theme/{slug}/userContent.css"),
+    ("app-themes/gtksourceview-theme/gtksourceview-4.xml.tmpl", "app-themes/gtksourceview-theme/{slug}/gtksourceview-4/jenerated-{slug}.xml"),
+    ("app-themes/gtksourceview-theme/gtksourceview-5.xml.tmpl", "app-themes/gtksourceview-theme/{slug}/gtksourceview-5/jenerated-{slug}.xml"),
+    ("app-themes/gtksourceview-theme/libgedit.xml.tmpl", "app-themes/gtksourceview-theme/{slug}/libgedit-gtksourceview-300/jenerated-{slug}.xml"),
+    ("app-themes/fzf-theme/fzf.sh.tmpl", "app-themes/fzf-theme/{slug}/jenerated-{slug}.sh"),
+    ("app-themes/fzf-theme/fzf.fish.tmpl", "app-themes/fzf-theme/{slug}/jenerated-{slug}.fish"),
+    ("app-themes/mpv-theme/colors.conf.tmpl", "app-themes/mpv-theme/{slug}/jenerated-{slug}.conf"),
+    ("app-themes/tmux-theme/colors.conf.tmpl", "app-themes/tmux-theme/{slug}/jenerated-{slug}.conf"),
+    ("app-themes/zsh-theme/colors.zsh.tmpl", "app-themes/zsh-theme/{slug}/jenerated-{slug}.zsh"),
+    ("app-themes/zsh-theme/fast-theme.ini.tmpl", "app-themes/zsh-theme/{slug}/jenerated-{slug}.ini"),
+    ("app-themes/element-theme/theme.json.tmpl", "app-themes/element-theme/{slug}/jenerated-{slug}.json"),
+    ("app-themes/mattermost-theme/theme.json.tmpl", "app-themes/mattermost-theme/{slug}.json"),
+    ("app-themes/insomnia-theme/package.json.tmpl", "app-themes/insomnia-theme/{slug}/insomnia-plugin-jenerated-{slug}/package.json"),
+    ("app-themes/insomnia-theme/index.js.tmpl", "app-themes/insomnia-theme/{slug}/insomnia-plugin-jenerated-{slug}/index.js"),
+    ("app-themes/sublime-theme/color-scheme.tmpl", "app-themes/sublime-theme/jenerated-{slug}.sublime-color-scheme"),
+    ("app-themes/xcode-theme/theme.xccolortheme.tmpl", "app-themes/xcode-theme/jenerated-{slug}.xccolortheme"),
+    ("app-themes/rstudio-theme/theme.rstheme.tmpl", "app-themes/rstudio-theme/jenerated-{slug}.rstheme"),
+    ("app-themes/emacs-theme/theme.el.tmpl", "app-themes/emacs-theme/jenerated-{slug}-theme.el"),
+    ("app-themes/qtcreator-theme/color-scheme.xml.tmpl", "app-themes/qtcreator-theme/jenerated-{slug}.xml"),
+    ("app-themes/spyder-theme/scheme.ini.tmpl", "app-themes/spyder-theme/jenerated-{slug}.ini"),
+    ("app-themes/unreal-theme/theme.json.tmpl", "app-themes/unreal-theme/jenerated-{slug}.json"),
+    ("app-themes/obs-theme/style.ovt.tmpl", "app-themes/obs-theme/jenerated-{slug}.ovt"),
+    ("app-themes/jellyfin-theme/theme.css.tmpl", "app-themes/jellyfin-theme/jenerated-{slug}.css"),
+    ("app-themes/libreoffice-theme/theme.xcu.tmpl", "app-themes/libreoffice-theme/{slug}/theme.xcu"),
+    ("app-themes/libreoffice-theme/description.xml.tmpl", "app-themes/libreoffice-theme/{slug}/description.xml"),
+    ("app-themes/libreoffice-theme/description.txt.tmpl", "app-themes/libreoffice-theme/{slug}/description.txt"),
+    ("app-themes/libreoffice-theme/manifest.xml.tmpl", "app-themes/libreoffice-theme/{slug}/META-INF/manifest.xml"),
 ]
 
 # package.json is rebuilt from this base after every run, listing each VS Code
@@ -160,6 +192,12 @@ def read_palette_file(path):
     return data
 
 
+def srgb_to_linear(channel):
+    """An sRGB channel (0-255) in linear light (0-1), by the sRGB curve."""
+    c = channel / 255
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
 def color_formats(key, value):
     """The other forms of a #rrggbb color that templates can use."""
     r, g, b = (int(value[i:i + 2], 16) for i in (1, 3, 5))
@@ -168,7 +206,13 @@ def color_formats(key, value):
         f"{key}_hex": value[1:],
         f"{key}_rgb": f"{r}, {g}, {b}",
         f"{key}_rgb_csv": f"{r},{g},{b}",
+        f"{key}_rgb_spaced": f"{r} {g} {b}",
+        f"{key}_int": str((r << 16) | (g << 8) | b),
         f"{key}_float": f"{r / 255:.4f}, {g / 255:.4f}, {b / 255:.4f}",
+        f"{key}_float_spaced": f"{r / 255:.4f} {g / 255:.4f} {b / 255:.4f}",
+        f"{key}_linear_r": f"{srgb_to_linear(r):.6f}",
+        f"{key}_linear_g": f"{srgb_to_linear(g):.6f}",
+        f"{key}_linear_b": f"{srgb_to_linear(b):.6f}",
         f"{key}_h": str(round(h * 360) % 360),
         f"{key}_s": str(round(s * 100)),
         f"{key}_l": str(round(l * 100)),

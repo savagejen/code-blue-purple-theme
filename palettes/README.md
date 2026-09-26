@@ -128,3 +128,14 @@ old-terminal side.
 ![The Cyberpunk Midnight palette in the Palette Creator's preview](Screenshots/cyberpunk-midnight.png)
 
 Editor `#100f0f` · Sidebar `#07181d` · Accent `#f048ac` · Text `#ebe8f4`
+
+## Madrone Grove
+
+`madrone-grove`
+
+Warm brown-black shadows, deep green leaves sidebar, crimson and yellow
+berries, orange and brown bark
+
+![The Madrone Grove palette in the Palette Creator's preview](Screenshots/madrone-grove.png)
+
+Editor `#17110f` · Sidebar `#14221a` · Accent `#d63d38` · Text `#f3e3d3`

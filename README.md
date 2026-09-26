@@ -11,22 +11,63 @@ install it in any app without running anything.
 
 ## Supported apps
 
-Each app has its own folder with a template and install instructions:
+Each app has its own folder with a template and install instructions. They're
+grouped the same way as in `./setup.sh`, which can also search for an app by
+name. Apps marked (Linux) or (macOS) are only offered on that system.
+
+### Web browsers
 
 - [Chromium browsers (Chrome, Brave, Edge, Opera and more)](app-themes/chromium-theme/)
-- [Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)](app-themes/decky-theme/)
 - [Firefox](app-themes/firefox-theme/)
-- [Godot](app-themes/godot-theme/)
-- [GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)](app-themes/gtk3-theme/)
-- [JetBrains apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)](app-themes/jetbrains-theme/)
-- [KDE Plasma (Plasma and KDE apps, Konsole, Kate)](app-themes/kde-theme/)
-- [Obsidian](app-themes/obsidian-theme/)
-- [Ptyxis (Ubuntu terminal)](app-themes/ptyxis-theme/)
-- [Slack](app-themes/slack-theme/)
-- [Tilix (terminal)](app-themes/tilix-theme/)
-- [Vim and Neovim](app-themes/vim-theme/)
 - [Vivaldi](app-themes/vivaldi-theme/)
+- [Zen Browser](app-themes/zen-theme/)
+
+### Communication
+
+- [Element (Matrix chat)](app-themes/element-theme/)
+- [Mattermost](app-themes/mattermost-theme/)
+- [Slack](app-themes/slack-theme/)
+
+### Editors: code, text and notes
+
+- [Emacs](app-themes/emacs-theme/)
+- [GNOME text editors: gedit, GNOME Text Editor and Xed (and Pluma, Meld and more)](app-themes/gtksourceview-theme/) (Linux)
+- [Godot](app-themes/godot-theme/)
+- [JetBrains apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)](app-themes/jetbrains-theme/)
+- [LibreOffice (Writer, Calc, Impress and more)](app-themes/libreoffice-theme/)
+- [Obsidian](app-themes/obsidian-theme/)
+- [Qt Creator](app-themes/qtcreator-theme/)
+- [RStudio](app-themes/rstudio-theme/)
+- [Spyder](app-themes/spyder-theme/)
+- [Sublime Text](app-themes/sublime-theme/)
+- [Unreal Engine](app-themes/unreal-theme/)
+- [Vim and Neovim](app-themes/vim-theme/)
 - [VS Code](app-themes/vs-code-theme/)
+- [Xcode](app-themes/xcode-theme/) (macOS)
+
+### Terminals and command-line tools
+
+- [fzf (fuzzy finder)](app-themes/fzf-theme/)
+- [Ptyxis (Ubuntu terminal)](app-themes/ptyxis-theme/) (Linux)
+- [Tilix (terminal)](app-themes/tilix-theme/) (Linux)
+- [tmux](app-themes/tmux-theme/)
+- [zsh (syntax highlighting and suggestions)](app-themes/zsh-theme/)
+
+### Linux desktops
+
+- [Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)](app-themes/decky-theme/)
+- [GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)](app-themes/gtk3-theme/)
+- [KDE Plasma (Plasma and KDE apps, Konsole, Kate)](app-themes/kde-theme/)
+
+### Entertainment
+
+- [Jellyfin (media server)](app-themes/jellyfin-theme/)
+- [mpv (media player)](app-themes/mpv-theme/)
+- [OBS Studio (streaming and recording)](app-themes/obs-theme/)
+
+### Other apps
+
+- [Insomnia (API client)](app-themes/insomnia-theme/)
 
 ## Themes
 

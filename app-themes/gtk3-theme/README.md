@@ -21,6 +21,9 @@ A GTK3 theme applies to every app built with GTK3. Some common ones:
 - **Terminals:** GNOME Terminal
 - **The Xfce, MATE and Cinnamon desktops' own apps**
 
+The text area in gedit, Xed, Pluma and Meld uses its own color scheme; see
+[the text editor color schemes](../gtksourceview-theme/).
+
 Apps built with GTK3 but drawing much of their own interface, such as
 LibreOffice, Audacity, Firefox and Thunderbird, pick up the theme in places
 (menus, dialogs, some controls).
@@ -55,8 +58,8 @@ Then choose **Jenerated-blue-purple**:
 - **One app at a time:** start it with the `GTK_THEME` variable, for example
   `GTK_THEME=Jenerated-blue-purple gimp`.
 
-Reopen GTK3 apps that were already open. Flatpak apps can't see your themes
-folder by default; to let them, run
+Reopen GTK3 apps that were already open. Apps installed through Flatpak
+can't see your themes folder by default; to let them, run
 `flatpak override --user --filesystem=xdg-data/themes:ro`.
 
 ## How it's built

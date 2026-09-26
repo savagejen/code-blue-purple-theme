@@ -54,6 +54,28 @@ chromium_theme() { printf '%s' "$SANDBOX/repo/app-themes/chromium-theme/$1"; }
 kde_theme() { printf '%s' "$SANDBOX/repo/app-themes/kde-theme/$1"; }
 decky_theme() { printf '%s' "$SANDBOX/repo/app-themes/decky-theme/$1"; }
 godot_theme() { printf '%s' "$SANDBOX/repo/app-themes/godot-theme/$1"; }
+zen_theme() { printf '%s' "$SANDBOX/repo/app-themes/zen-theme/$1"; }
+# gsv_scheme slug version -> the GtkSourceView scheme for a version folder
+# (gtksourceview-4, gtksourceview-5 or libgedit-gtksourceview-300).
+gsv_scheme() { printf '%s' "$SANDBOX/repo/app-themes/gtksourceview-theme/$1/$2/jenerated-$1.xml"; }
+GSV_VERSIONS="gtksourceview-4 gtksourceview-5 libgedit-gtksourceview-300"
+fzf_theme() { printf '%s' "$SANDBOX/repo/app-themes/fzf-theme/$1/jenerated-$1"; }
+mpv_theme() { printf '%s' "$SANDBOX/repo/app-themes/mpv-theme/$1/jenerated-$1.conf"; }
+tmux_theme() { printf '%s' "$SANDBOX/repo/app-themes/tmux-theme/$1/jenerated-$1.conf"; }
+zsh_theme() { printf '%s' "$SANDBOX/repo/app-themes/zsh-theme/$1/jenerated-$1"; }
+element_theme() { printf '%s' "$SANDBOX/repo/app-themes/element-theme/$1/jenerated-$1.json"; }
+mattermost_theme() { printf '%s' "$SANDBOX/repo/app-themes/mattermost-theme/$1.json"; }
+insomnia_plugin() { printf '%s' "$SANDBOX/repo/app-themes/insomnia-theme/$1/insomnia-plugin-jenerated-$1"; }
+sublime_scheme() { printf '%s' "$SANDBOX/repo/app-themes/sublime-theme/jenerated-$1.sublime-color-scheme"; }
+xcode_theme() { printf '%s' "$SANDBOX/repo/app-themes/xcode-theme/jenerated-$1.xccolortheme"; }
+rstudio_theme() { printf '%s' "$SANDBOX/repo/app-themes/rstudio-theme/jenerated-$1.rstheme"; }
+emacs_theme() { printf '%s' "$SANDBOX/repo/app-themes/emacs-theme/jenerated-$1-theme.el"; }
+qtcreator_scheme() { printf '%s' "$SANDBOX/repo/app-themes/qtcreator-theme/jenerated-$1.xml"; }
+spyder_theme() { printf '%s' "$SANDBOX/repo/app-themes/spyder-theme/jenerated-$1.ini"; }
+unreal_theme() { printf '%s' "$SANDBOX/repo/app-themes/unreal-theme/jenerated-$1.json"; }
+obs_style() { printf '%s' "$SANDBOX/repo/app-themes/obs-theme/jenerated-$1.ovt"; }
+jellyfin_css() { printf '%s' "$SANDBOX/repo/app-themes/jellyfin-theme/jenerated-$1.css"; }
+libreoffice_theme() { printf '%s' "$SANDBOX/repo/app-themes/libreoffice-theme/$1"; }
 
 # The tests read expected colors from the palette itself, so palettes can be
 # changed without changing the tests.
@@ -192,6 +214,34 @@ test_generates_every_app_theme() {
   assert_exists "$(decky_theme sunset)/shared.css"
   assert_exists "$(godot_theme sunset)/Jenerated-sunset.tet"
   assert_exists "$(godot_theme sunset)/editor-settings.cfg"
+  assert_exists "$(zen_theme sunset)/userChrome.css"
+  assert_exists "$(zen_theme sunset)/userContent.css"
+  for version in $GSV_VERSIONS; do
+    assert_exists "$(gsv_scheme sunset "$version")"
+  done
+  assert_exists "$(fzf_theme sunset).sh"
+  assert_exists "$(fzf_theme sunset).fish"
+  assert_exists "$(mpv_theme sunset)"
+  assert_exists "$(tmux_theme sunset)"
+  assert_exists "$(zsh_theme sunset).zsh"
+  assert_exists "$(zsh_theme sunset).ini"
+  assert_exists "$(element_theme sunset)"
+  assert_exists "$(mattermost_theme sunset)"
+  assert_exists "$(insomnia_plugin sunset)/package.json"
+  assert_exists "$(insomnia_plugin sunset)/index.js"
+  assert_exists "$(sublime_scheme sunset)"
+  assert_exists "$(xcode_theme sunset)"
+  assert_exists "$(rstudio_theme sunset)"
+  assert_exists "$(emacs_theme sunset)"
+  assert_exists "$(qtcreator_scheme sunset)"
+  assert_exists "$(spyder_theme sunset)"
+  assert_exists "$(unreal_theme sunset)"
+  assert_exists "$(obs_style sunset)"
+  assert_exists "$(jellyfin_css sunset)"
+  assert_exists "$(libreoffice_theme sunset)/theme.xcu"
+  assert_exists "$(libreoffice_theme sunset)/description.xml"
+  assert_exists "$(libreoffice_theme sunset)/description.txt"
+  assert_exists "$(libreoffice_theme sunset)/META-INF/manifest.xml"
 }
 
 # GIVEN the Sunset palette
@@ -208,7 +258,18 @@ test_fills_in_every_placeholder() {
     "$(chromium_theme sunset)/manifest.json" "$(kde_theme sunset)/Jenerated-sunset.colors" \
     "$(kde_theme sunset)/Jenerated-sunset.colorscheme" "$(kde_theme sunset)/Jenerated-sunset.theme" \
     "$(decky_theme sunset)/theme.json" "$(decky_theme sunset)/shared.css" \
-    "$(godot_theme sunset)/Jenerated-sunset.tet" "$(godot_theme sunset)/editor-settings.cfg"; do
+    "$(godot_theme sunset)/Jenerated-sunset.tet" "$(godot_theme sunset)/editor-settings.cfg" \
+    "$(zen_theme sunset)/userChrome.css" "$(zen_theme sunset)/userContent.css" \
+    "$(gsv_scheme sunset gtksourceview-4)" "$(gsv_scheme sunset gtksourceview-5)" \
+    "$(gsv_scheme sunset libgedit-gtksourceview-300)" \
+    "$(fzf_theme sunset).sh" "$(fzf_theme sunset).fish" "$(mpv_theme sunset)" "$(tmux_theme sunset)" \
+    "$(zsh_theme sunset).zsh" "$(zsh_theme sunset).ini" "$(element_theme sunset)" \
+    "$(mattermost_theme sunset)" "$(insomnia_plugin sunset)/package.json" "$(insomnia_plugin sunset)/index.js" \
+    "$(sublime_scheme sunset)" "$(xcode_theme sunset)" "$(rstudio_theme sunset)" \
+    "$(emacs_theme sunset)" "$(qtcreator_scheme sunset)" "$(spyder_theme sunset)" \
+    "$(unreal_theme sunset)" "$(obs_style sunset)" "$(jellyfin_css sunset)" \
+    "$(libreoffice_theme sunset)/theme.xcu" "$(libreoffice_theme sunset)/description.xml" \
+    "$(libreoffice_theme sunset)/description.txt" "$(libreoffice_theme sunset)/META-INF/manifest.xml"; do
     assert_file_not_contains "$file" "{{"
   done
 }
@@ -307,7 +368,34 @@ test_blue_purple_matches_the_committed_files() {
     app-themes/kde-theme/blue-purple/Jenerated-blue-purple.theme \
     app-themes/decky-theme/blue-purple/theme.json app-themes/decky-theme/blue-purple/shared.css \
     app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet \
-    app-themes/godot-theme/blue-purple/editor-settings.cfg; do
+    app-themes/godot-theme/blue-purple/editor-settings.cfg \
+    app-themes/zen-theme/blue-purple/userChrome.css app-themes/zen-theme/blue-purple/userContent.css \
+    app-themes/gtksourceview-theme/blue-purple/gtksourceview-4/jenerated-blue-purple.xml \
+    app-themes/gtksourceview-theme/blue-purple/gtksourceview-5/jenerated-blue-purple.xml \
+    app-themes/gtksourceview-theme/blue-purple/libgedit-gtksourceview-300/jenerated-blue-purple.xml \
+    app-themes/fzf-theme/blue-purple/jenerated-blue-purple.sh \
+    app-themes/fzf-theme/blue-purple/jenerated-blue-purple.fish \
+    app-themes/mpv-theme/blue-purple/jenerated-blue-purple.conf \
+    app-themes/tmux-theme/blue-purple/jenerated-blue-purple.conf \
+    app-themes/zsh-theme/blue-purple/jenerated-blue-purple.zsh \
+    app-themes/zsh-theme/blue-purple/jenerated-blue-purple.ini \
+    app-themes/element-theme/blue-purple/jenerated-blue-purple.json \
+    app-themes/mattermost-theme/blue-purple.json \
+    app-themes/insomnia-theme/blue-purple/insomnia-plugin-jenerated-blue-purple/package.json \
+    app-themes/insomnia-theme/blue-purple/insomnia-plugin-jenerated-blue-purple/index.js \
+    app-themes/sublime-theme/jenerated-blue-purple.sublime-color-scheme \
+    app-themes/xcode-theme/jenerated-blue-purple.xccolortheme \
+    app-themes/rstudio-theme/jenerated-blue-purple.rstheme \
+    app-themes/emacs-theme/jenerated-blue-purple-theme.el \
+    app-themes/qtcreator-theme/jenerated-blue-purple.xml \
+    app-themes/spyder-theme/jenerated-blue-purple.ini \
+    app-themes/unreal-theme/jenerated-blue-purple.json \
+    app-themes/obs-theme/jenerated-blue-purple.ovt \
+    app-themes/jellyfin-theme/jenerated-blue-purple.css \
+    app-themes/libreoffice-theme/blue-purple/theme.xcu \
+    app-themes/libreoffice-theme/blue-purple/description.xml \
+    app-themes/libreoffice-theme/blue-purple/description.txt \
+    app-themes/libreoffice-theme/blue-purple/META-INF/manifest.xml; do
     assert_same_file "$SANDBOX/repo/$rel" "$REPO/$rel"
   done
   # Generating other palettes changes your package.json, so compare against
@@ -439,6 +527,45 @@ test_colors_are_available_as_floats() {
   [ "$RENDERED" = "$expected" ] || fail "expected accent_float '$expected', got '$RENDERED'"
 }
 
+# GIVEN a template using {{accent_float_spaced}}
+# WHEN generating Sunset
+# THEN it becomes Sunset's accent as three numbers from 0 to 1 separated by
+#      spaces
+test_colors_are_available_as_spaced_floats() {
+  render_colors accent_float_spaced
+  assert_status 0
+  expected="$(color_rgb accent | awk -F', ' '{printf "%.4f %.4f %.4f", $1/255, $2/255, $3/255}')"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_float_spaced '$expected', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_linear_r}}, {{accent_linear_g}} and
+#       {{accent_linear_b}}
+# WHEN generating Sunset
+# THEN they become Sunset's accent's channels in linear light (the sRGB curve
+#      undone), with six decimal places
+test_colors_are_available_in_linear_light() {
+  render_colors accent_linear_r accent_linear_g accent_linear_b
+  assert_status 0
+  expected="$(color_rgb accent | awk -F', ' '
+    function linear(v) { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ^ 2.4 }
+    { printf "%.6f|%.6f|%.6f", linear($1), linear($2), linear($3) }')"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent linear r|g|b '$expected', got '$RENDERED'"
+}
+
+# GIVEN templates using the linear forms of black, white and mid gray
+# WHEN generating
+# THEN black is 0, white is 1, and #808080 is 0.215861 (it's darker in linear
+#      light than its 0.5 in sRGB)
+test_linear_light_matches_known_values() {
+  palette="$SANDBOX/repo/palettes/sunset-palette.toml"
+  grep -v -e '^term_black = ' -e '^term_white = ' -e '^term_bright_white = ' "$palette" >"$palette.tmp"
+  printf '%s\n' 'term_black = "#000000"' 'term_white = "#808080"' 'term_bright_white = "#ffffff"' >>"$palette.tmp"
+  mv "$palette.tmp" "$palette"
+  render_colors term_black_linear_r term_white_linear_g term_bright_white_linear_b
+  assert_status 0
+  [ "$RENDERED" = "0.000000|0.215861|1.000000" ] || fail "expected '0.000000|0.215861|1.000000', got '$RENDERED'"
+}
+
 # GIVEN a palette where term_red refers to red, and a template using
 #       {{term_red_rgb}}
 # WHEN generating it
@@ -468,6 +595,24 @@ test_colors_are_available_as_rgb_without_spaces() {
   render_colors accent_rgb_csv
   expected="$(color_rgb accent | tr -d ' ')"
   [ "$RENDERED" = "$expected" ] || fail "expected accent_rgb_csv '$expected', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_int}}
+# WHEN generating Sunset
+# THEN it's Sunset's accent as one decimal number (0xrrggbb)
+test_colors_are_available_as_integers() {
+  render_colors accent_int
+  expected="$(( 16#$(color accent | tr -d '#') ))"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_int '$expected', got '$RENDERED'"
+}
+
+# GIVEN a template using {{accent_rgb_spaced}}
+# WHEN generating Sunset
+# THEN it's Sunset's accent as "r g b", with spaces instead of commas
+test_colors_are_available_as_rgb_with_spaces() {
+  render_colors accent_rgb_spaced
+  expected="$(color_rgb accent | tr -d ',')"
+  [ "$RENDERED" = "$expected" ] || fail "expected accent_rgb_spaced '$expected', got '$RENDERED'"
 }
 
 # GIVEN a template using {{uuid}}
@@ -1067,6 +1212,1507 @@ test_remove_deletes_the_godot_theme() {
   assert_contains "Removed app-themes/godot-theme/sunset/Jenerated-sunset.tet"
   assert_missing "$(godot_theme sunset)"
   assert_exists "$SANDBOX/repo/app-themes/godot-theme/text-editor.tet.tmpl"
+}
+
+# --- Tests: Zen Browser -----------------------------------------------------
+
+# GIVEN the Sunset palette, and a light palette
+# WHEN generating them
+# THEN Sunset's Zen stylesheet sets the window background (including on the
+#      elements Zen's workspace themes color), Zen's accent, the text and
+#      the selected tab from the palette, and marks it dark; the light
+#      palette's is marked light; and its about: page stylesheet uses the
+#      editor background
+test_zen_theme_uses_the_palette() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  css="$(zen_theme sunset)/userChrome.css"
+  assert_file_contains "$css" "#zen-browser-background,"
+  assert_file_contains "$css" "--zen-main-browser-background: $(color bg_chrome) !important;"
+  assert_file_contains "$css" "--zen-primary-color: $(color accent) !important;"
+  assert_file_contains "$css" "--toolbox-textcolor: $(color text) !important;"
+  assert_file_contains "$css" "--tab-selected-textcolor: $(color text_strong) !important;"
+  assert_file_contains "$css" "color-scheme: dark !important;"
+  assert_file_contains "$(zen_theme daylight)/userChrome.css" "color-scheme: light !important;"
+  assert_file_contains "$(zen_theme sunset)/userContent.css" "--in-content-page-background: $(color bg) !important;"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Zen stylesheets without comments
+# THEN every declaration is marked !important (Zen's own values would win
+#      otherwise), and the braces balance
+test_zen_theme_overrides_every_value() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+for path in sys.argv[1:]:
+    css = re.sub(r"/\*.*?\*/", "", open(path).read(), flags=re.S)
+    if css.count("{") != css.count("}"):
+        print(f"{path}: the braces do not balance")
+    for declaration in re.findall(r"[{;]\s*([a-z-]+\s*:[^;{}]*);", css):
+        if not declaration.rstrip().endswith("!important"):
+            print(f"{path}: {declaration.strip()} is not !important")
+' "$(zen_theme sunset)/userChrome.css" "$(zen_theme sunset)/userContent.css")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Zen theme folder is deleted, and the templates are kept
+test_remove_deletes_the_zen_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/zen-theme/sunset/userChrome.css"
+  assert_missing "$(zen_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/zen-theme/userChrome.css.tmpl"
+}
+
+# --- Tests: GtkSourceView text editors --------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its three style schemes as XML
+# THEN each is valid XML named after the palette, with the editor's text
+#      and background, strings and keywords in the palette's colors
+test_gtksourceview_schemes_use_the_palette() {
+  run_jenerate sunset
+  for version in $GSV_VERSIONS; do
+    result="$("$PYTHON" -c '
+import sys, xml.etree.ElementTree as ET
+root = ET.parse(sys.argv[1]).getroot()
+styles = {s.get("name"): s for s in root.iter("style")}
+print(root.get("id"), root.get("name"), styles["text"].get("foreground"), styles["text"].get("background"),
+      styles["def:string"].get("foreground"), styles["def:keyword"].get("foreground"))
+' "$(gsv_scheme sunset "$version")")"
+    expected="jenerated-sunset Jenerated Sunset $(color text) $(color bg) $(color green) $(color accent_soft)"
+    [ "$result" = "$expected" ] || fail "$version: expected '$expected', got '$result'"
+  done
+}
+
+# GIVEN the Sunset palette, and a light palette
+# WHEN generating them
+# THEN each scheme follows its format's rules, which differ: GtkSourceView 3
+#      and 4 need version="1.0" and refuse <metadata>; GtkSourceView 5 has
+#      version="1.0" and <metadata> saying dark or light, with the colors
+#      GNOME Text Editor recolors its window from; and gedit 47's
+#      libgedit-gtksourceview needs kind="dark" or "light", and refuses any
+#      attribute or element it doesn't know (such as version, author,
+#      metadata, or underline-color, which it spells underline_color)
+test_gtksourceview_schemes_follow_each_format() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  OUTPUT="$("$PYTHON" -c '
+import sys, xml.etree.ElementTree as ET
+folder = sys.argv[1]
+def load(slug, version):
+    return ET.parse(f"{folder}/{slug}/{version}/jenerated-{slug}.xml").getroot()
+for slug, scheme in (("sunset", "dark"), ("daylight", "light")):
+    old = load(slug, "gtksourceview-4")
+    if old.get("version") != "1.0": print(f"{slug} gtksourceview-4: needs version=1.0")
+    if old.find("metadata") is not None: print(f"{slug} gtksourceview-4: has <metadata>")
+    new = load(slug, "gtksourceview-5")
+    if new.get("version") != "1.0": print(f"{slug} gtksourceview-5: needs version=1.0")
+    meta = {p.get("name"): p.text for p in new.iter("property")}
+    variant = meta.get("variant")
+    if variant != scheme: print(f"{slug} gtksourceview-5: variant is {variant}, not {scheme}")
+    for key in ("window_bg_color", "headerbar_bg_color", "sidebar_bg_color", "popover_bg_color", "accent_bg_color", "accent_fg_color"):
+        if not (meta.get(key) or "").startswith("#"): print(f"{slug} gtksourceview-5: no {key}")
+    gedit = load(slug, "libgedit-gtksourceview-300")
+    kind = gedit.get("kind")
+    if kind != scheme: print(f"{slug} libgedit: kind is {kind}, not {scheme}")
+    extra = set(gedit.attrib) - {"id", "name", "_name", "kind"}
+    if extra: print(f"{slug} libgedit: <style-scheme> has {sorted(extra)}")
+    for child in gedit:
+        if child.tag not in ("description", "_description", "color", "style"):
+            print(f"{slug} libgedit: has <{child.tag}>")
+        allowed = {"style": {"name", "foreground", "background", "italic", "bold", "underline", "underline_color",
+                             "strikethrough", "scale", "use-style"}, "color": {"name", "value"}}.get(child.tag, set())
+        name = child.get("name")
+        for attribute in set(child.attrib) - allowed:
+            print(f"{slug} libgedit: <{child.tag} name={name}> has {attribute}")
+' "$SANDBOX/repo/app-themes/gtksourceview-theme")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN the three style scheme templates
+# WHEN comparing their <style> lines (treating gedit's underline_color as
+#      underline-color)
+# THEN they're the same, so the editors all show a palette the same way
+test_gtksourceview_templates_share_their_styles() {
+  folder="$SANDBOX/repo/app-themes/gtksourceview-theme"
+  grep '<style ' "$folder/gtksourceview-4.xml.tmpl" >"$SANDBOX/styles-4"
+  for template in gtksourceview-5.xml.tmpl libgedit.xml.tmpl; do
+    grep '<style ' "$folder/$template" | sed 's/underline_color=/underline-color=/g' >"$SANDBOX/styles-other"
+    if ! cmp -s "$SANDBOX/styles-4" "$SANDBOX/styles-other"; then
+      fail "$template's styles differ from gtksourceview-4.xml.tmpl's:
+$(diff "$SANDBOX/styles-4" "$SANDBOX/styles-other")"
+    fi
+  done
+}
+
+# GIVEN the Sunset palette, and GtkSourceView 4's Python bindings
+# WHEN generating it and loading its GtkSourceView 4 scheme with the real
+#      library
+# THEN it loads, with the palette's colors
+test_gtksourceview_4_scheme_loads_in_gtksourceview() {
+  "$PYTHON" -c 'import gi; gi.require_version("GtkSource", "4")' 2>/dev/null || return 0
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import sys, gi
+gi.require_version("GtkSource", "4")
+from gi.repository import GtkSource
+manager = GtkSource.StyleSchemeManager()
+manager.set_search_path([sys.argv[1]])
+scheme = manager.get_scheme("jenerated-sunset")
+if scheme is None:
+    print("not loaded")
+else:
+    style = scheme.get_style("def:string")
+    print(scheme.get_name(), style.props.foreground.lower())
+' "$SANDBOX/repo/app-themes/gtksourceview-theme/sunset/gtksourceview-4" 2>&1)"
+  expected="Jenerated Sunset $(color green | tr 'A-F' 'a-f')"
+  [ "$OUTPUT" = "$expected" ] || fail "expected '$expected'"
+}
+
+# GIVEN the Sunset palette, and GtkSourceView 5's library
+# WHEN generating it and loading its GtkSourceView 5 scheme with the real
+#      library
+# THEN it loads, saying it's dark, with its header bar color for GNOME Text
+#      Editor
+test_gtksourceview_5_scheme_loads_in_gtksourceview() {
+  "$PYTHON" -c 'import ctypes; ctypes.CDLL("libgtksourceview-5.so.0")' 2>/dev/null || return 0
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import ctypes, sys
+lib = ctypes.CDLL("libgtksourceview-5.so.0")
+lib.gtk_source_init()
+p, s = ctypes.c_void_p, ctypes.c_char_p
+lib.gtk_source_style_scheme_manager_new.restype = p
+lib.gtk_source_style_scheme_manager_set_search_path.argtypes = [p, ctypes.POINTER(s)]
+lib.gtk_source_style_scheme_manager_get_scheme.restype = p
+lib.gtk_source_style_scheme_manager_get_scheme.argtypes = [p, s]
+lib.gtk_source_style_scheme_get_name.restype = s
+lib.gtk_source_style_scheme_get_name.argtypes = [p]
+lib.gtk_source_style_scheme_get_metadata.restype = s
+lib.gtk_source_style_scheme_get_metadata.argtypes = [p, s]
+manager = lib.gtk_source_style_scheme_manager_new()
+lib.gtk_source_style_scheme_manager_set_search_path(manager, (s * 2)(sys.argv[1].encode(), None))
+scheme = lib.gtk_source_style_scheme_manager_get_scheme(manager, b"jenerated-sunset")
+if not scheme:
+    print("not loaded")
+else:
+    print(lib.gtk_source_style_scheme_get_name(scheme).decode(),
+          lib.gtk_source_style_scheme_get_metadata(scheme, b"variant").decode(),
+          lib.gtk_source_style_scheme_get_metadata(scheme, b"headerbar_bg_color").decode())
+' "$SANDBOX/repo/app-themes/gtksourceview-theme/sunset/gtksourceview-5" 2>&1)"
+  expected="Jenerated Sunset dark $(color bg_chrome)"
+  [ "$OUTPUT" = "$expected" ] || fail "expected '$expected'"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its style scheme folders are deleted, and the templates are kept
+test_remove_deletes_the_gtksourceview_schemes() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/gtksourceview-theme/sunset/gtksourceview-5/jenerated-sunset.xml"
+  assert_missing "$SANDBOX/repo/app-themes/gtksourceview-theme/sunset"
+  assert_exists "$SANDBOX/repo/app-themes/gtksourceview-theme/libgedit.xml.tmpl"
+}
+
+# --- Tests: fzf -------------------------------------------------------------
+
+# fzf_colors file -> prints the name:color pairs of the --color option in a
+# generated fzf file, one per line.
+fzf_colors() {
+  sed -n "s/.*'--color=\([^']*\)'.*/\1/p" "$1" | tr ',' '\n'
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the bash/zsh and fish files set the same colors, with the list text,
+#      background, current line, matches, prompt and marker from the palette
+test_fzf_colors_use_the_palette() {
+  run_jenerate sunset
+  colors="$(fzf_colors "$(fzf_theme sunset).sh")"
+  for pair in "fg:$(color text_subtle)" "bg:$(color bg)" "fg+:$(color text_strong)" "bg+:$(color bg_selected)" \
+    "hl:$(color magenta)" "prompt:$(color accent)" "marker:$(color green)"; do
+    printf '%s\n' "$colors" | grep -qxF -- "$pair" || fail "expected $pair in the fzf colors"
+  done
+  [ "$colors" = "$(fzf_colors "$(fzf_theme sunset).fish")" ] || fail "expected the fish file to set the same colors"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading the color names it sets
+# THEN each is one fzf 0.29 (Ubuntu 22.04) already knew: older versions
+#      refuse the whole --color option over one name they don't know
+test_fzf_colors_only_use_names_from_fzf_0_29() {
+  run_jenerate sunset
+  known=" fg bg hl fg+ bg+ hl+ gutter query disabled info border prompt pointer marker spinner header preview-fg preview-bg "
+  for pair in $(fzf_colors "$(fzf_theme sunset).sh"); do
+    case "$known" in
+      *" ${pair%%:*} "*) ;;
+      *) fail "${pair%%:*} is newer than fzf 0.29" ;;
+    esac
+  done
+}
+
+# GIVEN the Sunset palette, and FZF_DEFAULT_OPTS set to --layout=reverse
+# WHEN a POSIX shell (dash if there is one) loads the generated file twice
+# THEN FZF_DEFAULT_OPTS is the user's option followed by the colors, once
+test_fzf_sh_adds_the_colors_once() {
+  run_jenerate sunset
+  shell="$(command -v dash || command -v sh)"
+  opts="$(FZF_DEFAULT_OPTS=--layout=reverse "$shell" -c '. "$1"; . "$1"; printf %s "$FZF_DEFAULT_OPTS"' sh "$(fzf_theme sunset).sh")"
+  expected="--layout=reverse --color=$(fzf_colors "$(fzf_theme sunset).sh" | paste -sd, -)"
+  [ "$opts" = "$expected" ] || fail "expected '$expected', got '$opts'"
+}
+
+# GIVEN the Sunset palette, and fish
+# WHEN fish loads the generated fish file twice, with FZF_DEFAULT_OPTS empty
+# THEN FZF_DEFAULT_OPTS is just the colors, once
+test_fzf_fish_adds_the_colors_once() {
+  command -v fish >/dev/null 2>&1 || return 0
+  run_jenerate sunset
+  opts="$(fish --no-config -c 'set -gx FZF_DEFAULT_OPTS ""; source $argv[1]; source $argv[1]; printf %s $FZF_DEFAULT_OPTS' "$(fzf_theme sunset).fish")"
+  expected="--color=$(fzf_colors "$(fzf_theme sunset).fish" | paste -sd, -)"
+  [ "$opts" = "$expected" ] || fail "expected '$expected', got '$opts'"
+}
+
+# GIVEN the Sunset palette, and fzf
+# WHEN fzf runs with the generated colors
+# THEN it accepts them
+test_fzf_accepts_the_colors() {
+  command -v fzf >/dev/null 2>&1 || return 0
+  run_jenerate sunset
+  OUTPUT="$(printf 'apple\n' | FZF_DEFAULT_OPTS= sh -c '. "$1"; fzf --filter a' sh "$(fzf_theme sunset).sh" 2>&1)"
+  [ "$OUTPUT" = "apple" ] || fail "expected fzf to accept the colors"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its fzf folder is deleted, and the templates are kept
+test_remove_deletes_the_fzf_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/fzf-theme/sunset/jenerated-sunset.sh"
+  assert_missing "$SANDBOX/repo/app-themes/fzf-theme/sunset"
+  assert_exists "$SANDBOX/repo/app-themes/fzf-theme/fzf.sh.tmpl"
+}
+
+# --- Tests: mpv -------------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its mpv colors set the OSD text, its outline, the controller's
+#      background and progress bar, and the console's focused item from the
+#      palette
+test_mpv_colors_use_the_palette() {
+  run_jenerate sunset
+  conf="$(mpv_theme sunset)"
+  assert_file_contains "$conf" "osd-color=\"$(color text)\""
+  assert_file_contains "$conf" "osd-border-color=\"$(color bg_chrome)\""
+  assert_file_contains "$conf" "osd-back-color=\"#CC$(color bg_chrome | cut -c2-)\""
+  assert_file_contains "$conf" "script-opts-append=\"osc-background_color=$(color bg_chrome)\""
+  assert_file_contains "$conf" "script-opts-append=\"osc-timecode_color=$(color accent)\""
+  assert_file_contains "$conf" "script-opts-append=\"console-focused_back_color=$(color accent)\""
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading each setting as mpv would
+# THEN every value is quoted (mpv reads an unquoted # as a comment), each
+#      option is one mpv has (osd-border-color rather than 0.40's
+#      osd-outline-color, which older versions don't know), each script
+#      option is one the controller or console has, and each color is
+#      #rrggbb (the controller reads exactly that) or, for the OSD, #aarrggbb
+test_mpv_colors_follow_mpvs_rules() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+options = {"osd-color", "osd-border-color", "osd-back-color", "osd-selected-color",
+           "osd-selected-outline-color", "script-opts-append"}
+scripts = {
+    "osc": {"background_color", "timecode_color", "title_color", "time_pos_color", "buttons_color",
+            "small_buttonsL_color", "small_buttonsR_color", "top_buttons_color", "held_element_color",
+            "time_pos_outline_color"},
+    "console": {"focused_color", "focused_back_color", "match_color", "menu_outline_color"},
+}
+for line in open(sys.argv[1]).read().splitlines():
+    if not line or line.startswith("#"):
+        continue
+    m = re.fullmatch(r"([a-z-]+)=\"([^\"]*)\"", line)
+    if not m:
+        print(f"not option=\"value\": {line}")
+        continue
+    option, value = m.groups()
+    if option not in options:
+        print(f"unknown option: {option}")
+    elif option == "script-opts-append":
+        script, _, rest = value.partition("-")
+        key, _, color = rest.partition("=")
+        if key not in scripts.get(script, set()):
+            print(f"unknown script option: {script}-{key}")
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+            print(f"{script}-{key} is {color}, not #rrggbb")
+    elif not re.fullmatch(r"#([0-9a-fA-F]{2})?[0-9a-fA-F]{6}", value):
+        print(f"{option} is {value}, not #rrggbb or #aarrggbb")
+' "$(mpv_theme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its mpv folder is deleted, and the template is kept
+test_remove_deletes_the_mpv_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/mpv-theme/sunset/jenerated-sunset.conf"
+  assert_missing "$SANDBOX/repo/app-themes/mpv-theme/sunset"
+  assert_exists "$SANDBOX/repo/app-themes/mpv-theme/colors.conf.tmpl"
+}
+
+# --- Tests: tmux ------------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its tmux colors set the status line, the current window, the active
+#      pane's border, messages and the copy-mode selection from the palette
+test_tmux_colors_use_the_palette() {
+  run_jenerate sunset
+  conf="$(tmux_theme sunset)"
+  assert_file_contains "$conf" "set -gq status-style \"fg=$(color text_subtle),bg=$(color bg_chrome)\""
+  assert_file_contains "$conf" "set -gq window-status-current-style \"fg=$(color text_strong),bg=$(color bg_selected),bold\""
+  assert_file_contains "$conf" "set -gq pane-active-border-style \"fg=$(color accent)\""
+  assert_file_contains "$conf" "set -gq message-style \"fg=$(color text),bg=$(color bg_widget)\""
+  assert_file_contains "$conf" "set -gq mode-style \"fg=$(color text_strong),bg=$(color selection)\""
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading each line as tmux would
+# THEN every setting is "set -gq" (so a tmux without the option skips it
+#      quietly), each option is one tmux 3.4 has, each value is quoted (tmux
+#      reads an unquoted # as a comment), and each style is fg=, bg= and
+#      attributes, with #rrggbb colors
+test_tmux_colors_follow_tmuxs_rules() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+styles = {"status-style", "window-status-style", "window-status-current-style", "window-status-activity-style",
+          "window-status-bell-style", "pane-border-style", "pane-active-border-style", "message-style",
+          "message-command-style", "mode-style", "copy-mode-match-style", "copy-mode-current-match-style",
+          "popup-style", "popup-border-style", "menu-style", "menu-selected-style", "menu-border-style"}
+colours = {"clock-mode-colour", "display-panes-colour", "display-panes-active-colour"}
+for line in open(sys.argv[1]).read().splitlines():
+    if not line or line.startswith("#"):
+        continue
+    m = re.fullmatch(r"set -gq ([a-z-]+) \"([^\"]*)\"", line)
+    if not m:
+        print(f"not set -gq option \"value\": {line}")
+        continue
+    option, value = m.groups()
+    if option in colours:
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+            print(f"{option} is {value}, not #rrggbb")
+    elif option in styles:
+        for part in value.split(","):
+            if not re.fullmatch(r"(fg|bg)=#[0-9a-fA-F]{6}|bold|italics|underscore|dim", part):
+                print(f"{option} has {part}")
+    else:
+        print(f"unknown option: {option}")
+' "$(tmux_theme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its tmux folder is deleted, and the template is kept
+test_remove_deletes_the_tmux_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/tmux-theme/sunset/jenerated-sunset.conf"
+  assert_missing "$SANDBOX/repo/app-themes/tmux-theme/sunset"
+  assert_exists "$SANDBOX/repo/app-themes/tmux-theme/colors.conf.tmpl"
+}
+
+# --- Tests: zsh -------------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN the zsh file colors commands, strings, options and unknown commands
+#      from the palette, and dims suggestions like comments; and the
+#      fast-syntax-highlighting theme uses the same colors
+test_zsh_colors_use_the_palette() {
+  run_jenerate sunset
+  zsh="$(zsh_theme sunset).zsh"
+  assert_file_contains "$zsh" "ZSH_HIGHLIGHT_STYLES[command]='fg=$(color accent_light)'"
+  assert_file_contains "$zsh" "ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=$(color green)'"
+  assert_file_contains "$zsh" "ZSH_HIGHLIGHT_STYLES[double-hyphen-option]='fg=$(color orange)'"
+  assert_file_contains "$zsh" "ZSH_HIGHLIGHT_STYLES[unknown-token]='fg=$(color red),bold'"
+  assert_file_contains "$zsh" "ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=$(color text_muted)'"
+  ini="$(zsh_theme sunset).ini"
+  assert_file_contains "$ini" "command           = $(color accent_light)"
+  assert_file_contains "$ini" "single-quoted-argument = $(color green)"
+  assert_file_contains "$ini" "unknown-token    = $(color red),bold"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading the zsh-syntax-highlighting styles it sets
+# THEN each is one the plugin documents, and each value is none, or fg=, bg=
+#      and attributes with #rrggbb colors
+test_zsh_styles_are_zsh_syntax_highlighting_styles() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+styles = set("""unknown-token reserved-word alias suffix-alias global-alias builtin function command
+precommand commandseparator hashed-command autodirectory path path_pathseparator path_prefix
+path_prefix_pathseparator globbing history-expansion command-substitution
+command-substitution-delimiter process-substitution process-substitution-delimiter
+arithmetic-expansion single-hyphen-option double-hyphen-option back-quoted-argument
+back-quoted-argument-delimiter single-quoted-argument double-quoted-argument
+dollar-quoted-argument rc-quote dollar-double-quoted-argument back-double-quoted-argument
+back-dollar-quoted-argument assign redirection comment named-fd numeric-fd arg0 default""".split())
+for name, value in re.findall(r"^ZSH_HIGHLIGHT_STYLES\[([^]]+)\]=\x27([^\x27]*)\x27$", open(sys.argv[1]).read(), re.M):
+    if name not in styles:
+        print(f"{name} is not a zsh-syntax-highlighting style")
+    for part in value.split(","):
+        if not re.fullmatch(r"none|(fg|bg)=#[0-9a-fA-F]{6}|bold|underline|standout", part):
+            print(f"{name} has {part}")
+' "$(zsh_theme sunset).zsh")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its fast-syntax-highlighting theme the way
+#      fast-theme does
+# THEN it sets every style fast-theme asks for (so fast-theme reports none
+#      missing), and each value is one fast-theme can read: none,
+#      attributes, and colors as #rrggbb or bg:#rrggbb
+test_zsh_fast_theme_has_every_style() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+wanted = """default unknown-token reserved-word alias suffix-alias builtin function command precommand
+commandseparator hashed-command path pathseparator globbing globbing-ext history-expansion
+single-hyphen-option double-hyphen-option back-quoted-argument single-quoted-argument
+double-quoted-argument dollar-quoted-argument back-or-dollar-double-quoted-argument
+back-dollar-quoted-argument assign redirection comment variable mathvar mathnum matherr
+assign-array-bracket forvar fornum foroper forsep exec-descriptor here-string-tri here-string-text
+here-string-var secondary case-input case-parentheses case-condition correct-subtle incorrect-subtle
+subtle-separator subtle-bg path-to-dir paired-bracket bracket-level-1 bracket-level-2 bracket-level-3
+global-alias subcommand single-sq-bracket double-sq-bracket double-paren optarg-string optarg-number
+recursive-base""".split()
+styles = {}
+for line in open(sys.argv[1]).read().splitlines():
+    if re.match(r"\s*;", line) or re.match(r"\s*\[", line) or not line.strip():
+        continue
+    m = re.fullmatch(r"\s*([^\s=]+)\s*=\s*(.*?)\s*", line)
+    if not m:
+        print(f"not key = value: {line}")
+        continue
+    styles[m.group(1)] = m.group(2)
+for name in wanted:
+    if name not in styles:
+        print(f"missing style: {name}")
+for name, value in styles.items():
+    if name not in wanted:
+        print(f"{name} is not a fast-syntax-highlighting style")
+    if name in ("secondary", "pathseparator") or not value:
+        continue
+    for part in value.split(","):
+        if not re.fullmatch(r"none|(no-)?(bold|blink|conceal|reverse|standout|underline)|(bg:)?#[0-9a-fA-F]{6}", part):
+            print(f"{name} has {part}")
+' "$(zsh_theme sunset).ini")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN the Sunset palette, and zsh
+# WHEN zsh loads the generated file, with and without a truecolor terminal
+# THEN it loads without errors, sets the styles and the suggestion color,
+#      and loads zsh's nearcolor module only when the terminal doesn't say it
+#      has 24-bit color
+test_zsh_file_loads_in_zsh() {
+  command -v zsh >/dev/null 2>&1 || return 0
+  run_jenerate sunset
+  file="$(zsh_theme sunset).zsh"
+  OUTPUT="$(COLORTERM=truecolor zsh -f -c 'source "$1"; print -r -- "$ZSH_HIGHLIGHT_STYLES[command] $ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE $(zmodload | grep -c nearcolor)"' zsh "$file" 2>&1)"
+  expected="fg=$(color accent_light) fg=$(color text_muted) 0"
+  [ "$OUTPUT" = "$expected" ] || fail "with truecolor: expected '$expected'"
+  nearcolor="$(COLORTERM= zsh -f -c 'source "$1"; zmodload | grep -c nearcolor' zsh "$file" 2>&1)"
+  [ "$nearcolor" = 1 ] || fail "expected zsh/nearcolor without truecolor, got: $nearcolor"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its zsh folder is deleted, and the templates are kept
+test_remove_deletes_the_zsh_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/zsh-theme/sunset/jenerated-sunset.zsh"
+  assert_missing "$SANDBOX/repo/app-themes/zsh-theme/sunset"
+  assert_exists "$SANDBOX/repo/app-themes/zsh-theme/colors.zsh.tmpl"
+}
+
+# --- Tests: Element ---------------------------------------------------------
+
+# GIVEN the Sunset palette, and a light palette
+# WHEN generating them
+# THEN each Element theme is valid JSON named after the palette and marked
+#      dark or light, with the timeline, room list and accent from the
+#      palette in both its colors and its Compound tokens, and 8 username
+#      and avatar colors
+test_element_theme_uses_the_palette() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  result="$("$PYTHON" -c '
+import json, sys
+for path in sys.argv[1:]:
+    t = json.load(open(path))
+    c, k = t["colors"], t["compound"]
+    print(t["name"], t["is_dark"], c["timeline-background-color"], c["roomlist-background-color"],
+          c["accent-color"], k["--cpd-color-bg-canvas-default"], k["--cpd-color-text-primary"],
+          k["--cpd-color-bg-action-primary-rest"], len(c["username-colors"]), len(c["avatar-background-colors"]))
+' "$(element_theme sunset)" "$(element_theme daylight)")"
+  expected="Jenerated Sunset True $(color bg) $(color bg_sidebar) $(color accent) $(color bg) $(color text) $(color accent) 8 8
+Jenerated Daylight False #fbfbfd $(color bg_sidebar) $(color accent) #fbfbfd $(color text) $(color accent) 8 8"
+  [ "$result" = "$expected" ] || fail "expected:
+$expected"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Element theme
+# THEN every Compound token it sets is a real semantic token of Compound
+#      10.2 (Element ignores unknown ones), and every color is #rrggbb, or
+#      #rrggbbaa for the see-through ones
+test_element_theme_uses_real_compound_tokens() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import json, re, sys
+tokens = set("""bg-accent-hovered bg-accent-pressed bg-accent-rest bg-accent-selected bg-action-primary-disabled
+bg-action-primary-hovered bg-action-primary-pressed bg-action-primary-rest bg-action-secondary-hovered
+bg-action-secondary-pressed bg-action-secondary-rest bg-action-tertiary-hovered bg-action-tertiary-rest
+bg-action-tertiary-selected bg-badge-accent bg-badge-critical bg-badge-default bg-badge-info bg-badge-primary
+bg-badge-secondary bg-canvas-default bg-canvas-default-level-1 bg-canvas-disabled bg-critical-hovered
+bg-critical-primary bg-critical-subtle bg-critical-subtle-hovered bg-decorative-1 bg-decorative-2 bg-decorative-3
+bg-decorative-4 bg-decorative-5 bg-decorative-6 bg-info-subtle bg-subtle-primary bg-subtle-secondary
+bg-subtle-secondary-level-0 bg-success-subtle border-accent-primary border-accent-subtle border-critical-hovered
+border-critical-primary border-critical-subtle border-disabled border-focused border-info-subtle
+border-interactive-hovered border-interactive-primary border-interactive-secondary border-success-subtle
+icon-accent-primary icon-accent-tertiary icon-critical-primary icon-disabled icon-info-primary icon-on-solid-primary
+icon-primary icon-quaternary icon-secondary icon-success-primary icon-tertiary text-action-accent
+text-action-primary text-badge-accent text-badge-info text-critical-primary text-decorative-1 text-decorative-2
+text-decorative-3 text-decorative-4 text-decorative-5 text-decorative-6 text-disabled text-info-primary
+text-link-external text-on-solid-primary text-primary text-secondary text-success-primary""".split())
+t = json.load(open(sys.argv[1]))
+for token, value in t["compound"].items():
+    if token.removeprefix("--cpd-color-") not in tokens:
+        print(f"{token} is not a Compound token")
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?", value):
+        print(f"{token} is {value}")
+for name, value in t["colors"].items():
+    for v in value if isinstance(value, list) else [value]:
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", v):
+            print(f"{name} has {v}")
+' "$(element_theme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Element folder is deleted, and the template is kept
+test_remove_deletes_the_element_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/element-theme/sunset/jenerated-sunset.json"
+  assert_missing "$SANDBOX/repo/app-themes/element-theme/sunset"
+  assert_exists "$SANDBOX/repo/app-themes/element-theme/theme.json.tmpl"
+}
+
+# --- Tests: Mattermost ------------------------------------------------------
+
+# GIVEN the Sunset palette, and a light palette
+# WHEN generating them
+# THEN each Mattermost theme is valid JSON with every color Mattermost's
+#      custom theme editor has (plus mentionBj, the older spelling of
+#      mentionBg that its own themes still set), each a #rrggbb color from
+#      the palette, and a code theme that suits the palette: Monokai for
+#      dark, GitHub for light
+test_mattermost_theme_has_every_color() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  OUTPUT="$("$PYTHON" -c '
+import json, re, sys
+keys = """sidebarBg sidebarText sidebarUnreadText sidebarTextHoverBg sidebarTextActiveBorder
+sidebarTextActiveColor sidebarHeaderBg sidebarHeaderTextColor sidebarTeamBarBg onlineIndicator
+awayIndicator dndIndicator mentionBg mentionBj mentionColor centerChannelBg centerChannelColor
+newMessageSeparator linkColor buttonBg buttonColor errorTextColor mentionHighlightBg
+mentionHighlightLink""".split()
+for path, code in ((sys.argv[1], "monokai"), (sys.argv[2], "github")):
+    t = json.load(open(path))
+    for key in keys:
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", t.get(key, "")):
+            print(f"{path}: {key} is {t.get(key)}")
+    extra = set(t) - set(keys) - {"type", "codeTheme"}
+    if extra:
+        print(f"{path}: unknown keys {sorted(extra)}")
+    kind, code_theme = t.get("type"), t.get("codeTheme")
+    if kind != "custom" or code_theme != code:
+        print(f"{path}: type {kind}, codeTheme {code_theme}")
+' "$(mattermost_theme sunset)" "$(mattermost_theme daylight)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+  theme="$(mattermost_theme sunset)"
+  assert_file_contains "$theme" "\"centerChannelBg\": \"$(color bg)\""
+  assert_file_contains "$theme" "\"sidebarBg\": \"$(color bg_sidebar)\""
+  assert_file_contains "$theme" "\"buttonBg\": \"$(color accent)\""
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Mattermost theme is deleted, and the template is kept
+test_remove_deletes_the_mattermost_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/mattermost-theme/sunset.json"
+  assert_missing "$(mattermost_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/mattermost-theme/theme.json.tmpl"
+}
+
+# --- Tests: Insomnia --------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its Insomnia plugin's package.json is valid JSON naming the plugin
+#      insomnia-plugin-jenerated-sunset, with an insomnia section that
+#      declares no permissions (a theme needs none)
+test_insomnia_plugin_package_json() {
+  run_jenerate sunset
+  result="$("$PYTHON" -c '
+import json, sys
+p = json.load(open(sys.argv[1]))
+print(p["name"], p["main"], p["insomnia"]["name"], p["insomnia"]["permissions"])
+' "$(insomnia_plugin sunset)/package.json")"
+  expected="insomnia-plugin-jenerated-sunset index.js Jenerated Sunset {'modules': [], 'capabilities': []}"
+  [ "$result" = "$expected" ] || fail "expected '$expected', got '$result'"
+}
+
+# GIVEN the Sunset palette, and Node.js
+# WHEN generating it and loading its plugin the way Insomnia would
+# THEN it exports one theme, named in lowercase without spaces (as Insomnia
+#      requires), whose every block has a default color, with the palette's
+#      background, text, accent (Insomnia's "surprise") and sidebar
+test_insomnia_plugin_exports_the_theme() {
+  command -v node >/dev/null 2>&1 || return 0
+  run_jenerate sunset
+  OUTPUT="$(node -e '
+const themes = require(process.argv[1]).themes;
+if (themes.length !== 1) console.log(`expected one theme, got ${themes.length}`);
+const t = themes[0];
+if (t.name !== t.name.replace(/\s/g, "-").toLowerCase()) console.log(`invalid theme name ${t.name}`);
+const blocks = [t.theme, ...Object.values(t.theme.styles)];
+for (const block of blocks)
+  for (const part of ["background", "foreground", "highlight"])
+    if (block[part] && !block[part].default) console.log(`a ${part} block has no default`);
+console.log([t.name, t.displayName, t.theme.background.default, t.theme.foreground.default,
+  t.theme.background.surprise, t.theme.styles.sidebar.background.default].join(" "));
+' "$(insomnia_plugin sunset)/index.js" 2>&1)"
+  expected="jenerated-sunset Jenerated Sunset $(color bg) $(color text) $(color accent) $(color bg_sidebar)"
+  [ "$OUTPUT" = "$expected" ] || fail "expected '$expected'"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Insomnia folder is deleted, and the templates are kept
+test_remove_deletes_the_insomnia_plugin() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/insomnia-theme/sunset/insomnia-plugin-jenerated-sunset/index.js"
+  assert_missing "$SANDBOX/repo/app-themes/insomnia-theme/sunset"
+  assert_exists "$SANDBOX/repo/app-themes/insomnia-theme/index.js.tmpl"
+}
+
+# --- Tests: Sublime Text ----------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its Sublime Text color scheme is valid JSON named after the palette,
+#      with the editor's background, text, caret and selection, and strings,
+#      keywords and functions in the palette's colors (as in the VS Code theme)
+test_sublime_scheme_uses_the_palette() {
+  run_jenerate sunset
+  result="$("$PYTHON" -c '
+import json, sys
+t = json.load(open(sys.argv[1]))
+g = t["globals"]
+by_name = {r["name"]: r for r in t["rules"]}
+print(t["name"], g["background"], g["foreground"], g["caret"], g["selection"],
+      by_name["String"]["foreground"], by_name["Keyword"]["foreground"], by_name["Function"]["foreground"])
+' "$(sublime_scheme sunset)")"
+  expected="Jenerated Sunset $(color bg) $(color text) $(color accent) $(color selection) $(color green) $(color accent_soft) $(color accent_light)"
+  [ "$result" = "$expected" ] || fail "expected '$expected', got '$result'"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its color scheme
+# THEN every global is one Sublime Text's docs list, colors are #rrggbb, and
+#      every rule has a scope and uses only the font styles Sublime Text knows
+test_sublime_scheme_follows_the_format() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import json, re, sys
+known = set("""background foreground invisibles caret line_highlight block_caret block_caret_border
+block_caret_underline block_caret_corner_style block_caret_corner_radius misspelling fold_marker
+minimap_border accent popup_css phantom_css sheet_css gutter gutter_foreground gutter_foreground_highlight
+line_diff_width line_diff_added line_diff_modified line_diff_deleted selection selection_foreground
+selection_border selection_border_width inactive_selection inactive_selection_border
+inactive_selection_foreground selection_corner_style selection_corner_radius highlight find_highlight
+find_highlight_foreground scroll_highlight scroll_selected_highlight rulers guide active_guide stack_guide
+brackets_options brackets_foreground bracket_contents_options bracket_contents_foreground tags_options
+tags_foreground shadow shadow_width""".split())
+options = {"brackets_options", "tags_options", "bracket_contents_options"}
+styles = {"bold", "italic", "glow", "underline", "stippled_underline", "squiggly_underline"}
+t = json.load(open(sys.argv[1]))
+for key, value in t["globals"].items():
+    if key not in known:
+        print(f"{key} is not a Sublime Text global")
+    elif key not in options and not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+        print(f"{key} is {value}")
+for rule in t["rules"]:
+    name = rule.get("name")
+    if not rule.get("scope"):
+        print(f"rule {name} has no scope")
+    for part in rule.get("font_style", "").split():
+        if part not in styles:
+            print(f"rule {name} has font style {part}")
+    for key in ("foreground", "background"):
+        if key in rule and not re.fullmatch(r"#[0-9a-fA-F]{6}", rule[key]):
+            print(f"rule {name} {key} is {rule[key]}")
+' "$(sublime_scheme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Sublime Text color scheme is deleted, and the template is kept
+test_remove_deletes_the_sublime_scheme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/sublime-theme/jenerated-sunset.sublime-color-scheme"
+  assert_missing "$(sublime_scheme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/sublime-theme/color-scheme.tmpl"
+}
+
+# --- Tests: Xcode -----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Xcode theme as a property list
+# THEN it's a valid plist with the editor's background, caret and selection,
+#      and strings, keywords and functions in the palette's colors (as in the
+#      VS Code theme), each as red, green, blue and alpha from 0 to 1
+test_xcode_theme_uses_the_palette() {
+  run_jenerate sunset
+  result="$("$PYTHON" -c '
+import plistlib, sys
+t = plistlib.load(open(sys.argv[1], "rb"))
+s = t["DVTSourceTextSyntaxColors"]
+print(t["DVTSourceTextBackground"], t["DVTSourceTextInsertionPointColor"], t["DVTSourceTextSelectionColor"],
+      s["xcode.syntax.string"], s["xcode.syntax.keyword"], s["xcode.syntax.identifier.function"], sep="|")
+' "$(xcode_theme sunset)")"
+  f() { color_rgb "$1" | awk -F', ' '{printf "%.4f %.4f %.4f 1", $1/255, $2/255, $3/255}'; }
+  expected="$(f bg)|$(f accent)|$(f selection)|$(f green)|$(f accent_soft)|$(f accent_light)"
+  [ "$result" = "$expected" ] || fail "expected '$expected', got '$result'"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Xcode theme
+# THEN it has every code color Xcode themes have, a font for each one but the
+#      regex ones (as Xcode's own themes do), and every color is four numbers
+#      from 0 to 1
+test_xcode_theme_has_every_code_color() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import plistlib, re, sys
+syntax = """attribute character comment comment.doc comment.doc.keyword declaration.other declaration.type
+identifier.class identifier.class.system identifier.constant identifier.constant.system identifier.function
+identifier.function.system identifier.macro identifier.macro.system identifier.type identifier.type.system
+identifier.variable identifier.variable.system keyword mark markup.code number plain preprocessor regex
+regex.capturename regex.charname regex.number regex.other string url""".split()
+t = plistlib.load(open(sys.argv[1], "rb"))
+colors, fonts = t["DVTSourceTextSyntaxColors"], t["DVTSourceTextSyntaxFonts"]
+for key in syntax:
+    if f"xcode.syntax.{key}" not in colors:
+        print(f"missing color xcode.syntax.{key}")
+    if not key.startswith("regex") and f"xcode.syntax.{key}" not in fonts:
+        print(f"missing font xcode.syntax.{key}")
+number = r"(0|1)(\.\d+)?"
+for key, value in list(colors.items()) + [(k, v) for k, v in t.items() if k.endswith("Color") or k == "DVTSourceTextBackground"]:
+    if not re.fullmatch(rf"{number} {number} {number} 1", value):
+        print(f"{key} is {value!r}")
+if t.get("DVTFontAndColorVersion") != 1:
+    print("DVTFontAndColorVersion is not 1")
+' "$(xcode_theme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Xcode theme is deleted, and the template is kept
+test_remove_deletes_the_xcode_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/xcode-theme/jenerated-sunset.xccolortheme"
+  assert_missing "$(xcode_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/xcode-theme/theme.xccolortheme.tmpl"
+}
+
+# --- Tests: RStudio ---------------------------------------------------------
+
+# GIVEN the Sunset palette, and a light palette
+# WHEN generating them and reading each theme's header with the regular
+#      expressions RStudio itself uses
+# THEN each is named after its palette and marked dark or light to match
+test_rstudio_theme_header() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  result="$("$PYTHON" -c '
+import re, sys
+for path in sys.argv[1:]:
+    text = open(path).read()
+    name = re.search(r"rs-theme-name\s*:\s*([^\*]+?)\s*(?:\*|$)", text, re.M).group(1)
+    dark = re.search(r"rs-theme-is-dark\s*:\s*([^\*]+?)\s*(?:\*|$)", text, re.M).group(1)
+    print(f"{name}|{dark}")
+' "$(rstudio_theme sunset)" "$(rstudio_theme daylight)")"
+  expected="Jenerated Sunset|TRUE
+Jenerated Daylight|FALSE"
+  [ "$result" = "$expected" ] || fail "expected:
+$expected
+got:
+$result"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its RStudio theme colors the editor, strings, keywords and functions
+#      from the palette (as in the VS Code theme), and the console's 16
+#      colors are the palette's terminal colors
+test_rstudio_theme_uses_the_palette() {
+  run_jenerate sunset
+  theme="$(rstudio_theme sunset)"
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+css = open(sys.argv[1]).read()
+def color_of(selector, prop="color"):
+    m = re.search(r"(?:^|\n)" + re.escape(selector) + r"[^{]*\{([^}]*)\}", css)
+    return re.search(prop + r"\s*:\s*([^;\n]+)", m.group(1)).group(1).strip() if m else None
+print(color_of(".ace_editor, .ace_editor_theme .profvis-flamegraph, .ace_editor_theme", "background-color"),
+      color_of(".ace_string"), color_of(".ace_keyword"), color_of(".ace_entity.ace_name.ace_function"))
+' "$theme")"
+  expected="$(color bg) $(color green) $(color accent_soft) $(color accent_light)"
+  [ "$OUTPUT" = "$expected" ] || fail "expected '$expected'"
+  assert_file_contains "$theme" ".xtermColor1 { color: $(color term_red) !important; }"
+  assert_file_contains "$theme" ".xtermColor12 { color: $(color term_bright_blue) !important; }"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its RStudio theme has the rules RStudio adds to every theme (the
+#      keyword rule for uncolored text, a bracket border, chunk, debug and
+#      find lines, the terminal), all 256 console colors, and balanced braces
+test_rstudio_theme_has_rstudios_rules() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+css = open(sys.argv[1]).read()
+for rule in (".nocolor.ace_editor .ace_line span", ".ace_marker-layer .ace_bracket", ".ace_marker-layer .ace_foreign_line",
+             ".ace_marker-layer .ace_active_debug_line", ".ace_marker-layer .ace_find_line", ".ace_console_error",
+             ".terminal {", ".terminal .xterm-viewport", ".xtermInvertColor"):
+    if rule not in css:
+        print(f"missing {rule}")
+if not re.search(r"\.ace_marker-layer \.ace_bracket \{[^}]*border:", css):
+    print("the bracket rule has no border (RStudio needs one)")
+for n in range(256):
+    for kind in ("Color", "BgColor"):
+        if f".xterm{kind}{n} " not in css:
+            print(f"missing .xterm{kind}{n}")
+if css.count("{") != css.count("}"):
+    print("the braces do not balance")
+' "$(rstudio_theme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its RStudio theme is deleted, and the template is kept
+test_remove_deletes_the_rstudio_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/rstudio-theme/jenerated-sunset.rstheme"
+  assert_missing "$(rstudio_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/rstudio-theme/theme.rstheme.tmpl"
+}
+
+# --- Tests: Emacs -----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Emacs theme
+# THEN it defines and provides the theme jenerated-sunset (matching the file
+#      name, as Emacs requires), its parentheses balance outside strings and
+#      comments, and the default, keyword and string faces and the terminal
+#      colors use the palette's colors
+test_emacs_theme_uses_the_palette() {
+  run_jenerate sunset
+  theme="$(emacs_theme sunset)"
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+text = open(sys.argv[1]).read()
+depth, in_string, i = 0, False, 0
+while i < len(text):
+    ch = text[i]
+    if in_string:
+        if ch == "\\": i += 1
+        elif ch == "\"": in_string = False
+    elif ch == ";":
+        i = text.find("\n", i)
+        if i < 0: break
+    elif ch == "\"": in_string = True
+    elif ch == "(": depth += 1
+    elif ch == ")":
+        depth -= 1
+        if depth < 0: print("a closing parenthesis without an opening one")
+    i += 1
+if depth != 0 or in_string:
+    print("the parentheses or strings do not balance")
+if "(deftheme jenerated-sunset" not in text or "(provide-theme (quote jenerated-sunset))" not in text.replace("\x27jenerated-sunset", "(quote jenerated-sunset)"):
+    print("the theme is not defined and provided as jenerated-sunset")
+' "$theme")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+  assert_file_contains "$theme" "'(default ((t (:foreground \"$(color text)\" :background \"$(color bg)\"))))"
+  assert_file_contains "$theme" "'(font-lock-keyword-face ((t (:foreground \"$(color accent_soft)\"))))"
+  assert_file_contains "$theme" "'(font-lock-string-face ((t (:foreground \"$(color green)\"))))"
+  assert_file_contains "$theme" "'(ansi-color-red ((t (:foreground \"$(color term_red)\" :background \"$(color term_red)\"))))"
+}
+
+# GIVEN the Sunset palette, and Emacs
+# WHEN Emacs loads the generated theme (with no init file of its own)
+# THEN it's enabled, its faces have the palette's colors, and every face it
+#      sets is one Emacs defines
+test_emacs_theme_loads_in_emacs() {
+  command -v emacs >/dev/null 2>&1 || return 0
+  run_jenerate sunset
+  OUTPUT="$(emacs --batch -Q --eval "
+(progn
+  (dolist (f '(ansi-color diff-mode hl-line display-line-numbers tab-bar tab-line paren display-fill-column-indicator))
+    (require f nil t))
+  (add-to-list 'custom-theme-load-path \"$SANDBOX/repo/app-themes/emacs-theme/\")
+  (load-theme 'jenerated-sunset t)
+  (let (unknown)
+    (dolist (spec (get 'jenerated-sunset 'theme-settings))
+      (when (and (eq (car spec) 'theme-face) (not (facep (nth 1 spec))))
+        (push (nth 1 spec) unknown)))
+    (princ (format \"%s %s %s %s\" custom-enabled-themes (face-attribute 'default :background)
+      (face-attribute 'font-lock-string-face :foreground) (or unknown \"\")))))" 2>&1)"
+  expected="(jenerated-sunset) $(color bg) $(color green) "
+  [ "$OUTPUT" = "$expected" ] || fail "expected '$expected'"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Emacs theme is deleted, and the template is kept
+test_remove_deletes_the_emacs_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/emacs-theme/jenerated-sunset-theme.el"
+  assert_missing "$(emacs_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/emacs-theme/theme.el.tmpl"
+}
+
+# --- Tests: Qt Creator ------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Qt Creator color scheme as XML
+# THEN it's named after the palette, and colors the editor, keywords,
+#      strings and functions from the palette (as in the VS Code theme)
+test_qtcreator_scheme_uses_the_palette() {
+  run_jenerate sunset
+  result="$("$PYTHON" -c '
+import sys, xml.etree.ElementTree as ET
+root = ET.parse(sys.argv[1]).getroot()
+s = {e.get("name"): e for e in root}
+print(root.get("name"), s["Text"].get("foreground"), s["Text"].get("background"),
+      s["Keyword"].get("foreground"), s["String"].get("foreground"), s["Function"].get("foreground"))
+' "$(qtcreator_scheme sunset)")"
+  expected="Jenerated Sunset $(color text) $(color bg) $(color accent_soft) $(color green) $(color accent_light)"
+  [ "$result" = "$expected" ] || fail "expected '$expected', got '$result'"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its color scheme the way Qt Creator does
+# THEN every style is one Qt Creator 20 names, each style appears once, and
+#      it only uses attributes Qt Creator reads: #rrggbb colors, bold and
+#      italic, and the underline styles it knows
+test_qtcreator_scheme_follows_the_format() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys, xml.etree.ElementTree as ET
+known = set(["Text", "Link", "Selection", "LineNumber", "SearchResult", "SearchResultAlt1", "SearchResultAlt2", "SearchResultContainingFunction", "SearchScope", "Parentheses", "ParenthesesMismatch", "AutoComplete", "CurrentLine", "CurrentLineNumber", "Occurrences", "Occurrences.Unused", "Occurrences.Rename", "Number", "String", "Type", "Concept", "Namespace", "Local", "Parameter", "Global", "Field", "Static", "VirtualMethod", "Function", "Keyword", "PrimitiveType", "Operator", "Overloaded Operator", "Punctuation", "Preprocessor", "Macro", "Label", "Attribute", "Comment", "Doxygen.Comment", "Doxygen.Tag", "VisualWhitespace", "QmlLocalId", "QmlExternalId", "QmlTypeId", "QmlRootObjectProperty", "QmlScopeObjectProperty", "QmlExternalObjectProperty", "JsScopeVar", "JsImportVar", "JsGlobalVar", "QmlStateName", "Binding", "DisabledCode", "AddedLine", "RemovedLine", "DiffFile", "DiffLocation", "DiffFileLine", "DiffContextLine", "DiffSourceLine", "DiffSourceChar", "DiffDestLine", "DiffDestChar", "LogChangeLine", "LogAuthorName", "LogCommitDate", "LogCommitHash", "LogCommitSubject", "LogDecoration", "Error", "ErrorContext", "Warning", "WarningContext", "Info", "InfoContext", "Declaration", "FunctionDefinition", "OutputArgument", "StaticMember", "CocoCodeAdded", "CocoPartiallyCovered", "CocoNotCovered", "CocoFullyCovered", "CocoManuallyValidated", "CocoDeadCode", "CocoExecutionCountTooLow", "CocoNotCoveredInfo", "CocoCoveredInfo", "CocoManuallyValidatedInfo"])
+underlines = {"NoUnderline", "SingleUnderline", "DashUnderline", "DotLine", "DashDotLine", "DashDotDotLine", "WaveUnderline"}
+root = ET.parse(sys.argv[1]).getroot()
+if root.tag != "style-scheme" or root.get("version") != "1.0":
+    print("not a version 1.0 style-scheme")
+seen = set()
+for style in root:
+    name = style.get("name")
+    if name not in known:
+        print(f"{name} is not a Qt Creator style")
+    if name in seen:
+        print(f"{name} appears twice")
+    seen.add(name)
+    for attr, value in style.attrib.items():
+        if attr in ("foreground", "background", "underlineColor"):
+            if not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+                print(f"{name} {attr} is {value}")
+        elif attr in ("bold", "italic"):
+            if value != "true":
+                print(f"{name} {attr} is {value}")
+        elif attr == "underlineStyle":
+            if value not in underlines:
+                print(f"{name} has underline style {value}")
+        elif attr != "name":
+            print(f"{name} has attribute {attr}")
+' "$(qtcreator_scheme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Qt Creator color scheme is deleted, and the template is kept
+test_remove_deletes_the_qtcreator_scheme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/qtcreator-theme/jenerated-sunset.xml"
+  assert_missing "$(qtcreator_scheme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/qtcreator-theme/color-scheme.xml.tmpl"
+}
+
+# --- Tests: Spyder ----------------------------------------------------------
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Spyder theme as Spyder reads its
+#      settings
+# THEN it has a name and every color a Spyder syntax theme has: the editor's
+#      as #rrggbb, and the code colors as (#rrggbb, bold, italic), with the
+#      palette's colors (as in the VS Code theme)
+test_spyder_theme_has_every_color() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import ast, configparser, re, sys
+p = configparser.ConfigParser(interpolation=None, comment_prefixes=(";",))
+p.optionxform = str
+p.read(sys.argv[1])
+t = p["appearance"]
+plain = "background currentline currentcell occurrence ctrlclick sideareas matched_p unmatched_p".split()
+code = "normal keyword builtin definition comment string number instance magic".split()
+name = t.get("name")
+if name != "Jenerated Sunset":
+    print(f"name is {name}")
+for key in plain:
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", t.get(key, "")):
+        print(f"{key} is {t.get(key)!r}")
+for key in code:
+    try:
+        color, bold, italic = ast.literal_eval(t.get(key, ""))
+        ok = re.fullmatch(r"#[0-9a-fA-F]{6}", color) and isinstance(bold, bool) and isinstance(italic, bool)
+    except (ValueError, SyntaxError, TypeError):
+        ok = False
+    if not ok:
+        print(f"{key} is {t.get(key)!r}")
+extra = set(t) - set(plain) - set(code) - {"name"}
+if extra:
+    print(f"unknown keys {sorted(extra)}")
+' "$(spyder_theme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+  theme="$(spyder_theme sunset)"
+  assert_file_contains "$theme" "background = $(color bg)"
+  assert_file_contains "$theme" "keyword = ('$(color accent_soft)', False, False)"
+  assert_file_contains "$theme" "string = ('$(color green)', False, False)"
+  assert_file_contains "$theme" "comment = ('$(color text_muted)', False, True)"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Spyder theme is deleted, and the template is kept
+test_remove_deletes_the_spyder_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/spyder-theme/jenerated-sunset.ini"
+  assert_missing "$(spyder_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/spyder-theme/scheme.ini.tmpl"
+}
+
+# --- Tests: Unreal Engine ---------------------------------------------------
+
+# unreal_colors path -> prints the theme's colors as "Name #rrggbb alpha", one
+# per line, converting Unreal's linear-light values back to sRGB.
+unreal_colors() {
+  "$PYTHON" -c '
+import json, re, sys
+def srgb(v):
+    return round(255 * (v * 12.92 if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055))
+for key, value in json.load(open(sys.argv[1]))["Colors"].items():
+    r, g, b, a = (float(x) for x in re.findall(r"=([0-9.]+)", value))
+    print(key.split("::")[1], "#%02x%02x%02x" % (srgb(r), srgb(g), srgb(b)), a)
+' "$1"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and turning its Unreal Engine theme's colors back into
+#      sRGB
+# THEN it's named after the palette, and the panels, text, primary buttons,
+#      selections and errors come out as the palette's own colors
+test_unreal_theme_uses_the_palette() {
+  run_jenerate sunset
+  name="$("$PYTHON" -c 'import json, sys; print(json.load(open(sys.argv[1]))["DisplayName"])' "$(unreal_theme sunset)")"
+  [ "$name" = "Jenerated Sunset" ] || fail "expected DisplayName 'Jenerated Sunset', got '$name'"
+  colors="$(unreal_colors "$(unreal_theme sunset)")"
+  for pair in "Panel bg" "Foreground text" "Primary accent" "Select accent" \
+    "SelectInactive bg_selected" "Error red" "AccentFolder accent_soft"; do
+    set -- $pair
+    expected="$1 $(color "$2" | tr 'A-F' 'a-f') 1.0"
+    printf '%s\n' "$colors" | grep -qx "$expected" ||
+      fail "expected '$expected', got '$(printf '%s\n' "$colors" | grep "^$1 ")'"
+  done
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its Unreal Engine theme the way Unreal 5
+#      does
+# THEN it has a numeric Version, an Id in a form Unreal parses, a
+#      DisplayName, and a Colors object whose keys are every one of Unreal's
+#      named style colors (EStyleColor::...), once each, with values in the
+#      "(R=..,G=..,B=..,A=..)" form, each from 0 to 1
+test_unreal_theme_follows_the_format() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import json, re, sys
+names = ["Black", "Background", "Title", "WindowBorder", "Foldout", "Input", "InputOutline", "Recessed", "Panel", "Header", "Dropdown", "DropdownOutline", "Hover", "Hover2", "White", "White25", "Highlight", "Primary", "PrimaryHover", "PrimaryPress", "Secondary", "Foreground", "ForegroundHover", "ForegroundInverted", "ForegroundHeader", "Select", "SelectInactive", "SelectParent", "SelectHover", "Notifications", "AccentBlue", "AccentPurple", "AccentPink", "AccentRed", "AccentOrange", "AccentYellow", "AccentGreen", "AccentBrown", "AccentBlack", "AccentGray", "AccentWhite", "AccentFolder", "Warning", "Error", "Success"]
+def unique(pairs):
+    keys = [k for k, _ in pairs]
+    for k in set(keys):
+        if keys.count(k) > 1:
+            print(f"{k} appears twice")
+    return dict(pairs)
+theme = json.load(open(sys.argv[1]), object_pairs_hook=unique)
+if not isinstance(theme.get("Version"), (int, float)):
+    print("Version is not a number")
+if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", str(theme.get("Id"))):
+    print("Id is not a GUID:", theme.get("Id"))
+if not isinstance(theme.get("DisplayName"), str):
+    print("DisplayName is not a string")
+colors = theme["Colors"]
+for key in set(colors) - {"EStyleColor::" + n for n in names}:
+    print(f"{key} is not one of Unreal'"'"'s style colors")
+for name in names:
+    value = colors.get("EStyleColor::" + name)
+    if value is None:
+        print(f"{name} is missing")
+        continue
+    m = re.fullmatch(r"\(R=([0-9.]+),G=([0-9.]+),B=([0-9.]+),A=([0-9.]+)\)", value)
+    if not m:
+        print(f"{name} is {value}")
+    elif not all(0 <= float(x) <= 1 for x in m.groups()):
+        print(f"{name} is out of range: {value}")
+' "$(unreal_theme sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN the Sunset and Blue Purple palettes
+# WHEN generating both
+# THEN their Unreal Engine themes have different Ids, so Unreal lists both
+test_unreal_themes_have_their_own_ids() {
+  run_jenerate sunset blue-purple
+  ids="$(cat "$(unreal_theme sunset)" "$(unreal_theme blue-purple)" | grep '"Id"' | sort -u | wc -l)"
+  [ "$ids" -eq 2 ] || fail "expected 2 different Ids, got $ids"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Unreal Engine theme is deleted, and the template is kept
+test_remove_deletes_the_unreal_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/unreal-theme/jenerated-sunset.json"
+  assert_missing "$(unreal_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/unreal-theme/theme.json.tmpl"
+}
+
+# --- Tests: OBS Studio ------------------------------------------------------
+
+# obs_var path name -> prints the value of an OBS style's --name variable.
+obs_var() { sed -n "s/^ *--$2: *\(.*\);$/\1/p" "$1"; }
+
+# GIVEN the Sunset palette and a light palette
+# WHEN generating them
+# THEN each OBS style is named after its palette, builds on OBS's Yami theme
+#      for Sunset and Yami's Light style for the light palette (marked dark
+#      and light to match), and colors the docks, text, focus outlines and
+#      audio meters from the palette
+test_obs_style_uses_the_palette() {
+  write_light_palette daylight Daylight
+  run_jenerate sunset,daylight
+  assert_status 0
+  style="$(obs_style sunset)"
+  assert_file_contains "$style" "name: 'Jenerated Sunset';"
+  assert_file_contains "$style" "id: 'com.jenerated.sunset';"
+  assert_file_contains "$style" "extends: 'com.obsproject.Yami';"
+  assert_file_contains "$style" "dark: 'true';"
+  assert_file_contains "$(obs_style daylight)" "extends: 'com.obsproject.Yami.Light';"
+  assert_file_contains "$(obs_style daylight)" "dark: 'false';"
+  for pair in "bg_base bg" "text text" "primary accent" "input_border_focus accent" "palette_link accent_soft"; do
+    set -- $pair
+    [ "$(obs_var "$style" "$1")" = "$(color "$2")" ] ||
+      fail "expected --$1 to be $(color "$2"), got '$(obs_var "$style" "$1")'"
+  done
+  assert_file_contains "$style" "qproperty-foregroundNominalColor: $(color green);"
+  assert_file_contains "$style" "qproperty-backgroundNominalColor: rgba($(color_rgb green | tr -d ' '),0.3);"
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its OBS style the way OBS 30 and later do
+# THEN it has the metadata OBS needs for a style (a name, an id and the theme
+#      it extends, each quoted), every variable is a #rrggbb color (the only
+#      form OBS reads besides rgb()), it sets every color in the ramps Yami's
+#      stylesheet uses, and each rgba() in the stylesheet is valid
+test_obs_style_follows_the_format() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+text = open(sys.argv[1]).read()
+meta = re.search(r"@OBSThemeMeta \{(.*?)\}", text, re.S)
+if not meta:
+    print("no @OBSThemeMeta block")
+else:
+    fields = dict(re.findall(r"(\w+): \x27([^\x27]*)\x27;", meta.group(1)))
+    for key in ("name", "id", "extends", "dark"):
+        if key not in fields:
+            print(f"meta has no {key}")
+    if fields.get("dark") not in ("true", "false"):
+        print("dark is not true or false")
+block = re.search(r"@OBSThemeVars \{(.*?)\n\}", text, re.S)
+if not block:
+    print("no @OBSThemeVars block")
+    sys.exit()
+body = re.sub(r"/\*.*?\*/", "", block.group(1), flags=re.S)
+names = set()
+for line in filter(None, (l.strip() for l in body.splitlines())):
+    m = re.fullmatch(r"--([a-zA-Z0-9_]+): (#[0-9a-fA-F]{6});", line)
+    if not m:
+        print(f"not a color variable: {line}")
+    else:
+        names.add(m.group(1))
+ramps = {f"{hue}{i}" for hue in ("grey",) for i in range(1, 9)}
+ramps |= {f"{hue}{i}" for hue in ("blue", "red", "pink", "purple", "teal", "green", "yellow") for i in range(1, 7)}
+ramps |= {f"{hue}{i}" for hue in ("white", "black") for i in range(1, 6)}
+for name in sorted(ramps - names):
+    print(f"--{name} is not set")
+rest = text[block.end():]
+if rest.count("{") != rest.count("}"):
+    print("unbalanced braces in the stylesheet")
+for args in re.findall(r"rgba\(([^)]*)\)", rest):
+    parts = args.split(",")
+    if len(parts) != 4 or not all(p.isdigit() and int(p) < 256 for p in parts[:3]) or not 0 <= float(parts[3]) <= 1:
+        print(f"bad rgba({args})")
+if "var(--" in rest:
+    print("the stylesheet uses a variable")
+' "$(obs_style sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its OBS style is deleted, and the template is kept
+test_remove_deletes_the_obs_style() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/obs-theme/jenerated-sunset.ovt"
+  assert_missing "$(obs_style sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/obs-theme/style.ovt.tmpl"
+}
+
+# --- Tests: Jellyfin --------------------------------------------------------
+
+# jellyfin_var path name -> prints the value of the CSS's --jf-name variable.
+jellyfin_var() { sed -n "s/^ *--jf-$2: *\(.*\);$/\1/p" "$1"; }
+
+# GIVEN the Sunset palette
+# WHEN generating it
+# THEN its Jellyfin CSS sets Jellyfin's page, panel, text, accent and error
+#      colors from the palette, for whichever of Jellyfin's themes is chosen
+test_jellyfin_css_uses_the_palette() {
+  run_jenerate sunset
+  css="$(jellyfin_css sunset)"
+  assert_file_contains "$css" ":root[data-theme] {"
+  for pair in "palette-background-default bg" "palette-background-paper bg_widget" \
+    "palette-text-primary text" "palette-primary-main accent" \
+    "palette-primary-contrastText text_bright" "palette-secondary-main accent_soft" \
+    "palette-error-main red" "palette-AppBar-defaultBg bg_chrome"; do
+    set -- $pair
+    [ "$(jellyfin_var "$css" "$1")" = "$(color "$2")" ] ||
+      fail "expected --jf-$1 to be $(color "$2"), got '$(jellyfin_var "$css" "$1")'"
+  done
+}
+
+# GIVEN the Sunset palette
+# WHEN generating its Jellyfin CSS
+# THEN its braces balance, every variable is Jellyfin's (--jf-...), each
+#      ...Channel variable is the "r g b" form of the color it goes with (as
+#      Jellyfin writes rgb(var(...Channel) / alpha)), and every color is a
+#      #rrggbb or a valid rgba()
+test_jellyfin_css_follows_the_format() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import re, sys
+css = re.sub(r"/\*.*?\*/", "", open(sys.argv[1]).read(), flags=re.S)
+if css.count("{") != css.count("}"):
+    print("unbalanced braces")
+decls = dict(re.findall(r"(--[\w-]+):\s*([^;]+);", css))
+for name, value in decls.items():
+    if not name.startswith("--jf-"):
+        print(f"{name} is not a Jellyfin variable")
+    if name.endswith("Channel"):
+        base = decls.get(name[:-len("Channel")])
+        if not re.fullmatch(r"\d{1,3} \d{1,3} \d{1,3}", value):
+            print(f"{name} is {value}")
+        elif base is None:
+            print(f"{name} has no color to go with")
+        elif " ".join(str(int(base[i:i + 2], 16)) for i in (1, 3, 5)) != value:
+            print(f"{name} is {value}, but its color is {base}")
+for value in re.findall(r"#[0-9a-zA-Z]+", css):
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+        print(f"bad color {value}")
+for args in re.findall(r"rgba\(([^)]*)\)", css):
+    parts = [p.strip() for p in args.split(",")]
+    if len(parts) != 4 or not all(p.isdigit() and int(p) < 256 for p in parts[:3]) or not 0 <= float(parts[3]) <= 1:
+        print(f"bad rgba({args})")
+if "var(" in css:
+    print("uses var()")
+' "$(jellyfin_css sunset)")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its Jellyfin CSS is deleted, and the template is kept
+test_remove_deletes_the_jellyfin_css() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/jellyfin-theme/jenerated-sunset.css"
+  assert_missing "$(jellyfin_css sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/jellyfin-theme/theme.css.tmpl"
+}
+
+# --- Tests: LibreOffice -----------------------------------------------------
+
+# libreoffice_colors folder -> prints the theme's scheme name, then each entry
+# as "Name #rrggbb [visible]", one per line.
+libreoffice_colors() {
+  "$PYTHON" -c '
+import sys, xml.etree.ElementTree as ET
+OOR = "{http://openoffice.org/2001/registry}"
+scheme = ET.parse(sys.argv[1] + "/theme.xcu").getroot().find("node/node/node")
+print(scheme.get(OOR + "name"))
+for entry in scheme:
+    props = {p.get(OOR + "name"): p.findtext("value") for p in entry}
+    print(entry.get(OOR + "name"), "#%06x" % int(props["Color"]), props.get("IsVisible", "")) 
+' "$1" | sed 's/ *$//'
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its LibreOffice theme's colors
+# THEN the scheme is named after the palette, and the page, text, window,
+#      selections, menus and spelling marks come from the palette
+test_libreoffice_theme_uses_the_palette() {
+  run_jenerate sunset
+  colors="$(libreoffice_colors "$(libreoffice_theme sunset)")"
+  [ "$(printf '%s\n' "$colors" | head -1)" = "Jenerated Sunset" ] ||
+    fail "expected the scheme 'Jenerated Sunset', got '$(printf '%s\n' "$colors" | head -1)'"
+  for pair in "DocColor bg" "FontColor text" "AppBackground bg_chrome" "WindowColor bg_sidebar" \
+    "WindowTextColor text" "AccentColor bg_selected" "MenuColor bg_widget" "Spell red" \
+    "CalcValue orange"; do
+    set -- $pair
+    expected="$1 $(color "$2" | tr 'A-F' 'a-f')"
+    printf '%s\n' "$colors" | grep -qx "$expected" ||
+      fail "expected '$expected', got '$(printf '%s\n' "$colors" | grep "^$1 ")'"
+  done
+}
+
+# GIVEN the Sunset palette
+# WHEN generating it and reading its LibreOffice extension the way
+#      LibreOffice does
+# THEN the settings file adds one scheme under Office.UI's ColorSchemes, with
+#      each of LibreOffice's color entries once, each a color from 0 to
+#      0xffffff, and IsVisible exactly where LibreOffice has one; the
+#      manifest lists that settings file as configuration data, and the
+#      description gives the extension an id and a name
+test_libreoffice_theme_follows_the_format() {
+  run_jenerate sunset
+  OUTPUT="$("$PYTHON" -c '
+import sys, xml.etree.ElementTree as ET
+folder = sys.argv[1]
+names = sys.argv[2].split()
+visible = {"Links", "LinksVisited", "Shadow", "WriterFieldShadings", "WriterIdxShadings", "WriterDirectCursor", "CalcHiddenColRow", "CalcTextOverflow", "DrawGrid"}
+OOR = "{http://openoffice.org/2001/registry}"
+root = ET.parse(folder + "/theme.xcu").getroot()
+if (root.tag, root.get(OOR + "name"), root.get(OOR + "package")) != (OOR + "component-data", "UI", "org.openoffice.Office"):
+    print("not Office.UI configuration data")
+path = [root.find("node"), root.find("node/node")]
+if [n.get(OOR + "name") if n is not None else None for n in path] != ["ColorScheme", "ColorSchemes"]:
+    print("the scheme is not under ColorScheme/ColorSchemes")
+schemes = root.findall("node/node/node")
+if len(schemes) != 1 or schemes[0].get(OOR + "op") != "replace":
+    print("expected one scheme, added with oor:op=replace")
+seen = []
+for entry in schemes[0]:
+    name = entry.get(OOR + "name")
+    seen.append(name)
+    props = {p.get(OOR + "name"): p.findtext("value") for p in entry}
+    if name not in names:
+        print(f"{name} is not a LibreOffice color entry")
+    if not props.get("Color", "").isdigit() or int(props["Color"]) > 0xFFFFFF:
+        print(f"{name} Color is {props.get('Color')}")
+    if ("IsVisible" in props) != (name in visible):
+        print(f"{name} has the wrong IsVisible")
+    if "IsVisible" in props and props["IsVisible"] not in ("true", "false"):
+        print(f"{name} IsVisible is {props['IsVisible']}")
+    if set(props) - {"Color", "IsVisible"}:
+        print(f"{name} has other properties")
+for name in names:
+    if seen.count(name) != 1:
+        print(f"{name} appears {seen.count(name)} times")
+M = "{http://openoffice.org/2001/manifest}"
+entries = ET.parse(folder + "/META-INF/manifest.xml").getroot().findall(M + "file-entry")
+if [(e.get(M + "full-path"), e.get(M + "media-type")) for e in entries] != [("theme.xcu", "application/vnd.sun.star.configuration-data")]:
+    print("the manifest does not list theme.xcu as configuration data")
+D = "{http://openoffice.org/extensions/description/2006}"
+desc = ET.parse(folder + "/description.xml").getroot()
+if desc.find(D + "identifier").get("value") != "com.jenerated.libreoffice.sunset":
+    print("unexpected identifier")
+if desc.findtext(D + "display-name/" + D + "name") != "Jenerated Sunset":
+    print("unexpected display name")
+' "$(libreoffice_theme sunset)" "DocColor DocBoundaries AppBackground TableBoundaries FontColor Links LinksVisited Spell Grammar SmartTags Shadow WriterTextGrid WriterBaselineGrid WriterFieldShadings WriterIdxShadings WriterDirectCursor WriterSectionBoundaries WriterHeaderFooterMark WriterPageBreaks WriterNonPrintChars HTMLSGML HTMLComment HTMLKeyword HTMLUnknown CalcGrid CalcCellFocus CalcDBFocus CalcPageBreak CalcPageBreakManual CalcPageBreakAutomatic CalcHiddenColRow CalcTextOverflow CalcComments CalcDetective CalcDetectiveError CalcReference CalcNotesBackground CalcValue CalcFormula CalcText CalcProtectedBackground DrawGrid BASICEditor BASICIdentifier BASICComment BASICNumber BASICString BASICOperator BASICKeyword BASICError SQLIdentifier SQLNumber SQLString SQLOperator SQLKeyword SQLParameter SQLComment WindowColor WindowTextColor BaseColor ButtonColor ButtonTextColor AccentColor DisabledColor DisabledTextColor ShadowColor SeparatorColor FaceColor ActiveColor ActiveTextColor ActiveBorderColor FieldColor MenuBarColor MenuBarTextColor MenuBarHighlightColor MenuBarHighlightTextColor MenuColor MenuTextColor MenuHighlightColor MenuHighlightTextColor MenuBorderColor InactiveColor InactiveTextColor InactiveBorderColor")"
+  [ -z "$OUTPUT" ] || fail "$OUTPUT"
+}
+
+# GIVEN Sunset has been generated
+# WHEN removing Sunset
+# THEN its LibreOffice extension folder is deleted, and the templates are kept
+test_remove_deletes_the_libreoffice_theme() {
+  run_jenerate sunset
+  run_jenerate --remove sunset
+  assert_contains "Removed app-themes/libreoffice-theme/sunset/theme.xcu"
+  assert_missing "$(libreoffice_theme sunset)"
+  assert_exists "$SANDBOX/repo/app-themes/libreoffice-theme/theme.xcu.tmpl"
 }
 
 # --- Tests: light and dark palettes -----------------------------------------

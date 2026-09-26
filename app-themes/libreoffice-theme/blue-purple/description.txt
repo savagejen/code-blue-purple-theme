@@ -1,0 +1,1 @@
+The Jenerated Blue Purple theme for LibreOffice. Turn it on in Tools > Options > LibreOffice > Appearance.

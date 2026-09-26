@@ -1,0 +1,67 @@
+# Warm brown-black shadows, deep green leaves sidebar, crimson and yellow
+# berries, orange and brown bark
+#
+# Every color is a #rrggbb hex value, or the name of another color in this
+# file. Templates add transparency themselves (e.g. {{accent}}33).
+
+name = "Madrone Grove"
+slug = "madrone-grove"
+
+[colors]
+# Backgrounds: warm shadows, darkest to lightest, with a green sidebar
+bg_chrome = "#0f0b0a"          # activity bar, title bar, status bar
+bg_minimap = "#140f0d"
+bg = "#17110f"                 # editor and terminal: warm near-black
+bg_sidebar = "#14221a"         # deep bottle green
+bg_widget = "#221815"          # popups, hovers, notifications
+bg_line_highlight = "#1f1714"
+bg_hover = "#2c1f1a"           # hovered items, inputs
+bg_selected = "#4a1a17"        # inactive selection in lists: deep red
+bg_secondary_hover = "#5a2a22" # hovered secondary buttons
+selection = "#5e211d"          # selected text: crimson shadow
+
+# Lines
+guide = "#2a201c"              # indent guides, rulers
+whitespace = "#3a2c26"         # rendered whitespace
+border = "#352823"
+
+# Text: cream, dimmest to brightest
+text_faint = "#65524a"         # line numbers, ignored files
+text_muted = "#a08a7b"         # comments, inactive tabs
+text_subtle = "#d4bfae"        # sidebar text, punctuation
+text = "#f3e3d3"               # cream
+text_bright = "#fff4e8"        # text on the accent color
+text_strong = "#fff4e8"        # emphasized text: active tabs, selected items
+
+# Accent
+accent = "#d63d38"             # crimson: cursor, focus, buttons, badges
+accent_hover = "#b8302c"       # hovered buttons: deeper crimson
+accent_soft = "#e2b650"        # café amber: keywords, links
+accent_light = "#78a2ec"       # lamp blue: functions
+accent_pale = "#f0c9a8"        # peach cream: properties
+
+# Syntax and status colors
+red = "#f0604f"                # tomato red: errors, deleted
+orange = "#ea8a3f"             # apartment orange: numbers, parameters, attributes
+yellow = "#f2d64b"             # poster yellow: warnings, regex
+green = "#86c160"              # backdrop green: strings, added
+cyan = "#6fbcae"               # absinthe: classes, types
+magenta = "#e5789a"            # rosy pink: constants, search matches
+
+# Terminal (ANSI) colors
+term_black = "#2a1f1b"
+term_red = "red"
+term_green = "green"
+term_yellow = "yellow"
+term_blue = "accent_light"
+term_magenta = "magenta"
+term_cyan = "cyan"
+term_white = "text_subtle"
+term_bright_black = "text_muted"
+term_bright_red = "#ff8c7c"
+term_bright_green = "#aad98a"
+term_bright_yellow = "#f8e684"
+term_bright_blue = "#a3c1f4"
+term_bright_magenta = "#f0a2ba"
+term_bright_cyan = "#9ad5ca"
+term_bright_white = "text_strong"

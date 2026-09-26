@@ -41,11 +41,17 @@ fake_no_python() {
 # it the answers (use \n between them), and sets OUTPUT and STATUS. It runs
 # from $RUN_FROM (default $SANDBOX), and runs $SETUP (default the sandbox
 # repository's setup.sh).
+# Settings that point apps at other folders (ZDOTDIR, RSTUDIO_CONFIG_HOME,
+# SPYDER_CONFDIR) are cleared, so the tests never touch your real ones; a test
+# that needs one set uses TEST_ZDOTDIR, TEST_RSTUDIO_CONFIG_HOME or
+# TEST_SPYDER_CONFDIR instead.
 run_setup() {
   local answers="$1"
   shift
   OUTPUT="$(cd "${RUN_FROM:-$SANDBOX}" && printf '%b' "$answers" |
     HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WAYLAND_DISPLAY= XDG_DATA_HOME= XDG_CACHE_HOME= XDG_CONFIG_HOME= \
+    ZDOTDIR="${TEST_ZDOTDIR:-}" RSTUDIO_CONFIG_HOME="${TEST_RSTUDIO_CONFIG_HOME:-}" \
+    SPYDER_CONFDIR="${TEST_SPYDER_CONFDIR:-}" \
       bash "${SETUP:-$SANDBOX/repo/setup.sh}" "$@" 2>&1)"
   STATUS=$?
 }
@@ -66,58 +72,259 @@ print(tomllib.load(open(sys.argv[1], "rb"))["name"])
 # --- Tests: menus ------------------------------------------------------------
 
 # GIVEN a Linux system
-# WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      JetBrains apps, Chromium browsers, Godot, Ptyxis, Tilix, GTK3 apps, KDE
-#      and Decky Loader
-test_app_menu_on_linux_includes_the_terminals() {
+# WHEN setup.sh shows the app menu
+# THEN it lists the categories with how many apps each has, then the apps
+#      that don't fit one, then search, and a way back
+test_app_menu_on_linux_groups_the_apps() {
   fake_os Linux
-  run_setup "1\n2\n1\n"
-  assert_contains "1) VS Code"
-  assert_contains "2) Slack"
-  assert_contains "3) Obsidian"
-  assert_contains "4) Vim / Neovim"
-  assert_contains "5) Firefox"
-  assert_contains "6) Vivaldi"
-  assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
-  assert_contains "8) Chromium browsers (Chrome, Brave, Edge, Opera and more)"
-  assert_contains "9) Godot"
-  assert_contains "10) Ptyxis (Ubuntu terminal)"
-  assert_contains "11) Tilix (terminal)"
-  assert_contains "12) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)"
-  assert_contains "13) KDE Plasma (Plasma and KDE apps, Konsole, Kate)"
-  assert_contains "14) Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)"
+  run_setup "1\n2\n3\n1\n"
+  assert_status 0
+  assert_contains "Which app do you want to theme?
+  1) Web browsers (4 apps)
+  2) Communication (3 apps)
+  3) Editors: code, text and notes (13 apps)
+  4) Terminals and command-line tools (5 apps)
+  5) Linux desktops (3 apps)
+  6) Entertainment (3 apps)
+  7) Insomnia (API client)
+  8) Search for an app by name
+  0) Back"
+  assert_contains "Your Slack theme string"
 }
 
 # GIVEN a Mac
-# WHEN setup.sh starts
-# THEN the app menu lists VS Code, Slack, Obsidian, Vim, Firefox, Vivaldi,
-#      JetBrains apps, Chromium browsers and Godot, but not Ptyxis, Tilix,
-#      GTK3 apps, KDE or Decky Loader
-test_app_menu_on_macos_hides_the_linux_terminals() {
+# WHEN setup.sh shows the app menu
+# THEN the Linux-only apps are left out of the categories, and the Linux
+#      desktops category, which has none left, isn't shown
+test_app_menu_on_macos_leaves_out_linux_apps() {
   fake_os Darwin
-  run_setup "1\n2\n1\n"
-  assert_contains "1) VS Code"
-  assert_contains "2) Slack"
-  assert_contains "3) Obsidian"
-  assert_contains "4) Vim / Neovim"
-  assert_contains "5) Firefox"
-  assert_contains "6) Vivaldi"
-  assert_contains "7) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)"
-  assert_contains "8) Chromium browsers (Chrome, Brave, Edge, Opera and more)"
-  assert_contains "9) Godot"
-  assert_not_contains "Ptyxis"
-  assert_not_contains "Tilix"
-  assert_not_contains "GTK3"
-  assert_not_contains "KDE"
-  assert_not_contains "Decky"
+  run_setup "1\n2\n3\n1\n"
+  assert_status 0
+  assert_contains "Which app do you want to theme?
+  1) Web browsers (4 apps)
+  2) Communication (3 apps)
+  3) Editors: code, text and notes (13 apps)
+  4) Terminals and command-line tools (3 apps)
+  5) Entertainment (3 apps)
+  6) Insomnia (API client)
+  7) Search for an app by name
+  0) Back"
+  assert_contains "Your Slack theme string"
+  assert_not_contains "Linux desktops"
+}
+
+# GIVEN a Linux system
+# WHEN opening each category from the app menu, then going back
+# THEN each lists its apps, alphabetically, with a way back, and Back
+#      returns to the app menu each time
+test_each_category_lists_its_apps() {
+  fake_os Linux
+  run_setup "1\n1\n0\n2\n0\n3\n0\n4\n0\n5\n0\n6\n0\n7\n1\n"
+  assert_status 0
+  assert_contains "Communication:
+  1) Element (Matrix chat)
+  2) Mattermost
+  3) Slack
+  0) Back"
+  assert_contains "Web browsers:
+  1) Chromium browsers (Chrome, Brave, Edge, Opera and more)
+  2) Firefox
+  3) Vivaldi
+  4) Zen Browser
+  0) Back"
+  assert_contains "Editors: code, text and notes:
+  1) Emacs
+  2) GNOME text editors: gedit, GNOME Text Editor and Xed (and Pluma, Meld and more)
+  3) Godot
+  4) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)
+  5) LibreOffice (Writer, Calc, Impress and more)
+  6) Obsidian
+  7) Qt Creator
+  8) RStudio
+  9) Spyder
+  10) Sublime Text
+  11) Unreal Engine
+  12) Vim / Neovim
+  13) VS Code
+  0) Back"
+  assert_contains "Terminals and command-line tools:
+  1) fzf (fuzzy finder)
+  2) Ptyxis (Ubuntu terminal)
+  3) Tilix (terminal)
+  4) tmux
+  5) zsh (syntax highlighting and suggestions)
+  0) Back"
+  assert_contains "Linux desktops:
+  1) Decky Loader (Steam's Gaming Mode on SteamOS, Bazzite, CachyOS and more)
+  2) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)
+  3) KDE Plasma (Plasma and KDE apps, Konsole, Kate)
+  0) Back"
+  assert_contains "Entertainment:
+  1) Jellyfin (media server)
+  2) mpv (media player)
+  3) OBS Studio (streaming and recording)
+  0) Back"
+  count="$(printf '%s\n' "$OUTPUT" | grep -c '^Which app do you want to theme?$')"
+  [ "$count" -eq 7 ] || fail "expected the app menu 7 times (once, then after each Back), got $count"
+}
+
+# GIVEN a category open
+# WHEN choosing an app from it
+# THEN that app is installed
+test_choosing_an_app_from_a_category() {
+  fake_os Linux
+  run_setup "1\n4\n4\n1\n"
+  assert_status 0
+  assert_contains "Installing the tmux colors"
+}
+
+# GIVEN the app menu
+# WHEN typing part of a name instead of a number
+# THEN it lists the apps whose name, or category, match (case doesn't
+#      matter), and one can be chosen from them
+test_typing_a_name_searches() {
+  fake_os Linux
+  run_setup "1\nCOMMAND-LINE\n4\n1\n"
+  assert_status 0
+  assert_contains 'Apps matching "COMMAND-LINE":
+  1) fzf (fuzzy finder)
+  2) Ptyxis (Ubuntu terminal)
+  3) Tilix (terminal)
+  4) tmux
+  5) zsh (syntax highlighting and suggestions)
+     Covers: zsh-syntax-highlighting, fast-syntax-highlighting,
+     zsh-autosuggestions
+  0) Back'
+  assert_contains "Installing the tmux colors"
+}
+
+# GIVEN the app menu
+# WHEN searching for apps a theme covers but its menu name doesn't list:
+#      RustRover, Dolphin and Brave
+# THEN each finds the theme that covers it (JetBrains, KDE Plasma and
+#      Chromium browsers), with the full list of apps it covers under it,
+#      wrapped and lined up with its name
+test_search_finds_apps_a_theme_covers() {
+  fake_os Linux
+  run_setup "1\nrustrover\n0\ndolphin\n0\nbrave\n1\n1\n"
+  assert_status 0
+  assert_contains 'Apps matching "rustrover":
+  1) JetBrains Apps (IntelliJ IDEA, Android Studio, PyCharm, WebStorm and more)
+     Covers: IntelliJ IDEA, Android Studio, PyCharm, WebStorm, PhpStorm,
+     GoLand, RubyMine, CLion, Rider, DataGrip, DataSpell, RustRover
+  0) Back'
+  assert_contains 'Apps matching "dolphin":
+  1) KDE Plasma (Plasma and KDE apps, Konsole, Kate)
+     Covers: Dolphin, Kate, KWrite, Okular, Konsole, System Settings
+  0) Back'
+  assert_contains 'Apps matching "brave":
+  1) Chromium browsers (Chrome, Brave, Edge, Opera and more)
+     Covers: Google Chrome, Chromium, Brave, Microsoft Edge, Opera
+  0) Back'
+}
+
+# GIVEN the app menu and a category
+# WHEN they're shown
+# THEN they don't list the apps each theme covers (only search results do)
+test_menus_leave_out_the_covered_apps() {
+  fake_os Linux
+  run_setup "1\n2\n0\nslack\n1\n1\n"
+  assert_status 0
+  assert_not_contains "Covers:"
+}
+
+# GIVEN the JetBrains theme's README, which lists the IDEs it supports
+# WHEN searching for each of them
+# THEN every one finds the JetBrains theme
+test_search_finds_every_jetbrains_ide() {
+  fake_os Linux
+  ides="$(sed -n '/^Themes for the JetBrains apps/,/^(Not Fleet/s/^- //p' "$SANDBOX/repo/app-themes/jetbrains-theme/README.md")"
+  [ -n "$ides" ] || fail "expected the README to list the IDEs"
+  answers="1\n"
+  while IFS= read -r ide; do answers="$answers$ide\n0\n"; done <<<"$ides"
+  run_setup "${answers}slack\n1\n1\n"
+  assert_status 0
+  while IFS= read -r ide; do
+    assert_contains "Apps matching \"$ide\":
+  1) JetBrains Apps"
+  done <<<"$ides"
+  # The Covers list shown in search results names them all too.
+  covers="$(printf '%s\n' "$OUTPUT" | sed -n '/^Apps matching "RustRover":$/,/^  0) Back$/p' | sed -n '/Covers:/,/0) Back/p' | tr '\n' ' ')"
+  while IFS= read -r ide; do
+    case "$covers" in *"$ide"*) ;; *) fail "expected the Covers list to name $ide" ;; esac
+  done <<<"$ides"
+}
+
+# GIVEN an app two themes cover: gedit, whose text area the GNOME text
+#       editors theme colors and whose window the GTK3 theme colors
+# WHEN searching for it
+# THEN both are listed
+test_search_lists_every_theme_for_an_app() {
+  fake_os Linux
+  run_setup "1\ngedit\n0\nslack\n1\n1\n"
+  assert_status 0
+  assert_contains 'Apps matching "gedit":
+  1) GNOME text editors: gedit, GNOME Text Editor and Xed (and Pluma, Meld and more)
+     Covers: gedit, GNOME Text Editor, Xed, Pluma, Meld
+  2) GTK3 apps (GIMP, Inkscape, Thunar, GParted and more)
+     Covers: GIMP, Inkscape, Shotwell, Thunar, Nemo, Caja, gedit,'
+}
+
+# GIVEN the app menu
+# WHEN choosing "Search for an app by name" and typing a name
+# THEN it lists the matching apps
+test_search_option_asks_for_a_name() {
+  fake_os Linux
+  run_setup "1\n8\nfire\n1\n1\n"
+  assert_status 0
+  assert_contains "Type part of an app's name (or press Enter to go back): "
+  assert_contains 'Apps matching "fire":
+  1) Firefox
+  0) Back'
+}
+
+# GIVEN the app menu
+# WHEN searching for something no app matches, then for Slack
+# THEN it says nothing matches and shows the app menu again, where the next
+#      search works
+test_search_with_no_matches_returns_to_the_app_menu() {
+  fake_os Linux
+  run_setup "1\nnotepad\nslack\n1\n1\n"
+  assert_status 0
+  assert_contains 'No app matches "notepad".'
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN the app menu
+# WHEN choosing Back
+# THEN it returns to the first question, where installing starts over
+test_back_from_the_app_menu_returns_to_the_first_question() {
+  fake_os Linux
+  run_setup "1\n0\n1\nslack\n1\n1\n"
+  assert_status 0
+  count="$(printf '%s\n' "$OUTPUT" | grep -c '^What would you like to do?$')"
+  [ "$count" -eq 2 ] || fail "expected the first question twice, got $count"
+  assert_contains "Your Slack theme string"
+}
+
+# GIVEN an app chosen from a category
+# WHEN choosing Back at the theme menu
+# THEN it returns to that category, where another app can be chosen
+test_back_from_the_theme_menu_returns_to_the_category() {
+  fake_os Linux
+  run_setup "1\n1\n2\n0\n1\n1\n"
+  assert_status 0
+  count="$(printf '%s\n' "$OUTPUT" | grep -c '^Web browsers:$')"
+  [ "$count" -eq 2 ] || fail "expected the browsers category twice, got $count"
+  assert_contains "chrome://extensions"
+  assert_not_contains "about:debugging"
 }
 
 # GIVEN the palettes in palettes/
 # WHEN choosing an app
 # THEN the theme menu lists every palette by name
 test_theme_menu_lists_every_palette() {
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   for file in "$SANDBOX"/repo/palettes/*-palette.toml; do
     assert_contains ") $(palette_name "$file")"
   done
@@ -130,7 +337,7 @@ test_theme_menu_lists_a_new_palette() {
   sed -e 's/^name = .*/name = "Forest"/' -e 's/^slug = .*/slug = "forest"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/forest-palette.toml"
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   assert_contains ") Forest"
 }
 
@@ -140,7 +347,7 @@ test_theme_menu_lists_a_new_palette() {
 test_theme_menu_reads_single_quoted_names() {
   sed -e "s/^name = .*/name = 'Forest'/" -e "s/^slug = .*/slug = 'forest'/" \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
-  run_setup "1\n2\n2\n"
+  run_setup "1\nslack\n1\n2\n"
   assert_status 0
   assert_contains "2) Forest"
   assert_contains "Generated Forest (forest)"
@@ -153,7 +360,7 @@ test_theme_menu_without_python_reads_single_quoted_names() {
   fake_no_python
   sed -e "s/^name = .*/name = 'Forest'/" -e "s/^slug = .*/slug = 'forest'/" \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/forest-palette.toml"
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   assert_contains "2) Forest"
 }
 
@@ -162,21 +369,22 @@ test_theme_menu_without_python_reads_single_quoted_names() {
 # THEN it stops before the theme menu, naming the broken palette
 test_theme_menu_stops_on_an_unreadable_palette() {
   printf 'name = "Broken\n' >"$SANDBOX/repo/palettes/broken-palette.toml"
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   assert_status 1
   assert_contains "broken-palette.toml: not a valid palette file"
   assert_contains "fix the palette named above"
   assert_not_contains "Which theme"
 }
 
-# GIVEN answers that are empty, not numbers, or out of range
-# WHEN they're typed at the app menu
-# THEN each one asks again, and a valid answer then carries on
+# GIVEN answers that are empty or out of range at the app menu, and empty,
+#       not numbers or out of range at the theme menu
+# WHEN they're typed
+# THEN each one asks again, and valid answers then carry on
 test_invalid_choices_ask_again() {
-  run_setup "1\n\nabc\n0\n99\n-1\n2\n1\n"
+  run_setup "1\n\n99\nslack\n1\n\nabc\n99\n-1\n1\n"
   assert_status 0
-  count="$(printf '%s\n' "$OUTPUT" | grep -c 'Please enter a number between 1 and')"
-  [ "$count" -eq 5 ] || fail "expected 5 re-prompts, got $count"
+  count="$(printf '%s\n' "$OUTPUT" | grep -c 'Please enter a number between 0 and')"
+  [ "$count" -eq 6 ] || fail "expected 6 re-prompts, got $count"
   assert_contains "Your Slack theme string"
 }
 
@@ -207,7 +415,7 @@ EOF
 # THEN it offers installing a theme or designing a palette, and choosing to
 #      install goes on to the app menu
 test_first_menu_offers_installing_or_designing() {
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   assert_status 0
   assert_contains "What would you like to do?"
   assert_contains "1) Install a theme for an app"
@@ -219,7 +427,7 @@ test_first_menu_offers_installing_or_designing() {
 # WHEN it's typed at the first menu
 # THEN it asks again
 test_first_menu_asks_again_for_an_invalid_choice() {
-  run_setup "3\n1\n2\n1\n"
+  run_setup "3\n1\nslack\n1\n1\n"
   assert_status 0
   assert_contains "Please enter a number between 1 and 2."
 }
@@ -259,7 +467,7 @@ test_palette_creator_needs_python() {
 # WHEN choosing Slack and Sunset
 # THEN Sunset's themes are generated and added to package.json
 test_generates_the_chosen_palette() {
-  run_setup "1\n2\n2\n"
+  run_setup "1\nslack\n1\n2\n"
   assert_status 0
   assert_contains "Generated Sunset (sunset)"
   assert_exists "$SANDBOX/repo/app-themes/slack-theme/sunset.txt"
@@ -274,7 +482,7 @@ test_generates_the_chosen_palette() {
 # THEN it succeeds using the committed Blue Purple files
 test_blue_purple_works_without_python() {
   fake_no_python
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   assert_status 0
   assert_contains "Python 3.11+ not found"
   assert_contains "$(tr -d '\n' <"$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt")"
@@ -285,7 +493,7 @@ test_blue_purple_works_without_python() {
 # THEN it exits with status 1, saying generating Sunset needs Python
 test_other_palettes_need_python() {
   fake_no_python
-  run_setup "1\n2\n2\n"
+  run_setup "1\nslack\n1\n2\n"
   assert_status 1
   assert_contains "generating Sunset needs Python 3.11 or later"
 }
@@ -299,7 +507,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blue-purple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "1\n11\n1\n"
+  run_setup "1\ntilix\n1\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blue-purple' is not a #rrggbb value"
@@ -317,14 +525,14 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "1\n11\n2\n"
+  run_setup "1\ntilix\n1\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
   assert_exists "$repo/app-themes/tilix-theme/sunset.json"
-  run_setup "1\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$repo/app-themes/vs-code-theme"
-  run_setup "1\n3\n1\n$SANDBOX/Notes\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Notes\n"
   assert_status 0
   assert_link "$SANDBOX/Notes/.obsidian/themes/Jenerated Blue Purple" "$repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -336,7 +544,7 @@ test_repo_in_a_folder_with_spaces() {
 # THEN the extension folder is linked into ~/.vscode/extensions, and it says
 #      which theme to choose
 test_vscode_links_the_extension() {
-  run_setup "1\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
   assert_contains 'Choose "Jenerated Blue Purple"'
@@ -348,7 +556,7 @@ test_vscode_links_the_extension() {
 test_vscode_already_linked_is_left_alone() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   ln -s "$SANDBOX/repo/app-themes/vs-code-theme" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\n"
   assert_status 0
   assert_contains "Already installed"
   assert_not_contains "Replace it"
@@ -359,7 +567,7 @@ test_vscode_already_linked_is_left_alone() {
 # THEN the copy is replaced with a link
 test_vscode_replaces_an_old_copy_when_asked() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\n1\n1\ny\n"
+  run_setup "1\nvs code\n1\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
@@ -371,7 +579,7 @@ test_vscode_replaces_an_old_copy_when_asked() {
 test_vscode_replaces_a_link_to_another_folder() {
   mkdir -p "$SANDBOX/home/.vscode/extensions" "$SANDBOX/elsewhere"
   ln -s "$SANDBOX/elsewhere" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\n1\n1\n\n"
+  run_setup "1\nvs code\n1\n1\n\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
   assert_exists "$SANDBOX/elsewhere"
@@ -383,7 +591,7 @@ test_vscode_replaces_a_link_to_another_folder() {
 test_vscode_keeps_an_old_copy_when_declined() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
   touch "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
-  run_setup "1\n1\n1\nn\n"
+  run_setup "1\nvs code\n1\n1\nn\n"
   assert_status 1
   assert_contains "left the existing install alone"
   assert_exists "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
@@ -394,7 +602,7 @@ test_vscode_keeps_an_old_copy_when_declined() {
 # THEN it warns about the packaged copy so the two don't clash
 test_vscode_warns_about_a_packaged_copy() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/local.jenerated-themes-1.0.0"
-  run_setup "1\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\n"
   assert_status 0
   assert_contains "you also have a packaged copy installed (local.jenerated-themes-1.0.0)"
 }
@@ -405,7 +613,7 @@ test_vscode_warns_about_a_packaged_copy() {
 test_vscode_removes_obsolete_file_with_only_this_extension() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n1\n\n"
+  run_setup "1\nvs code\n1\n1\n\n"
   assert_status 0
   assert_contains "marked as uninstalled"
   assert_missing "$SANDBOX/home/.vscode/extensions/.obsolete"
@@ -418,7 +626,7 @@ test_vscode_keeps_other_obsolete_entries() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"a.first-1.0.0":true,"local.jenerated-themes-1.0.0":true,"b.second-2.0.0":true}' \
     >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n1\n\n"
+  run_setup "1\nvs code\n1\n1\n\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" \
     '{"a.first-1.0.0":true,"b.second-2.0.0":true}'
@@ -430,7 +638,7 @@ test_vscode_keeps_other_obsolete_entries() {
 test_vscode_stops_if_input_ends_before_enter() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\n"
   assert_status 1
   assert_contains "stopped before changing VS Code's files"
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"local.jenerated-themes-1.0.0":true}'
@@ -442,7 +650,7 @@ test_vscode_stops_if_input_ends_before_enter() {
 test_vscode_ignores_obsolete_file_without_this_extension() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"a.first-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\n"
   assert_status 0
   assert_not_contains "marked as uninstalled"
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"a.first-1.0.0":true}'
@@ -456,7 +664,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "1\n10\n1\n"
+  run_setup "1\nptyxis\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -468,8 +676,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "1\n10\n1\n"
-  run_setup "1\n10\n1\n"
+  run_setup "1\nptyxis\n1\n1\n"
+  run_setup "1\nptyxis\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -485,7 +693,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "1\n11\n1\n"
+  run_setup "1\ntilix\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
@@ -497,7 +705,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "1\n11\n2\n"
+  run_setup "1\ntilix\n1\n2\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
@@ -511,7 +719,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "1\n11\n1\n"
+  run_setup "1\ntilix\n1\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -521,8 +729,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "1\n11\n1\n"
-  run_setup "1\n11\n1\n"
+  run_setup "1\ntilix\n1\n1\n"
+  run_setup "1\ntilix\n1\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -534,7 +742,7 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "1\n11\n1\nn\n"
+  run_setup "1\ntilix\n1\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
 }
@@ -560,7 +768,7 @@ vim_loads() {
 # THEN app-themes/vim-theme is linked as a Vim package, Vim can load the colorscheme,
 #      and it says what to add to ~/.vimrc
 test_vim_links_the_package() {
-  run_setup "1\n4\n1\n"
+  run_setup "1\nneovim\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$VIM_PACK" "$SANDBOX/repo/app-themes/vim-theme"
   assert_contains "colorscheme jenerated-blue-purple"
@@ -574,7 +782,7 @@ test_vim_links_the_package() {
 #      to init.lua
 test_vim_links_the_package_for_neovim() {
   mkdir -p "$SANDBOX/home/.config/nvim"
-  run_setup "1\n4\n1\n"
+  run_setup "1\nneovim\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$NVIM_PACK" "$SANDBOX/repo/app-themes/vim-theme"
   assert_contains 'vim.cmd.colorscheme("jenerated-blue-purple")'
@@ -585,8 +793,8 @@ test_vim_links_the_package_for_neovim() {
 # THEN the link is already there, and Sunset's newly generated colorscheme
 #      loads through it too
 test_vim_one_link_serves_every_palette() {
-  run_setup "1\n4\n1\n"
-  run_setup "1\n4\n2\n"
+  run_setup "1\nneovim\n1\n1\n"
+  run_setup "1\nneovim\n1\n2\n"
   assert_status 0
   assert_contains "Already installed"
   assert_exists "$SANDBOX/repo/app-themes/vim-theme/colors/jenerated-sunset.vim"
@@ -599,7 +807,7 @@ test_vim_one_link_serves_every_palette() {
 test_vim_asks_before_replacing_a_copy() {
   mkdir -p "$SANDBOX/home/$VIM_PACK/colors"
   touch "$SANDBOX/home/$VIM_PACK/colors/keep-me.vim"
-  run_setup "1\n4\n1\nn\n"
+  run_setup "1\nneovim\n1\n1\nn\n"
   assert_status 1
   assert_exists "$SANDBOX/home/$VIM_PACK/colors/keep-me.vim"
 }
@@ -636,7 +844,7 @@ wait_for() {
 test_firefox_packages_the_theme() {
   fake_os Linux
   fake_command firefox "touch \"$SANDBOX/firefox-ran\""
-  run_setup "1\n5\n2\nn\n"
+  run_setup "1\nfirefox\n1\n2\nn\n"
   assert_status 0
   xpi="$SANDBOX/repo/$FIREFOX_DIR/jenerated-sunset.xpi"
   assert_exists "$xpi"
@@ -658,7 +866,7 @@ test_firefox_packages_the_theme() {
 test_firefox_opens_the_debugging_page() {
   fake_os Linux
   fake_command firefox "printf '%s' \"\$*\" >\"$SANDBOX/firefox-ran\""
-  run_setup "1\n5\n1\ny\n"
+  run_setup "1\nfirefox\n1\n1\ny\n"
   assert_status 0
   wait_for "$SANDBOX/firefox-ran"
   assert_file_equals "$SANDBOX/firefox-ran" "about:debugging#/runtime/this-firefox"
@@ -670,7 +878,7 @@ test_firefox_opens_the_debugging_page() {
 test_firefox_on_macos_uses_open() {
   fake_os Darwin
   fake_command open "printf '%s' \"\$*\" >\"$SANDBOX/open-ran\""
-  run_setup "1\n5\n1\ny\n"
+  run_setup "1\nfirefox\n1\n1\ny\n"
   assert_status 0
   assert_file_equals "$SANDBOX/open-ran" "-a Firefox about:debugging#/runtime/this-firefox"
 }
@@ -681,7 +889,7 @@ test_firefox_on_macos_uses_open() {
 test_firefox_that_cant_be_found_is_explained() {
   fake_os Darwin
   fake_command open "exit 1"
-  run_setup "1\n5\n1\ny\n"
+  run_setup "1\nfirefox\n1\n1\ny\n"
   assert_status 0
   assert_contains "Couldn't find Firefox"
   assert_contains "Load Temporary Add-on"
@@ -694,7 +902,7 @@ test_firefox_that_cant_be_found_is_explained() {
 test_firefox_without_python_can_still_be_tried() {
   fake_os Linux
   fake_no_python
-  run_setup "1\n5\n1\nn\n"
+  run_setup "1\nfirefox\n1\n1\nn\n"
   assert_status 0
   assert_contains "Couldn't package it"
   assert_contains "$SANDBOX/repo/$FIREFOX_DIR/blue-purple/manifest.json"
@@ -711,7 +919,7 @@ VIVALDI_DIR="app-themes/vivaldi-theme"
 # THEN it's packaged as a .zip holding just its settings.json, as Vivaldi
 #      imports it, and it explains how to import it
 test_vivaldi_packages_the_theme() {
-  run_setup "1\n6\n2\n"
+  run_setup "1\nvivaldi\n1\n2\n"
   assert_status 0
   theme_zip="$SANDBOX/repo/$VIVALDI_DIR/jenerated-sunset.zip"
   assert_exists "$theme_zip"
@@ -734,7 +942,7 @@ print(z.namelist(), s["name"])
 test_vivaldi_packages_with_zip_without_python() {
   fake_no_python
   fake_command zip "printf '%s\n' \"\$@\" >\"$SANDBOX/zip-ran\""
-  run_setup "1\n6\n1\n"
+  run_setup "1\nvivaldi\n1\n1\n"
   assert_status 0
   assert_file_contains "$SANDBOX/zip-ran" "$SANDBOX/repo/$VIVALDI_DIR/jenerated-blue-purple.zip"
   assert_file_contains "$SANDBOX/zip-ran" "-r"
@@ -746,7 +954,7 @@ test_vivaldi_packages_with_zip_without_python() {
 test_vivaldi_without_a_way_to_zip() {
   fake_no_python
   fake_command zip "exit 1"
-  run_setup "1\n6\n1\n"
+  run_setup "1\nvivaldi\n1\n1\n"
   assert_status 1
   assert_contains "couldn't make the .zip (that needs python3 or zip)"
 }
@@ -761,7 +969,7 @@ JETBRAINS_DIR="app-themes/jetbrains-theme"
 #      and editor scheme, each pointing at files in the .jar, and it explains
 #      installing it from disk
 test_jetbrains_packages_the_plugin() {
-  run_setup "1\n7\n2\n"
+  run_setup "1\njetbrains\n1\n2\n"
   assert_status 0
   jar="$SANDBOX/repo/$JETBRAINS_DIR/jenerated-sunset.jar"
   assert_exists "$jar"
@@ -789,7 +997,7 @@ print(names, theme_path in names, scheme_path in names, theme["name"])
 test_jetbrains_without_a_way_to_zip() {
   fake_no_python
   fake_command zip "exit 1"
-  run_setup "1\n7\n1\n"
+  run_setup "1\njetbrains\n1\n1\n"
   assert_status 1
   assert_contains "couldn't make the .jar (that needs python3 or zip)"
 }
@@ -813,7 +1021,7 @@ esac"
 #      and it explains how to turn it on
 test_gtk3_links_the_theme() {
   fake_os Linux
-  run_setup "1\n12\n1\n"
+  run_setup "1\ngtk3\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
   assert_exists "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple/gtk-3.0/gtk.css"
@@ -828,7 +1036,7 @@ test_gtk3_links_the_theme() {
 test_gtk3_switches_the_theme_when_asked() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\n12\n2\ny\n"
+  run_setup "1\ngtk3\n1\n2\ny\n"
   assert_status 0
   assert_contains "Your GTK3 theme is 'Yaru-dark'."
   assert_file_equals "$SANDBOX/gsettings-set" "set org.gnome.desktop.interface gtk-theme Jenerated-sunset"
@@ -842,7 +1050,7 @@ test_gtk3_switches_the_theme_when_asked() {
 test_gtk3_leaves_the_theme_setting_when_declined() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\n12\n1\nn\n"
+  run_setup "1\ngtk3\n1\n1\nn\n"
   assert_status 0
   assert_missing "$SANDBOX/gsettings-set"
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
@@ -856,7 +1064,7 @@ test_gtk3_leaves_the_theme_setting_when_declined() {
 # THEN Sunset's theme is generated, and it explains loading its folder as an
 #      unpacked extension in each browser
 test_chromium_explains_loading_the_theme() {
-  run_setup "1\n8\n2\n"
+  run_setup "1\nchromium\n1\n2\n"
   assert_status 0
   folder="$SANDBOX/repo/app-themes/chromium-theme/sunset"
   assert_exists "$folder/manifest.json"
@@ -872,7 +1080,7 @@ test_chromium_explains_loading_the_theme() {
 # THEN the cache is deleted, so the browser uses the current colors
 test_chromium_clears_an_old_theme_cache() {
   touch "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/Cached Theme.pak"
-  run_setup "1\n8\n1\n"
+  run_setup "1\nchromium\n1\n1\n"
   assert_status 0
   assert_missing "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/Cached Theme.pak"
   assert_exists "$SANDBOX/repo/app-themes/chromium-theme/blue-purple/manifest.json"
@@ -902,7 +1110,7 @@ fi"
 #      looks for them, and it explains how to turn each on
 test_kde_links_the_themes() {
   fake_os Linux
-  run_setup "1\n13\n1\n"
+  run_setup "1\nkde plasma\n1\n1\n"
   assert_status 0
   folder="$SANDBOX/repo/app-themes/kde-theme/blue-purple"
   assert_link "$SANDBOX/home/$KDE_DATA/color-schemes/Jenerated-blue-purple.colors" "$folder/Jenerated-blue-purple.colors"
@@ -921,7 +1129,7 @@ test_kde_links_the_themes() {
 test_kde_switches_the_color_scheme_when_asked() {
   fake_os Linux
   fake_plasma BreezeDark
-  run_setup "1\n13\n2\ny\n"
+  run_setup "1\nkde plasma\n1\n2\ny\n"
   assert_status 0
   assert_contains "Your Plasma color scheme is BreezeDark."
   assert_file_equals "$SANDBOX/plasma-applied" "Jenerated-sunset"
@@ -936,7 +1144,7 @@ test_kde_switches_the_color_scheme_when_asked() {
 test_kde_leaves_the_color_scheme_when_declined() {
   fake_os Linux
   fake_plasma BreezeDark
-  run_setup "1\n13\n1\nn\n"
+  run_setup "1\nkde plasma\n1\n1\nn\n"
   assert_status 0
   assert_missing "$SANDBOX/plasma-applied"
   assert_contains "System Settings -> Colors & Themes -> Colors"
@@ -952,7 +1160,7 @@ test_kde_leaves_the_color_scheme_when_declined() {
 test_decky_links_the_theme() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/homebrew/plugins"
-  run_setup "1\n14\n1\n"
+  run_setup "1\ndecky\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/homebrew/themes/Jenerated-blue-purple" \
     "$SANDBOX/repo/app-themes/decky-theme/blue-purple"
@@ -967,7 +1175,7 @@ test_decky_links_the_theme() {
 #      theme anyway, ready for when it is
 test_decky_explains_when_decky_is_missing() {
   fake_os Linux
-  run_setup "1\n14\n2\n"
+  run_setup "1\ndecky\n1\n2\n"
   assert_status 0
   assert_contains "Decky Loader isn't installed yet"
   assert_contains "https://decky.xyz"
@@ -997,7 +1205,7 @@ godot_settings() {
 test_godot_links_the_theme_and_explains_before_first_run() {
   fake_os Linux
   fake_command pgrep "exit 1"
-  run_setup "1\n9\n1\n"
+  run_setup "1\ngodot\n1\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$GODOT_CFG/text_editor_themes/Jenerated-blue-purple.tet" \
     "$SANDBOX/repo/app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet"
@@ -1017,7 +1225,7 @@ test_godot_sets_the_editor_colors_when_asked() {
   godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.5.tres"
   godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
   cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
-  run_setup "1\n9\n1\ny\n"
+  run_setup "1\ngodot\n1\n1\ny\n"
   assert_status 0
   settings="$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
   assert_same_file "$settings.before-jenerated" "$SANDBOX/original.tres"
@@ -1032,6 +1240,26 @@ test_godot_sets_the_editor_colors_when_asked() {
   assert_contains "cp \"$settings.before-jenerated\" \"$settings\""
 }
 
+# GIVEN Godot's script editor theme already linked, but to an old copy
+#       elsewhere
+# WHEN choosing Godot and Blue Purple, and answering yes to replacing it and
+#      then no to changing the settings
+# THEN the link is replaced after asking (the question reads the answer
+#      typed, not setup.sh's own list of folders)
+test_godot_asks_before_replacing_an_old_link() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
+  mkdir -p "$SANDBOX/home/$GODOT_CFG/text_editor_themes" "$SANDBOX/old"
+  : >"$SANDBOX/old/Jenerated-blue-purple.tet"
+  ln -s "$SANDBOX/old/Jenerated-blue-purple.tet" "$SANDBOX/home/$GODOT_CFG/text_editor_themes/Jenerated-blue-purple.tet"
+  run_setup "1\ngodot\n1\n1\ny\nn\n"
+  assert_status 0
+  assert_contains "Replace it with a link to this folder?"
+  assert_link "$SANDBOX/home/$GODOT_CFG/text_editor_themes/Jenerated-blue-purple.tet" \
+    "$SANDBOX/repo/app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet"
+}
+
 # GIVEN Godot's settings, already set to Blue Purple by setup.sh
 # WHEN choosing Godot and Sunset, and answering yes again
 # THEN the settings get Sunset's, and the backup is still the settings from
@@ -1041,8 +1269,8 @@ test_godot_keeps_the_first_backup() {
   fake_command pgrep "exit 1"
   godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
   cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
-  run_setup "1\n9\n1\ny\n"
-  run_setup "1\n9\n2\ny\n"
+  run_setup "1\ngodot\n1\n1\ny\n"
+  run_setup "1\ngodot\n1\n2\ny\n"
   assert_status 0
   settings="$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
   assert_file_contains "$settings" 'text_editor/theme/color_theme = "Jenerated-sunset"'
@@ -1059,7 +1287,7 @@ test_godot_leaves_the_settings_when_declined() {
   fake_command pgrep "exit 1"
   godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
   cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
-  run_setup "1\n9\n1\nn\n"
+  run_setup "1\ngodot\n1\n1\nn\n"
   assert_status 0
   assert_same_file "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
   assert_missing "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres.before-jenerated"
@@ -1076,7 +1304,7 @@ test_godot_waits_while_godot_is_open() {
   fake_command pgrep "exit 0"
   godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
   cp "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres" "$SANDBOX/original.tres"
-  run_setup "1\n9\n1\n"
+  run_setup "1\ngodot\n1\n1\n"
   assert_status 0
   assert_contains "Godot is open"
   assert_not_contains "Set Godot's editor colors"
@@ -1084,8 +1312,8 @@ test_godot_waits_while_godot_is_open() {
   assert_contains "Interface > Theme > Base Color:"
 }
 
-# GIVEN the Godot Flatpak, with its own settings, as well as the usual
-#       settings folder
+# GIVEN Godot installed through Flatpak, with its own settings, as well as
+#       the usual settings folder
 # WHEN choosing Godot and answering yes
 # THEN the theme is linked into both, and both settings files are updated
 test_godot_themes_the_flatpak_too() {
@@ -1094,7 +1322,7 @@ test_godot_themes_the_flatpak_too() {
   flatpak="$SANDBOX/home/.var/app/org.godotengine.Godot/config/godot"
   godot_settings "$flatpak/editor_settings-4.6.tres"
   godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-4.6.tres"
-  run_setup "1\n9\n1\ny\n"
+  run_setup "1\ngodot\n1\n1\ny\n"
   assert_status 0
   for dir in "$SANDBOX/home/$GODOT_CFG" "$flatpak"; do
     assert_link "$dir/text_editor_themes/Jenerated-blue-purple.tet" \
@@ -1113,7 +1341,7 @@ test_godot_updates_the_newest_settings() {
   for version in 4 4.9 4.10; do
     godot_settings "$SANDBOX/home/$GODOT_CFG/editor_settings-$version.tres"
   done
-  run_setup "1\n9\n1\ny\n"
+  run_setup "1\ngodot\n1\n1\ny\n"
   assert_status 0
   assert_file_contains "$SANDBOX/home/$GODOT_CFG/editor_settings-4.10.tres" "Jenerated-blue-purple"
   assert_file_not_contains "$SANDBOX/home/$GODOT_CFG/editor_settings-4.9.tres" "Jenerated"
@@ -1129,11 +1357,611 @@ test_godot_on_macos_uses_application_support() {
   fake_command pgrep "exit 1"
   dir="$SANDBOX/home/Library/Application Support/Godot"
   godot_settings "$dir/editor_settings-4.6.tres"
-  run_setup "1\n9\n1\ny\n"
+  run_setup "1\ngodot\n1\n1\ny\n"
   assert_status 0
   assert_link "$dir/text_editor_themes/Jenerated-blue-purple.tet" \
     "$SANDBOX/repo/app-themes/godot-theme/blue-purple/Jenerated-blue-purple.tet"
   assert_file_contains "$dir/editor_settings-4.6.tres" 'text_editor/theme/color_theme = "Jenerated-blue-purple"'
+}
+
+# --- Tests: Zen Browser -----------------------------------------------------
+
+# zen_profile root name path... -> writes root/profiles.ini listing a profile
+# for each "name path" pair (paths relative to root), and creates their
+# folders.
+zen_profile() {
+  local root="$1" n=0
+  shift
+  mkdir -p "$root"
+  : >"$root/profiles.ini"
+  while [ $# -gt 1 ]; do
+    printf '[Profile%d]\nName=%s\nIsRelative=1\nPath=%s\n\n' "$n" "$1" "$2" >>"$root/profiles.ini"
+    mkdir -p "$root/$2"
+    n=$((n + 1))
+    shift 2
+  done
+  printf '[General]\nStartWithLastProfile=1\n' >>"$root/profiles.ini"
+}
+
+ZEN_ROOT=".zen"
+
+# GIVEN a Linux system with one Zen profile and no custom stylesheets
+# WHEN choosing Zen Browser and Blue Purple
+# THEN the theme's stylesheets are linked into the profile's chrome folder,
+#      userChrome.css and userContent.css are created to import them, custom
+#      stylesheets are turned on in user.js, and it says to restart Zen
+test_zen_installs_the_theme_into_the_profile() {
+  fake_os Linux
+  zen_profile "$SANDBOX/home/$ZEN_ROOT" "Default (release)" "abc.Default (release)"
+  run_setup "1\nzen browser\n1\n1\n"
+  assert_status 0
+  profile="$SANDBOX/home/$ZEN_ROOT/abc.Default (release)"
+  folder="$SANDBOX/repo/app-themes/zen-theme/blue-purple"
+  assert_link "$profile/chrome/jenerated-userChrome.css" "$folder/userChrome.css"
+  assert_link "$profile/chrome/jenerated-userContent.css" "$folder/userContent.css"
+  assert_file_contains "$profile/chrome/userChrome.css" '@import "jenerated-userChrome.css";'
+  assert_file_contains "$profile/chrome/userContent.css" '@import "jenerated-userContent.css";'
+  assert_file_contains "$profile/user.js" 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);'
+  assert_contains "Restart Zen"
+}
+
+# GIVEN a Zen profile with a userChrome.css of the user's own, and a user.js
+#       whose last line has no line break
+# WHEN choosing Zen Browser and answering yes to adding the theme
+# THEN the import is added as the first line, the user's styles are kept
+#      after it, and the setting goes on its own line in user.js
+test_zen_adds_the_theme_to_an_existing_stylesheet() {
+  fake_os Linux
+  zen_profile "$SANDBOX/home/$ZEN_ROOT" "Default" "abc.default"
+  profile="$SANDBOX/home/$ZEN_ROOT/abc.default"
+  mkdir -p "$profile/chrome"
+  printf '#nav-bar { opacity: 0.9; }\n' >"$profile/chrome/userChrome.css"
+  printf 'user_pref("browser.startup.page", 3);' >"$profile/user.js"
+  run_setup "1\nzen browser\n1\n1\ny\n"
+  assert_status 0
+  expected="$(printf '@import "jenerated-userChrome.css";\n#nav-bar { opacity: 0.9; }')"
+  assert_file_equals "$profile/chrome/userChrome.css" "$expected"
+  expected="$(printf 'user_pref("browser.startup.page", 3);\nuser_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);')"
+  assert_file_equals "$profile/user.js" "$expected"
+}
+
+# GIVEN a Zen profile with a userChrome.css of the user's own
+# WHEN choosing Zen Browser and answering no to adding the theme
+# THEN the stylesheet is left alone, and it shows the line to add by hand
+test_zen_leaves_an_existing_stylesheet_when_declined() {
+  fake_os Linux
+  zen_profile "$SANDBOX/home/$ZEN_ROOT" "Default" "abc.default"
+  profile="$SANDBOX/home/$ZEN_ROOT/abc.default"
+  mkdir -p "$profile/chrome"
+  printf '#nav-bar { opacity: 0.9; }\n' >"$profile/chrome/userChrome.css"
+  run_setup "1\nzen browser\n1\n1\nn\n"
+  assert_status 0
+  assert_file_equals "$profile/chrome/userChrome.css" "#nav-bar { opacity: 0.9; }"
+  assert_contains '    @import "jenerated-userChrome.css";'
+}
+
+# GIVEN Zen with Blue Purple installed by setup.sh
+# WHEN choosing Zen Browser and Sunset, and answering yes to replacing the
+#      old links
+# THEN the links point to Sunset, and neither the imports nor the setting
+#      are added twice
+test_zen_switching_palettes_adds_nothing_twice() {
+  fake_os Linux
+  zen_profile "$SANDBOX/home/$ZEN_ROOT" "Default" "abc.default"
+  profile="$SANDBOX/home/$ZEN_ROOT/abc.default"
+  run_setup "1\nzen browser\n1\n1\n"
+  run_setup "1\nzen browser\n1\n2\ny\ny\n"
+  assert_status 0
+  assert_link "$profile/chrome/jenerated-userChrome.css" "$SANDBOX/repo/app-themes/zen-theme/sunset/userChrome.css"
+  [ "$(grep -c jenerated-userChrome.css "$profile/chrome/userChrome.css")" = 1 ] || fail "expected one import in userChrome.css"
+  [ "$(grep -c legacyUserProfileCustomizations "$profile/user.js")" = 1 ] || fail "expected the setting once in user.js"
+}
+
+# GIVEN two Zen profiles
+# WHEN choosing Zen Browser and then the second profile
+# THEN it lists both by name, and installs into the second one only
+test_zen_asks_which_profile() {
+  fake_os Linux
+  zen_profile "$SANDBOX/home/$ZEN_ROOT" "Work" "aaa.work" "Personal" "bbb.personal"
+  run_setup "1\nzen browser\n1\n1\n2\n"
+  assert_status 0
+  assert_contains "Which Zen profile?"
+  assert_contains "1) Work ($SANDBOX/home/$ZEN_ROOT/aaa.work)"
+  assert_contains "2) Personal ($SANDBOX/home/$ZEN_ROOT/bbb.personal)"
+  assert_exists "$SANDBOX/home/$ZEN_ROOT/bbb.personal/chrome/jenerated-userChrome.css"
+  assert_missing "$SANDBOX/home/$ZEN_ROOT/aaa.work/chrome"
+}
+
+# GIVEN Zen profiles in the XDG config folder and in the folder Flatpak
+#       gives Zen (and none in ~/.zen)
+# WHEN choosing Zen Browser
+# THEN both are offered
+test_zen_finds_xdg_and_flatpak_profiles() {
+  fake_os Linux
+  zen_profile "$SANDBOX/home/.config/zen" "Native" "n.default"
+  zen_profile "$SANDBOX/home/.var/app/app.zen_browser.zen/.zen" "Flatpak" "f.default"
+  run_setup "1\nzen browser\n1\n1\n2\n"
+  assert_status 0
+  assert_contains "Native ($SANDBOX/home/.config/zen/n.default)"
+  assert_contains "Flatpak ($SANDBOX/home/.var/app/app.zen_browser.zen/.zen/f.default)"
+  assert_exists "$SANDBOX/home/.var/app/app.zen_browser.zen/.zen/f.default/chrome/jenerated-userChrome.css"
+}
+
+# GIVEN a Mac with a Zen profile in Application Support
+# WHEN choosing Zen Browser (also 10 on a Mac)
+# THEN the theme is installed into that profile
+test_zen_on_macos_uses_application_support() {
+  fake_os Darwin
+  zen_profile "$SANDBOX/home/Library/Application Support/zen" "Default" "Profiles/abc.default"
+  run_setup "1\nzen browser\n1\n1\n"
+  assert_status 0
+  assert_exists "$SANDBOX/home/Library/Application Support/zen/Profiles/abc.default/chrome/jenerated-userChrome.css"
+}
+
+# GIVEN Zen has never been opened (no profiles)
+# WHEN choosing Zen Browser
+# THEN it says to open Zen once first, and installs nothing
+test_zen_explains_when_there_is_no_profile() {
+  fake_os Linux
+  run_setup "1\nzen browser\n1\n1\n"
+  assert_status 0
+  assert_contains "Zen hasn't been opened yet"
+  assert_missing "$SANDBOX/home/$ZEN_ROOT"
+}
+
+# --- Tests: GtkSourceView text editors --------------------------------------
+
+# GIVEN a Linux system
+# WHEN choosing the text editors and Blue Purple (a dark palette)
+# THEN each GtkSourceView version's styles folder gets a link to its own
+#      version of the scheme (3 and 4 share one), and it explains where each
+#      editor's setting is, telling GNOME Text Editor users to pick its dark
+#      style
+test_gtksourceview_links_each_version() {
+  fake_os Linux
+  run_setup "1\ngnome text editors\n1\n1\n"
+  assert_status 0
+  data="$SANDBOX/home/.local/share"
+  folder="$SANDBOX/repo/app-themes/gtksourceview-theme/blue-purple"
+  file="jenerated-blue-purple.xml"
+  assert_link "$data/gtksourceview-3.0/styles/$file" "$folder/gtksourceview-4/$file"
+  assert_link "$data/gtksourceview-4/styles/$file" "$folder/gtksourceview-4/$file"
+  assert_link "$data/gtksourceview-5/styles/$file" "$folder/gtksourceview-5/$file"
+  assert_link "$data/libgedit-gtksourceview-300/styles/$file" "$folder/libgedit-gtksourceview-300/$file"
+  assert_contains "gedit: Preferences -> Font & Colors."
+  assert_contains "Xed: Edit -> Preferences -> Theme."
+  assert_contains "choose the dark style first"
+  assert_missing "$SANDBOX/home/.var"
+}
+
+# GIVEN a light palette
+# WHEN choosing the text editors and it
+# THEN it tells GNOME Text Editor users to pick its light style
+test_gtksourceview_light_palette_says_light_style() {
+  fake_os Linux
+  sed -e 's/^name = .*/name = "Dawn"/' -e 's/^slug = .*/slug = "dawn"/' \
+    -e 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/sunset-palette.toml" \
+    >"$SANDBOX/repo/palettes/dawn-palette.toml"
+  run_setup "1\ngnome text editors\n1\n2\n"
+  assert_status 0
+  assert_contains "Jenerated Dawn"
+  assert_contains "choose the light style first"
+}
+
+# GIVEN GNOME Text Editor and gedit installed through Flatpak
+# WHEN choosing the text editors
+# THEN their own data folders get links too
+test_gtksourceview_themes_the_flatpaks() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/org.gnome.TextEditor" "$SANDBOX/home/.var/app/org.gnome.gedit"
+  run_setup "1\ngnome text editors\n1\n1\n"
+  assert_status 0
+  folder="$SANDBOX/repo/app-themes/gtksourceview-theme/blue-purple"
+  assert_link "$SANDBOX/home/.var/app/org.gnome.TextEditor/data/gtksourceview-5/styles/jenerated-blue-purple.xml" \
+    "$folder/gtksourceview-5/jenerated-blue-purple.xml"
+  assert_link "$SANDBOX/home/.var/app/org.gnome.gedit/data/libgedit-gtksourceview-300/styles/jenerated-blue-purple.xml" \
+    "$folder/libgedit-gtksourceview-300/jenerated-blue-purple.xml"
+}
+
+# --- Tests: fzf -------------------------------------------------------------
+
+FZF_LINE='[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/jenerated-colors.sh" ] && . "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/jenerated-colors.sh"'
+
+# GIVEN a bash user whose ~/.bashrc sets FZF_DEFAULT_OPTS, and whose last
+#       line has no line break
+# WHEN choosing fzf and Blue Purple, and answering yes to loading the colors
+# THEN the colors file is linked into ~/.config/fzf, ~/.bashrc loads it on a
+#      line of its own, and a shell reading ~/.bashrc has the user's option
+#      followed by Blue Purple's colors
+test_fzf_loads_the_colors_from_bashrc() {
+  fake_os Linux
+  printf 'export FZF_DEFAULT_OPTS="--layout=reverse"' >"$SANDBOX/home/.bashrc"
+  SHELL=/bin/bash run_setup "1\nfzf\n1\n1\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/fzf/jenerated-colors.sh" \
+    "$SANDBOX/repo/app-themes/fzf-theme/blue-purple/jenerated-blue-purple.sh"
+  assert_file_contains "$SANDBOX/home/.bashrc" 'export FZF_DEFAULT_OPTS="--layout=reverse"'
+  [ "$(grep -cxF -- "$FZF_LINE" "$SANDBOX/home/.bashrc")" = 1 ] || fail "expected ~/.bashrc to load the colors once"
+  opts="$(HOME="$SANDBOX/home" XDG_CONFIG_HOME= bash -c '. ~/.bashrc; printf %s "$FZF_DEFAULT_OPTS"')"
+  case "$opts" in
+    "--layout=reverse --color=fg:"*) ;;
+    *) fail "expected the user's option, then the colors, got: $opts" ;;
+  esac
+  assert_contains "Open a new terminal"
+}
+
+# GIVEN a zsh user with no ~/.zshrc yet
+# WHEN choosing fzf and answering yes
+# THEN ~/.zshrc is created, loading the colors
+test_fzf_creates_zshrc_for_a_zsh_user() {
+  fake_os Linux
+  SHELL=/usr/bin/zsh run_setup "1\nfzf\n1\n1\ny\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/.zshrc" "$FZF_LINE"
+}
+
+# GIVEN fzf set up with Blue Purple, loaded from ~/.bashrc
+# WHEN choosing fzf and Sunset, and answering yes to replacing the link
+# THEN the link points to Sunset's colors, and ~/.bashrc isn't changed again
+test_fzf_switching_palettes_repoints_the_link() {
+  fake_os Linux
+  : >"$SANDBOX/home/.bashrc"
+  SHELL=/bin/bash run_setup "1\nfzf\n1\n1\ny\n"
+  cp "$SANDBOX/home/.bashrc" "$SANDBOX/bashrc-before"
+  SHELL=/bin/bash run_setup "1\nfzf\n1\n2\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/fzf/jenerated-colors.sh" \
+    "$SANDBOX/repo/app-themes/fzf-theme/sunset/jenerated-sunset.sh"
+  assert_same_file "$SANDBOX/home/.bashrc" "$SANDBOX/bashrc-before"
+  assert_not_contains "Load the colors in"
+}
+
+# GIVEN a fish user (a ~/.config/fish folder, and no bash or zsh files)
+# WHEN choosing fzf
+# THEN the fish colors are linked into fish's conf.d, which fish loads by
+#      itself, and no startup file is changed
+test_fzf_links_the_fish_colors() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/fish"
+  SHELL=/usr/bin/fish run_setup "1\nfzf\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/fish/conf.d/jenerated-fzf.fish" \
+    "$SANDBOX/repo/app-themes/fzf-theme/blue-purple/jenerated-blue-purple.fish"
+  assert_missing "$SANDBOX/home/.bashrc"
+  assert_missing "$SANDBOX/home/.zshrc"
+  assert_contains "Open a new terminal"
+}
+
+# GIVEN a bash user, without fish
+# WHEN choosing fzf and answering no to loading the colors
+# THEN ~/.bashrc is left alone, and it shows the line to add by hand
+test_fzf_shows_the_line_when_declined() {
+  command -v fish >/dev/null 2>&1 && return 0  # fish would load the colors itself
+  fake_os Linux
+  printf '# my bashrc\n' >"$SANDBOX/home/.bashrc"
+  SHELL=/bin/bash run_setup "1\nfzf\n1\n1\nn\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/home/.bashrc" "# my bashrc"
+  assert_contains "add this line to your shell's startup file"
+  assert_contains "    $FZF_LINE"
+}
+
+# --- Tests: mpv -------------------------------------------------------------
+
+MPV_LINE='include="~~/jenerated-colors.conf"'
+
+# GIVEN a system where mpv has no settings file yet
+# WHEN choosing mpv and Blue Purple
+# THEN the colors are linked into ~/.config/mpv, and mpv.conf is created to
+#      include them
+test_mpv_creates_mpv_conf() {
+  fake_os Linux
+  run_setup "1\nmpv\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/mpv/jenerated-colors.conf" \
+    "$SANDBOX/repo/app-themes/mpv-theme/blue-purple/jenerated-blue-purple.conf"
+  assert_file_contains "$SANDBOX/home/.config/mpv/mpv.conf" "$MPV_LINE"
+  assert_contains "Restart mpv"
+}
+
+# GIVEN an mpv.conf of the user's own, whose last line has no line break
+# WHEN choosing mpv and answering yes to loading the colors
+# THEN the include goes at the end, on a line of its own, after the user's
+#      settings
+test_mpv_adds_the_colors_to_an_existing_mpv_conf() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/mpv"
+  printf 'volume=70' >"$SANDBOX/home/.config/mpv/mpv.conf"
+  run_setup "1\nmpv\n1\n1\ny\n"
+  assert_status 0
+  expected="$(printf 'volume=70\n# Colors from Jenerated Themes\n%s' "$MPV_LINE")"
+  assert_file_equals "$SANDBOX/home/.config/mpv/mpv.conf" "$expected"
+}
+
+# GIVEN an mpv.conf of the user's own
+# WHEN choosing mpv and answering no to loading the colors
+# THEN mpv.conf is left alone, and it shows the line to add by hand
+test_mpv_leaves_mpv_conf_when_declined() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/mpv"
+  printf 'volume=70\n' >"$SANDBOX/home/.config/mpv/mpv.conf"
+  run_setup "1\nmpv\n1\n1\nn\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/home/.config/mpv/mpv.conf" "volume=70"
+  assert_contains "    $MPV_LINE"
+}
+
+# GIVEN mpv set up with Blue Purple
+# WHEN choosing mpv and Sunset, and answering yes to replacing the link
+# THEN the link points to Sunset's colors, and mpv.conf isn't changed again
+test_mpv_switching_palettes_repoints_the_link() {
+  fake_os Linux
+  run_setup "1\nmpv\n1\n1\n"
+  cp "$SANDBOX/home/.config/mpv/mpv.conf" "$SANDBOX/mpv-before.conf"
+  run_setup "1\nmpv\n1\n2\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/mpv/jenerated-colors.conf" \
+    "$SANDBOX/repo/app-themes/mpv-theme/sunset/jenerated-sunset.conf"
+  assert_same_file "$SANDBOX/home/.config/mpv/mpv.conf" "$SANDBOX/mpv-before.conf"
+}
+
+# GIVEN mpv installed through Flatpak, and on a Mac too
+# WHEN choosing mpv
+# THEN the Flatpak's settings folder gets the colors as well; and on a Mac
+#      they go in ~/.config/mpv, where mpv looks there too
+test_mpv_themes_the_flatpak_and_macos() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/io.mpv.Mpv"
+  run_setup "1\nmpv\n1\n1\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/.var/app/io.mpv.Mpv/config/mpv/mpv.conf" "$MPV_LINE"
+  assert_exists "$SANDBOX/home/.var/app/io.mpv.Mpv/config/mpv/jenerated-colors.conf"
+  rm -rf "$SANDBOX/home/.config" "$SANDBOX/home/.var"
+  fake_os Darwin
+  run_setup "1\nmpv\n1\n1\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/.config/mpv/mpv.conf" "$MPV_LINE"
+}
+
+# --- Tests: tmux ------------------------------------------------------------
+
+TMUX_LINE='source-file -q ~/.config/tmux/jenerated-colors.conf'
+
+# fake_tmux running|stopped -> fakes tmux: list-sessions succeeds only when
+# running, and source-file records the file it's given in $SANDBOX/tmux-sourced.
+fake_tmux() {
+  local status=1
+  [ "$1" = running ] && status=0
+  fake_command tmux "case \"\$1\" in
+  list-sessions) exit $status ;;
+  source-file) printf '%s' \"\$2\" >\"$SANDBOX/tmux-sourced\" ;;
+esac"
+}
+
+# GIVEN no tmux settings file, and tmux not running
+# WHEN choosing tmux and Blue Purple
+# THEN the colors are linked into ~/.config/tmux, ~/.tmux.conf is created to
+#      load them, and it says how to load them into a running tmux
+test_tmux_creates_tmux_conf() {
+  fake_os Linux
+  fake_tmux stopped
+  run_setup "1\ntmux\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/tmux/jenerated-colors.conf" \
+    "$SANDBOX/repo/app-themes/tmux-theme/blue-purple/jenerated-blue-purple.conf"
+  assert_file_contains "$SANDBOX/home/.tmux.conf" "$TMUX_LINE"
+  assert_contains "the next time it starts"
+  assert_contains "tmux source-file ~/.config/tmux/jenerated-colors.conf"
+  assert_missing "$SANDBOX/tmux-sourced"
+}
+
+# GIVEN a tmux.conf in ~/.config/tmux (and no ~/.tmux.conf)
+# WHEN choosing tmux and answering yes to loading the colors
+# THEN that file loads them, and no ~/.tmux.conf is made (tmux would read it
+#      instead)
+test_tmux_uses_the_config_folder_file() {
+  fake_os Linux
+  fake_tmux stopped
+  mkdir -p "$SANDBOX/home/.config/tmux"
+  printf 'set -g mouse on\n' >"$SANDBOX/home/.config/tmux/tmux.conf"
+  run_setup "1\ntmux\n1\n1\ny\n"
+  assert_status 0
+  expected="$(printf 'set -g mouse on\n# Colors from Jenerated Themes\n%s' "$TMUX_LINE")"
+  assert_file_equals "$SANDBOX/home/.config/tmux/tmux.conf" "$expected"
+  assert_missing "$SANDBOX/home/.tmux.conf"
+}
+
+# GIVEN a ~/.tmux.conf of the user's own
+# WHEN choosing tmux and answering no to loading the colors
+# THEN ~/.tmux.conf is left alone, and it shows the line to add by hand
+test_tmux_leaves_tmux_conf_when_declined() {
+  fake_os Linux
+  fake_tmux stopped
+  printf 'set -g mouse on\n' >"$SANDBOX/home/.tmux.conf"
+  run_setup "1\ntmux\n1\n1\nn\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/home/.tmux.conf" "set -g mouse on"
+  assert_contains "    $TMUX_LINE"
+}
+
+# GIVEN tmux running
+# WHEN choosing tmux and answering yes to loading the colors into it
+# THEN the running tmux is told to load the colors file
+test_tmux_loads_the_colors_into_a_running_tmux() {
+  fake_os Linux
+  fake_tmux running
+  run_setup "1\ntmux\n1\n1\ny\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/tmux-sourced" "$SANDBOX/home/.config/tmux/jenerated-colors.conf"
+  assert_contains "tmux uses Jenerated Blue Purple now"
+}
+
+# GIVEN tmux set up with Blue Purple
+# WHEN choosing tmux and Sunset, and answering yes to replacing the link
+# THEN the link points to Sunset, and ~/.tmux.conf isn't changed again
+test_tmux_switching_palettes_repoints_the_link() {
+  fake_os Linux
+  fake_tmux stopped
+  run_setup "1\ntmux\n1\n1\n"
+  cp "$SANDBOX/home/.tmux.conf" "$SANDBOX/tmux-before.conf"
+  run_setup "1\ntmux\n1\n2\ny\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/tmux/jenerated-colors.conf" \
+    "$SANDBOX/repo/app-themes/tmux-theme/sunset/jenerated-sunset.conf"
+  assert_same_file "$SANDBOX/home/.tmux.conf" "$SANDBOX/tmux-before.conf"
+}
+
+# --- Tests: zsh -------------------------------------------------------------
+
+ZSH_LINE='[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/jenerated-colors.zsh" ] && source "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/jenerated-colors.zsh"'
+
+# fake_zsh with|without -> fakes zsh, as if ~/.zshrc loaded
+# fast-syntax-highlighting or not: with it, running fast-theme prints the
+# marker setup.sh looks for. Records the command it's given in
+# $SANDBOX/zsh-ran.
+fake_zsh() {
+  local marker=""
+  [ "$1" = with ] && marker="echo JENERATED-FAST-THEME-DONE"
+  fake_command zsh "printf '%s' \"\$2\" >\"$SANDBOX/zsh-ran\"
+$marker"
+}
+
+# GIVEN no ~/.zshrc, and zsh without fast-syntax-highlighting
+# WHEN choosing zsh and Blue Purple
+# THEN the zsh colors and the fast-syntax-highlighting theme are linked into
+#      ~/.config, ~/.zshrc is created to load the colors, and it says how to
+#      switch fast-syntax-highlighting to the theme
+test_zsh_creates_zshrc() {
+  fake_os Linux
+  fake_zsh without
+  run_setup "1\nzsh\n1\n1\n"
+  assert_status 0
+  folder="$SANDBOX/repo/app-themes/zsh-theme/blue-purple"
+  assert_link "$SANDBOX/home/.config/zsh/jenerated-colors.zsh" "$folder/jenerated-blue-purple.zsh"
+  assert_link "$SANDBOX/home/.config/fsh/jenerated-colors.ini" "$folder/jenerated-blue-purple.ini"
+  assert_file_contains "$SANDBOX/home/.zshrc" "$ZSH_LINE"
+  assert_contains "    fast-theme XDG:jenerated-colors"
+  assert_file_contains "$SANDBOX/zsh-ran" "fast-theme -q XDG:jenerated-colors"
+}
+
+# GIVEN a ~/.zshrc of the user's own, and zsh with fast-syntax-highlighting
+# WHEN choosing zsh and answering yes to loading the colors
+# THEN the line goes at the end of ~/.zshrc, and fast-syntax-highlighting is
+#      switched to the theme
+test_zsh_switches_fast_syntax_highlighting() {
+  fake_os Linux
+  fake_zsh with
+  printf 'source ~/plugins/fast-syntax-highlighting.plugin.zsh\n' >"$SANDBOX/home/.zshrc"
+  run_setup "1\nzsh\n1\n1\ny\n"
+  assert_status 0
+  expected="$(printf 'source ~/plugins/fast-syntax-highlighting.plugin.zsh\n# Colors from Jenerated Themes\n%s' "$ZSH_LINE")"
+  assert_file_equals "$SANDBOX/home/.zshrc" "$expected"
+  assert_contains "Switched fast-syntax-highlighting to Jenerated Blue Purple."
+  assert_not_contains "If you use fast-syntax-highlighting"
+}
+
+# GIVEN a ~/.zshrc of the user's own
+# WHEN choosing zsh and answering no to loading the colors
+# THEN ~/.zshrc is left alone, and it shows the line to add by hand
+test_zsh_leaves_zshrc_when_declined() {
+  fake_os Linux
+  fake_zsh without
+  printf 'setopt autocd\n' >"$SANDBOX/home/.zshrc"
+  run_setup "1\nzsh\n1\n1\nn\n"
+  assert_status 0
+  assert_file_equals "$SANDBOX/home/.zshrc" "setopt autocd"
+  assert_contains "    $ZSH_LINE"
+}
+
+# GIVEN ZDOTDIR set to another folder, where zsh keeps its .zshrc
+# WHEN choosing zsh
+# THEN the .zshrc in that folder loads the colors, and no ~/.zshrc is made
+test_zsh_uses_zdotdir() {
+  fake_os Linux
+  fake_zsh without
+  mkdir -p "$SANDBOX/home/.config/zsh"
+  TEST_ZDOTDIR="$SANDBOX/home/.config/zsh" run_setup "1\nzsh\n1\n1\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/.config/zsh/.zshrc" "$ZSH_LINE"
+  assert_missing "$SANDBOX/home/.zshrc"
+}
+
+# --- Tests: Element ---------------------------------------------------------
+
+# GIVEN Element Desktop without a config.json of its own
+# WHEN choosing Element and Blue Purple
+# THEN ~/.config/Element/config.json is created with Blue Purple's theme as
+#      a custom theme, and it says to restart Element and choose the theme
+test_element_creates_config_json() {
+  fake_os Linux
+  run_setup "1\nelement\n1\n1\n"
+  assert_status 0
+  result="$("$(find_python)" -c '
+import json, sys
+c = json.load(open(sys.argv[1]))
+print([t["name"] for t in c["setting_defaults"]["custom_themes"]])
+' "$SANDBOX/home/.config/Element/config.json")"
+  [ "$result" = "['Jenerated Blue Purple']" ] || fail "expected just Blue Purple's theme, got $result"
+  assert_missing "$SANDBOX/home/.config/Element/config.json.before-jenerated"
+  assert_contains "Restart Element"
+  assert_contains 'choose "Jenerated Blue Purple"'
+}
+
+# GIVEN an Element config.json with a homeserver, another setting, someone
+#       else's custom theme, and a Jenerated theme from before
+# WHEN choosing Element and Sunset
+# THEN the file is backed up, and keeps the homeserver, the setting and the
+#      other theme, with the old Jenerated theme replaced by Sunset's
+test_element_keeps_the_rest_of_config_json() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/Element"
+  printf '%s\n' '{"default_server_config": {"m.homeserver": {"base_url": "https://matrix.example.org"}},' \
+    ' "setting_defaults": {"showHiddenEventsInTimeline": true, "custom_themes": [' \
+    '  {"name": "Other Theme", "is_dark": true, "colors": {}},' \
+    '  {"name": "Jenerated Blue Purple", "is_dark": true, "colors": {}}]}}' \
+    >"$SANDBOX/home/.config/Element/config.json"
+  cp "$SANDBOX/home/.config/Element/config.json" "$SANDBOX/original.json"
+  run_setup "1\nelement\n1\n2\n"
+  assert_status 0
+  result="$("$(find_python)" -c '
+import json, sys
+c = json.load(open(sys.argv[1]))
+d = c["setting_defaults"]
+print(c["default_server_config"]["m.homeserver"]["base_url"], d["showHiddenEventsInTimeline"],
+      [t["name"] for t in d["custom_themes"]])
+' "$SANDBOX/home/.config/Element/config.json")"
+  [ "$result" = "https://matrix.example.org True ['Other Theme', 'Jenerated Sunset']" ] || fail "got $result"
+  assert_same_file "$SANDBOX/home/.config/Element/config.json.before-jenerated" "$SANDBOX/original.json"
+}
+
+# GIVEN an Element config.json that isn't valid JSON
+# WHEN choosing Element
+# THEN it stops, saying it couldn't update the file, and leaves it as it was
+test_element_stops_on_a_broken_config_json() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/Element"
+  printf '{"brand": "Element",\n' >"$SANDBOX/home/.config/Element/config.json"
+  run_setup "1\nelement\n1\n1\n"
+  assert_status 1
+  assert_contains "couldn't update $SANDBOX/home/.config/Element/config.json (is it valid JSON?)"
+  assert_file_equals "$SANDBOX/home/.config/Element/config.json" '{"brand": "Element",'
+}
+
+# GIVEN Element installed through Flatpak, and on a Mac
+# WHEN choosing Element
+# THEN the Flatpak's settings folder gets the theme too; and on a Mac it
+#      goes in Application Support
+test_element_themes_the_flatpak_and_macos() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/im.riot.Riot"
+  run_setup "1\nelement\n1\n1\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/.var/app/im.riot.Riot/config/Element/config.json" "Jenerated Blue Purple"
+  assert_file_contains "$SANDBOX/home/.config/Element/config.json" "Jenerated Blue Purple"
+  fake_os Darwin
+  run_setup "1\nelement\n1\n1\n"
+  assert_status 0
+  assert_file_contains "$SANDBOX/home/Library/Application Support/Element/config.json" "Jenerated Blue Purple"
 }
 
 # --- Tests: Obsidian --------------------------------------------------------
@@ -1169,7 +1997,7 @@ obsidian_theme() {
 test_obsidian_links_the_theme_into_a_known_vault() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
   assert_status 0
   assert_contains "1) $SANDBOX/Notes"
   assert_contains "2) Another folder (type its path)"
@@ -1183,7 +2011,7 @@ test_obsidian_links_the_theme_into_a_known_vault() {
 test_obsidian_theme_folder_matches_its_manifest() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\n3\n2\n1\n"
+  run_setup "1\nobsidian\n1\n2\n1\n"
   assert_status 0
   assert_file_contains "$(obsidian_theme "$SANDBOX/Notes" "Sunset")/manifest.json" \
     '"name": "Jenerated Sunset"'
@@ -1197,7 +2025,7 @@ test_obsidian_lists_every_known_vault_that_exists() {
   make_vault "$SANDBOX/Notes"
   make_vault "$SANDBOX/My Work"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes" "$SANDBOX/Gone" "$SANDBOX/My Work"
-  run_setup "1\n3\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
   assert_contains ") $SANDBOX/Notes"
   assert_contains ") $SANDBOX/My Work"
   assert_not_contains "$SANDBOX/Gone"
@@ -1210,7 +2038,7 @@ test_obsidian_lists_every_known_vault_that_exists() {
 test_obsidian_vault_with_spaces_in_its_path() {
   make_vault "$SANDBOX/My Work"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/My Work"
-  run_setup "1\n3\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/My Work" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -1222,18 +2050,19 @@ test_obsidian_finds_vaults_on_macos() {
   fake_os Darwin
   make_vault "$SANDBOX/Notes"
   know_vaults "Library/Application Support/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
   assert_status 0
   assert_contains "1) $SANDBOX/Notes"
 }
 
-# GIVEN Obsidian's vault list in the Flatpak config folder
+# GIVEN Obsidian installed through Flatpak, with its vault list in the
+#       folder Flatpak gives it
 # WHEN choosing Obsidian
 # THEN the vault is offered
 test_obsidian_finds_vaults_from_flatpak() {
   make_vault "$SANDBOX/Notes"
   know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
   assert_contains "1) $SANDBOX/Notes"
 }
 
@@ -1244,7 +2073,7 @@ test_obsidian_lists_a_vault_known_twice_once() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
   know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
   assert_contains "2) Another folder"
 }
 
@@ -1253,7 +2082,7 @@ test_obsidian_lists_a_vault_known_twice_once() {
 # THEN it asks for the path directly and links the theme into that vault
 test_obsidian_asks_for_a_path_when_no_vaults_are_known() {
   make_vault "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n$SANDBOX/Notes/\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Notes/\n"
   assert_status 0
   assert_contains "Path to your vault folder:"
   assert_not_contains "Another folder"
@@ -1267,7 +2096,7 @@ test_obsidian_another_folder_expands_the_home_folder() {
   make_vault "$SANDBOX/Notes"
   make_vault "$SANDBOX/home/Vault"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n2\n~/Vault\n"
+  run_setup "1\nobsidian\n1\n1\n2\n~/Vault\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/home/Vault" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -1278,7 +2107,7 @@ test_obsidian_another_folder_expands_the_home_folder() {
 test_obsidian_relative_path_is_relative_to_where_setup_ran() {
   mkdir -p "$SANDBOX/work/Notes/.obsidian"
   RUN_FROM="$SANDBOX/work"
-  run_setup "1\n3\n1\nNotes\n"
+  run_setup "1\nobsidian\n1\n1\nNotes\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/work/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -1287,7 +2116,7 @@ test_obsidian_relative_path_is_relative_to_where_setup_ran() {
 # WHEN pressing Enter without typing a path
 # THEN it exits with status 1, saying no vault was given
 test_obsidian_empty_path_is_an_error() {
-  run_setup "1\n3\n1\n\n"
+  run_setup "1\nobsidian\n1\n1\n\n"
   assert_status 1
   assert_contains "no vault given"
 }
@@ -1296,7 +2125,7 @@ test_obsidian_empty_path_is_an_error() {
 # WHEN typing the path of a folder that doesn't exist
 # THEN it exits with status 1, saying there's no folder there
 test_obsidian_missing_folder_is_an_error() {
-  run_setup "1\n3\n1\n$SANDBOX/Nowhere\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Nowhere\n"
   assert_status 1
   assert_contains "there's no folder at $SANDBOX/Nowhere"
 }
@@ -1306,7 +2135,7 @@ test_obsidian_missing_folder_is_an_error() {
 # THEN it exits with status 1 without creating anything in the folder
 test_obsidian_asks_before_using_a_folder_that_isnt_a_vault() {
   mkdir -p "$SANDBOX/Plain"
-  run_setup "1\n3\n1\n$SANDBOX/Plain\nn\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Plain\nn\n"
   assert_status 1
   assert_contains "has no .obsidian folder"
   assert_missing "$SANDBOX/Plain/.obsidian"
@@ -1317,7 +2146,7 @@ test_obsidian_asks_before_using_a_folder_that_isnt_a_vault() {
 # THEN the theme is linked into it
 test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
   mkdir -p "$SANDBOX/Plain"
-  run_setup "1\n3\n1\n$SANDBOX/Plain\ny\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Plain\ny\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/Plain" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -1328,8 +2157,8 @@ test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
 test_obsidian_already_linked_is_left_alone() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n1\n"
-  run_setup "1\n3\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -1341,7 +2170,7 @@ test_obsidian_replaces_an_old_copy_when_asked() {
   make_vault "$SANDBOX/Notes"
   mkdir -p "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\n3\n1\n1\ny\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
   assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
@@ -1616,11 +2445,460 @@ test_unknown_option_is_an_error() {
 test_slack_prints_and_copies_the_theme_string() {
   fake_os Linux
   theme="$(tr -d '\n' <"$SANDBOX/repo/app-themes/slack-theme/blue-purple.txt")"
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   assert_status 0
   assert_contains "    $theme"
   assert_contains "(Copied to your clipboard.)"
   assert_file_equals "$SANDBOX/clipboard" "$theme"
+}
+
+# GIVEN Insomnia without plugins
+# WHEN choosing Insomnia and Blue Purple
+# THEN Blue Purple's plugin is copied (not linked: Insomnia ignores links to
+#      folders elsewhere) into Insomnia's plugins folder, and it explains how
+#      to reload plugins and choose the theme
+test_insomnia_copies_the_plugin() {
+  fake_os Linux
+  run_setup "1\ninsomnia\n1\n1\n"
+  assert_status 0
+  plugin="$SANDBOX/home/.config/Insomnia/plugins/insomnia-plugin-jenerated-blue-purple"
+  [ -d "$plugin" ] && [ ! -L "$plugin" ] || fail "expected a copied plugin folder at $plugin"
+  assert_same_file "$plugin/index.js" \
+    "$SANDBOX/repo/app-themes/insomnia-theme/blue-purple/insomnia-plugin-jenerated-blue-purple/index.js"
+  assert_exists "$plugin/package.json"
+  assert_contains "-> Plugins and choose Reload."
+  assert_contains 'choose "Jenerated Blue Purple"'
+}
+
+# GIVEN Blue Purple's plugin copied before, with a file from an older version
+#       in it, and another plugin of the user's own
+# WHEN choosing Insomnia and Blue Purple again, then Sunset
+# THEN Blue Purple's folder is replaced by a fresh copy, Sunset's plugin is
+#      added beside it, and the other plugin is left alone
+test_insomnia_replaces_its_own_plugin() {
+  fake_os Linux
+  plugins="$SANDBOX/home/.config/Insomnia/plugins"
+  mkdir -p "$plugins/insomnia-plugin-jenerated-blue-purple" "$plugins/insomnia-plugin-other"
+  printf 'old\n' >"$plugins/insomnia-plugin-jenerated-blue-purple/stale.js"
+  printf '{}\n' >"$plugins/insomnia-plugin-other/package.json"
+  run_setup "1\ninsomnia\n1\n1\n"
+  run_setup "1\ninsomnia\n1\n2\n"
+  assert_status 0
+  assert_missing "$plugins/insomnia-plugin-jenerated-blue-purple/stale.js"
+  assert_exists "$plugins/insomnia-plugin-jenerated-blue-purple/index.js"
+  assert_exists "$plugins/insomnia-plugin-jenerated-sunset/index.js"
+  assert_file_equals "$plugins/insomnia-plugin-other/package.json" "{}"
+}
+
+# GIVEN Insomnia installed through Flatpak and through Snap, and on a Mac
+# WHEN choosing Insomnia
+# THEN each of their plugins folders gets the plugin; and on a Mac it goes in
+#      Application Support
+test_insomnia_themes_flatpak_snap_and_macos() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/rest.insomnia.Insomnia" "$SANDBOX/home/snap/insomnia"
+  run_setup "1\ninsomnia\n1\n1\n"
+  assert_status 0
+  for dir in "$SANDBOX/home/.config/Insomnia/plugins" \
+    "$SANDBOX/home/.var/app/rest.insomnia.Insomnia/config/Insomnia/plugins" \
+    "$SANDBOX/home/snap/insomnia/current/.config/Insomnia/plugins"; do
+    assert_exists "$dir/insomnia-plugin-jenerated-blue-purple/index.js"
+  done
+  fake_os Darwin
+  run_setup "1\ninsomnia\n1\n1\n"
+  assert_status 0
+  assert_exists "$SANDBOX/home/Library/Application Support/Insomnia/plugins/insomnia-plugin-jenerated-blue-purple/index.js"
+}
+
+# GIVEN Sublime Text 4
+# WHEN choosing Sublime Text and Blue Purple
+# THEN the color scheme is linked into its Packages/User folder, and it says
+#      to choose the scheme and the Adaptive theme from the command palette
+test_sublime_links_the_color_scheme() {
+  fake_os Linux
+  run_setup "1\nsublime\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/sublime-text/Packages/User/jenerated-blue-purple.sublime-color-scheme" \
+    "$SANDBOX/repo/app-themes/sublime-theme/jenerated-blue-purple.sublime-color-scheme"
+  assert_missing "$SANDBOX/home/.config/sublime-text-3"
+  assert_contains '"UI: Select Color Scheme", then "Jenerated Blue Purple"'
+  assert_contains '"Adaptive"'
+}
+
+# GIVEN Sublime Text 3's folder, and Sublime Text installed through Flatpak
+#       and through Snap
+# WHEN choosing Sublime Text
+# THEN each of their Packages/User folders gets the color scheme too
+test_sublime_themes_st3_flatpak_and_snap() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/sublime-text-3" "$SANDBOX/home/.var/app/com.sublimetext.three" \
+    "$SANDBOX/home/snap/sublime-text"
+  run_setup "1\nsublime\n1\n1\n"
+  assert_status 0
+  for dir in "$SANDBOX/home/.config/sublime-text" "$SANDBOX/home/.config/sublime-text-3" \
+    "$SANDBOX/home/.var/app/com.sublimetext.three/config/sublime-text" \
+    "$SANDBOX/home/snap/sublime-text/current/.config/sublime-text"; do
+    assert_link "$dir/Packages/User/jenerated-blue-purple.sublime-color-scheme" \
+      "$SANDBOX/repo/app-themes/sublime-theme/jenerated-blue-purple.sublime-color-scheme"
+  done
+}
+
+# GIVEN a Mac
+# WHEN choosing Sublime Text
+# THEN the color scheme goes in Application Support
+test_sublime_on_macos_uses_application_support() {
+  fake_os Darwin
+  run_setup "1\nsublime\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Application Support/Sublime Text/Packages/User/jenerated-blue-purple.sublime-color-scheme" \
+    "$SANDBOX/repo/app-themes/sublime-theme/jenerated-blue-purple.sublime-color-scheme"
+}
+
+# GIVEN a Mac
+# WHEN choosing Xcode and Blue Purple
+# THEN the theme is linked into Xcode's themes folder under the palette's
+#      name (which Xcode lists it by), and it explains how to choose it
+test_xcode_links_the_theme_on_macos() {
+  fake_os Darwin
+  run_setup "1\nxcode\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Developer/Xcode/UserData/FontAndColorThemes/Jenerated Blue Purple.xccolortheme" \
+    "$SANDBOX/repo/app-themes/xcode-theme/jenerated-blue-purple.xccolortheme"
+  assert_contains 'Themes, and'
+  assert_contains 'choose "Jenerated Blue Purple".'
+}
+
+# GIVEN a Linux system
+# WHEN searching the app menu for Xcode
+# THEN it isn't offered, since Xcode only runs on a Mac
+test_xcode_is_only_offered_on_macos() {
+  fake_os Linux
+  run_setup "1\nxcode\nslack\n1\n1\n"
+  assert_status 0
+  assert_contains 'No app matches "xcode".'
+}
+
+# GIVEN RStudio's settings in the usual place
+# WHEN choosing RStudio and Blue Purple
+# THEN the theme is linked into ~/.config/rstudio/themes, and it explains
+#      where to choose it
+test_rstudio_links_the_theme() {
+  fake_os Linux
+  run_setup "1\nrstudio\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/rstudio/themes/jenerated-blue-purple.rstheme" \
+    "$SANDBOX/repo/app-themes/rstudio-theme/jenerated-blue-purple.rstheme"
+  assert_contains "Tools -> Global Options -> Appearance"
+  assert_contains 'Choose "Jenerated Blue Purple" as the Editor theme'
+}
+
+# GIVEN RSTUDIO_CONFIG_HOME set to another folder, as RStudio allows
+# WHEN choosing RStudio
+# THEN the theme goes in that folder's themes folder instead
+test_rstudio_uses_rstudio_config_home() {
+  fake_os Darwin
+  TEST_RSTUDIO_CONFIG_HOME="$SANDBOX/home/rs-config" run_setup "1\nrstudio\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/rs-config/themes/jenerated-blue-purple.rstheme" \
+    "$SANDBOX/repo/app-themes/rstudio-theme/jenerated-blue-purple.rstheme"
+  assert_missing "$SANDBOX/home/.config/rstudio"
+}
+
+# GIVEN no Emacs folder yet
+# WHEN choosing Emacs and Blue Purple
+# THEN the theme is linked into ~/.emacs.d (where Emacs looks for themes by
+#      default), and it explains how to load it and keep it
+test_emacs_links_the_theme() {
+  fake_os Linux
+  run_setup "1\nemacs\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.emacs.d/jenerated-blue-purple-theme.el" \
+    "$SANDBOX/repo/app-themes/emacs-theme/jenerated-blue-purple-theme.el"
+  assert_contains "M-x load-theme RET jenerated-blue-purple RET"
+  assert_contains "M-x customize-themes"
+}
+
+# GIVEN Emacs set up in ~/.config/emacs (and no ~/.emacs.d or ~/.emacs)
+# WHEN choosing Emacs
+# THEN the theme goes in ~/.config/emacs, the folder Emacs uses then
+test_emacs_uses_the_config_folder() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/emacs"
+  run_setup "1\nemacs\n1\n1\n"
+  assert_status 0
+  assert_exists "$SANDBOX/home/.config/emacs/jenerated-blue-purple-theme.el"
+  assert_missing "$SANDBOX/home/.emacs.d"
+}
+
+# GIVEN a ~/.emacs file as well as ~/.config/emacs
+# WHEN choosing Emacs
+# THEN the theme goes in ~/.emacs.d, since Emacs prefers it whenever there's
+#      a ~/.emacs
+test_emacs_prefers_emacs_d_when_there_is_a_dot_emacs() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.config/emacs"
+  printf ';; my settings\n' >"$SANDBOX/home/.emacs"
+  run_setup "1\nemacs\n1\n1\n"
+  assert_status 0
+  assert_exists "$SANDBOX/home/.emacs.d/jenerated-blue-purple-theme.el"
+  assert_missing "$SANDBOX/home/.config/emacs/jenerated-blue-purple-theme.el"
+}
+
+# GIVEN Qt Creator installed the usual way and through Flatpak
+# WHEN choosing Qt Creator and Blue Purple
+# THEN the color scheme is linked into both styles folders, and it explains
+#      where to choose it, and to pick Qt Creator's own dark theme to match
+test_qtcreator_links_the_color_scheme() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/io.qt.QtCreator"
+  run_setup "1\nqt creator\n1\n1\n"
+  assert_status 0
+  for dir in "$SANDBOX/home/.config/QtProject/qtcreator/styles" \
+    "$SANDBOX/home/.var/app/io.qt.QtCreator/config/QtProject/qtcreator/styles"; do
+    assert_link "$dir/jenerated-blue-purple.xml" "$SANDBOX/repo/app-themes/qtcreator-theme/jenerated-blue-purple.xml"
+  done
+  assert_contains "Text Editor -> Font & Colors"
+  assert_contains 'Choose "Jenerated Blue Purple" as the Color Scheme.'
+  assert_contains "Dark or Light theme"
+}
+
+# GIVEN a Mac
+# WHEN choosing Qt Creator
+# THEN the color scheme goes in ~/.config/QtProject, where Qt Creator keeps
+#      its settings on a Mac too
+test_qtcreator_on_macos_uses_dot_config() {
+  fake_os Darwin
+  run_setup "1\nqt creator\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/QtProject/qtcreator/styles/jenerated-blue-purple.xml" \
+    "$SANDBOX/repo/app-themes/qtcreator-theme/jenerated-blue-purple.xml"
+}
+
+# GIVEN Linux
+# WHEN choosing Unreal Engine and Blue Purple
+# THEN the theme is linked into Unreal's folder for your own themes, in
+#      ~/.config/Epic, and it explains where to choose it and to duplicate it
+#      before editing
+test_unreal_links_the_theme() {
+  fake_os Linux
+  run_setup "1\nunreal\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/.config/Epic/UnrealEngine/Slate/Themes/jenerated-blue-purple.json" \
+    "$SANDBOX/repo/app-themes/unreal-theme/jenerated-blue-purple.json"
+  assert_contains "Editor Preferences -> General -> Appearance"
+  assert_contains 'choose "Jenerated Blue Purple" as the Active Theme.'
+  assert_contains "choose Duplicate"
+}
+
+# GIVEN a Mac
+# WHEN choosing Unreal Engine
+# THEN the theme goes in ~/Library/Application Support/Epic, where Unreal
+#      keeps your settings on a Mac
+test_unreal_on_macos_uses_application_support() {
+  fake_os Darwin
+  run_setup "1\nunreal\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Application Support/Epic/UnrealEngine/Slate/Themes/jenerated-blue-purple.json" \
+    "$SANDBOX/repo/app-themes/unreal-theme/jenerated-blue-purple.json"
+}
+
+# GIVEN OBS Studio installed the usual way and through Flatpak
+# WHEN choosing OBS Studio and Blue Purple
+# THEN the style is linked into both themes folders, and it explains where
+#      to choose it
+test_obs_links_the_style() {
+  fake_os Linux
+  mkdir -p "$SANDBOX/home/.var/app/com.obsproject.Studio"
+  run_setup "1\nobs studio\n1\n1\n"
+  assert_status 0
+  for dir in "$SANDBOX/home/.config/obs-studio/themes" \
+    "$SANDBOX/home/.var/app/com.obsproject.Studio/config/obs-studio/themes"; do
+    assert_link "$dir/jenerated-blue-purple.ovt" "$SANDBOX/repo/app-themes/obs-theme/jenerated-blue-purple.ovt"
+  done
+  assert_contains "Settings -> Appearance"
+  assert_contains 'Choose Yami as the Theme, and "Jenerated Blue Purple" as the Style.'
+}
+
+# GIVEN a Mac
+# WHEN choosing OBS Studio
+# THEN the style goes in ~/Library/Application Support/obs-studio/themes
+test_obs_on_macos_uses_application_support() {
+  fake_os Darwin
+  run_setup "1\nobs studio\n1\n1\n"
+  assert_status 0
+  assert_link "$SANDBOX/home/Library/Application Support/obs-studio/themes/jenerated-blue-purple.ovt" \
+    "$SANDBOX/repo/app-themes/obs-theme/jenerated-blue-purple.ovt"
+}
+
+# GIVEN LibreOffice's unopkg, and LibreOffice closed
+# WHEN choosing LibreOffice and Blue Purple
+# THEN it packages the theme as an .oxt holding the extension's files,
+#      installs it with "unopkg add --force", and explains where to turn it on
+test_libreoffice_installs_the_extension() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  fake_command unopkg "printf '%s\\n' \"\$@\" >\"$SANDBOX/unopkg-args\""
+  run_setup "1\nlibreoffice\n1\n1\n"
+  assert_status 0
+  oxt="$SANDBOX/repo/app-themes/libreoffice-theme/jenerated-blue-purple.oxt"
+  result="$("$(find_python)" -c '
+import sys, zipfile
+print(sorted(zipfile.ZipFile(sys.argv[1]).namelist()))
+' "$oxt")"
+  [ "$result" = "['META-INF/manifest.xml', 'description.txt', 'description.xml', 'theme.xcu']" ] ||
+    fail "unexpected .oxt contents: $result"
+  assert_file_equals "$SANDBOX/unopkg-args" "add
+--force
+$oxt"
+  assert_contains "Installed."
+  assert_contains "LibreOffice -> Appearance"
+  assert_contains 'Tick "Enable application theming", choose "Jenerated Blue Purple" as the'
+}
+
+# GIVEN LibreOffice's unopkg, and LibreOffice open
+# WHEN choosing LibreOffice
+# THEN it doesn't run unopkg (which needs LibreOffice closed), and explains
+#      adding the .oxt in Tools -> Extensions instead
+test_libreoffice_open_adds_the_extension_by_hand() {
+  fake_os Linux
+  fake_command pgrep "exit 0"
+  fake_command unopkg "touch \"$SANDBOX/unopkg-ran\""
+  run_setup "1\nlibreoffice\n1\n1\n"
+  assert_status 0
+  assert_missing "$SANDBOX/unopkg-ran"
+  assert_contains "Tools -> Extensions, click Add"
+  assert_contains "app-themes/libreoffice-theme/jenerated-blue-purple.oxt"
+}
+
+SPYDER_INI=".config/spyder-py3/config/spyder.ini"
+
+# spyder_ini path -> writes a small spyder.ini with a custom theme of the
+# user's own (custom-0) and an editor setting.
+spyder_ini() {
+  mkdir -p "$(dirname "$1")"
+  printf '%s\n' '[main]' 'version = 87.2.0' '' '[appearance]' 'selected = spyder/dark' \
+    "custom_names = ['custom-0']" 'custom-0/name = My Theme' 'custom-0/background = #000000' \
+    '' '[editor]' 'wrap = True' >"$1"
+}
+
+# spyder_value ini option -> prints an [appearance] option from spyder.ini.
+spyder_value() {
+  "$(find_python)" -c '
+import configparser, sys
+p = configparser.ConfigParser(interpolation=None)
+p.optionxform = str
+p.read(sys.argv[1])
+print(p["appearance"].get(sys.argv[2], ""))
+' "$1" "$2"
+}
+
+# GIVEN Spyder's settings with a custom theme of the user's own, and Spyder
+#       closed
+# WHEN choosing Spyder and Blue Purple, and answering yes to making it the
+#      current theme
+# THEN spyder.ini is backed up, Blue Purple becomes the next custom theme
+#      (custom-1, keeping the user's custom-0) and is selected, and the rest
+#      of the file is kept
+test_spyder_adds_and_selects_the_theme() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  ini="$SANDBOX/home/$SPYDER_INI"
+  spyder_ini "$ini"
+  cp "$ini" "$SANDBOX/original.ini"
+  run_setup "1\nspyder\n1\n1\ny\n"
+  assert_status 0
+  assert_same_file "$ini.before-jenerated" "$SANDBOX/original.ini"
+  [ "$(spyder_value "$ini" custom_names)" = "['custom-0', 'custom-1']" ] || fail "expected custom-0 and custom-1"
+  [ "$(spyder_value "$ini" custom-1/name)" = "Jenerated Blue Purple" ] || fail "expected custom-1 to be Blue Purple"
+  [ "$(spyder_value "$ini" custom-0/name)" = "My Theme" ] || fail "expected the user's theme to be kept"
+  [ "$(spyder_value "$ini" selected)" = "custom-1" ] || fail "expected Blue Purple to be selected"
+  assert_file_contains "$ini" "custom-1/normal = ('#DBDEE1', False, False)"
+  assert_file_contains "$ini" "wrap = True"
+}
+
+# GIVEN Blue Purple added to Spyder before
+# WHEN choosing Spyder and Blue Purple again, and answering no to selecting it
+# THEN it updates the same custom theme instead of adding another, and the
+#      current theme is left alone
+test_spyder_updates_its_own_theme() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  ini="$SANDBOX/home/$SPYDER_INI"
+  spyder_ini "$ini"
+  run_setup "1\nspyder\n1\n1\nn\n"
+  run_setup "1\nspyder\n1\n1\nn\n"
+  assert_status 0
+  [ "$(spyder_value "$ini" custom_names)" = "['custom-0', 'custom-1']" ] || fail "expected no third custom theme"
+  [ "$(spyder_value "$ini" selected)" = "spyder/dark" ] || fail "expected the current theme to be left alone"
+  assert_contains "Syntax"
+}
+
+# GIVEN Spyder's settings, and Spyder running
+# WHEN choosing Spyder
+# THEN its settings are left alone, and it says to close Spyder first
+test_spyder_waits_while_spyder_is_open() {
+  fake_os Linux
+  fake_command pgrep "exit 0"
+  ini="$SANDBOX/home/$SPYDER_INI"
+  spyder_ini "$ini"
+  cp "$ini" "$SANDBOX/original.ini"
+  run_setup "1\nspyder\n1\n1\n"
+  assert_status 0
+  assert_contains "Spyder is open"
+  assert_same_file "$ini" "$SANDBOX/original.ini"
+}
+
+# GIVEN Spyder has never been opened (no spyder.ini)
+# WHEN choosing Spyder
+# THEN it says to open Spyder once first, and creates nothing
+test_spyder_explains_before_first_run() {
+  fake_os Linux
+  fake_command pgrep "exit 1"
+  run_setup "1\nspyder\n1\n1\n"
+  assert_status 0
+  assert_contains "Spyder hasn't been opened yet"
+  assert_missing "$SANDBOX/home/.config/spyder-py3"
+}
+
+# GIVEN a Mac with Spyder's settings, and SPYDER_CONFDIR pointing elsewhere
+#       on Linux
+# WHEN choosing Spyder
+# THEN the Mac's ~/.spyder-py3 and the SPYDER_CONFDIR folder get the theme
+test_spyder_on_macos_and_with_spyder_confdir() {
+  fake_command pgrep "exit 1"
+  fake_os Darwin
+  spyder_ini "$SANDBOX/home/.spyder-py3/config/spyder.ini"
+  run_setup "1\nspyder\n1\n1\nn\n"
+  assert_status 0
+  [ "$(spyder_value "$SANDBOX/home/.spyder-py3/config/spyder.ini" custom-1/name)" = "Jenerated Blue Purple" ] ||
+    fail "expected the theme in ~/.spyder-py3"
+  fake_os Linux
+  spyder_ini "$SANDBOX/home/spyder-conf/config/spyder.ini"
+  TEST_SPYDER_CONFDIR="$SANDBOX/home/spyder-conf" run_setup "1\nspyder\n1\n1\nn\n"
+  assert_status 0
+  [ "$(spyder_value "$SANDBOX/home/spyder-conf/config/spyder.ini" custom-1/name)" = "Jenerated Blue Purple" ] ||
+    fail "expected the theme in the SPYDER_CONFDIR folder"
+}
+
+# GIVEN a Linux system with a clipboard tool
+# WHEN choosing Mattermost and Blue Purple
+# THEN it prints Blue Purple's Mattermost theme on one line, as valid JSON
+#      with the palette's colors, copies it to the clipboard, and explains
+#      where to paste it
+test_mattermost_prints_and_copies_the_theme() {
+  fake_os Linux
+  run_setup "1\nmattermost\n1\n1\n"
+  assert_status 0
+  assert_contains "(Copied to your clipboard.)"
+  assert_contains "Copy and paste to share theme colors"
+  result="$("$(find_python)" -c '
+import json, sys
+theme = json.loads(open(sys.argv[1]).read())
+print(theme["type"], theme["centerChannelBg"], theme["codeTheme"])
+' "$SANDBOX/clipboard")"
+  [ "$result" = "custom #12131c monokai" ] || fail "expected the clipboard to hold Blue Purple's theme, got: $result"
+  line="$(printf '%s\n' "$OUTPUT" | grep '^{ "type": "custom"')"
+  [ "$line" = "$(cat "$SANDBOX/clipboard")" ] || fail "expected the printed theme, on one line, to be what was copied"
 }
 
 # GIVEN a Mac
@@ -1629,9 +2907,24 @@ test_slack_prints_and_copies_the_theme_string() {
 test_slack_uses_pbcopy_on_macos() {
   fake_os Darwin
   fake_command pbcopy "cat > \"$SANDBOX/pbcopy-used\""
-  run_setup "1\n2\n1\n"
+  run_setup "1\nslack\n1\n1\n"
   assert_status 0
   assert_exists "$SANDBOX/pbcopy-used"
+}
+
+# GIVEN a Linux system with a clipboard tool
+# WHEN choosing Jellyfin and Blue Purple
+# THEN the CSS is copied to the clipboard, it says where the file is, and it
+#      explains both places to paste it
+test_jellyfin_copies_the_css() {
+  fake_os Linux
+  run_setup "1\njellyfin\n1\n1\n"
+  assert_status 0
+  assert_contains "app-themes/jellyfin-theme/jenerated-blue-purple.css"
+  assert_contains "(Copied to your clipboard.)"
+  assert_same_file "$SANDBOX/clipboard" "$SANDBOX/repo/app-themes/jellyfin-theme/jenerated-blue-purple.css"
+  assert_contains "Dashboard -> Branding"
+  assert_contains "Settings -> Display"
 }
 
 # GIVEN a Linux system with no clipboard tool
@@ -1647,7 +2940,7 @@ test_slack_without_a_clipboard_tool_still_prints_the_string() {
     ln -s "$(command -v "$tool")" "$SANDBOX/minbin/$tool"
   done
   fake_no_python
-  OUTPUT="$(printf '1\n2\n1\n' |
+  OUTPUT="$(printf '1\nslack\n1\n1\n' |
     HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$SANDBOX/minbin" WAYLAND_DISPLAY= \
       "$SANDBOX/minbin/bash" "$SANDBOX/repo/setup.sh" 2>&1)"
   STATUS=$?

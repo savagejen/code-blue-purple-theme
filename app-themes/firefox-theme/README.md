@@ -10,6 +10,9 @@ Blue Purple is included; to add other palettes, see
 Each theme marks Firefox's own pages as dark or light, to match the palette.
 Websites still follow your system's light or dark setting.
 
+Zen Browser is built on Firefox, but draws its own interface, so it has
+[its own theme](../zen-theme/).
+
 The manifests are generated from `manifest.json.tmpl` by
 [jenerate.py](../../jenerate.py). To change colors, see
 [Changing colors](../../README.md#changing-colors).
