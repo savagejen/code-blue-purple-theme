@@ -507,7 +507,7 @@ test_choosing_a_broken_palette_stops_with_its_error() {
   sed -e 's/^name = .*/name = "Bad"/' -e 's/^slug = .*/slug = "bad"/' \
     "$SANDBOX/repo/palettes/sunset-palette.toml" >"$SANDBOX/repo/palettes/bad-palette.toml"
   printf 'mystery = "blue-purple"\n' >>"$SANDBOX/repo/palettes/bad-palette.toml"
-  run_setup "1\ntilix\n1\n1\n"
+  run_setup "1\ntilix\n1\n1\ny\n1\n"
   assert_status 1
   assert_contains "1) Bad"
   assert_contains "color \`mystery\` = 'blue-purple' is not a #rrggbb value"
@@ -525,14 +525,14 @@ test_repo_in_a_folder_with_spaces() {
   mv "$SANDBOX/repo" "$SANDBOX/My Projects/repo"
   local repo="$SANDBOX/My Projects/repo"
   SETUP="$repo/setup.sh"
-  run_setup "1\ntilix\n1\n2\n"
+  run_setup "1\ntilix\n1\n2\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/tilix/schemes/jenerated-sunset.json" "$repo/app-themes/tilix-theme/sunset.json"
   assert_exists "$repo/app-themes/tilix-theme/sunset.json"
-  run_setup "1\nvs code\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$repo/app-themes/vs-code-theme"
-  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Notes\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Notes\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/Notes/.obsidian/themes/Jenerated Blue Purple" "$repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -544,7 +544,7 @@ test_repo_in_a_folder_with_spaces() {
 # THEN the extension folder is linked into ~/.vscode/extensions, and it says
 #      which theme to choose
 test_vscode_links_the_extension() {
-  run_setup "1\nvs code\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
   assert_contains 'Choose "Jenerated Blue Purple"'
@@ -556,7 +556,7 @@ test_vscode_links_the_extension() {
 test_vscode_already_linked_is_left_alone() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   ln -s "$SANDBOX/repo/app-themes/vs-code-theme" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\nvs code\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 0
   assert_contains "Already installed"
   assert_not_contains "Replace it"
@@ -567,7 +567,7 @@ test_vscode_already_linked_is_left_alone() {
 # THEN the copy is replaced with a link
 test_vscode_replaces_an_old_copy_when_asked() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\nvs code\n1\n1\ny\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
@@ -579,7 +579,7 @@ test_vscode_replaces_an_old_copy_when_asked() {
 test_vscode_replaces_a_link_to_another_folder() {
   mkdir -p "$SANDBOX/home/.vscode/extensions" "$SANDBOX/elsewhere"
   ln -s "$SANDBOX/elsewhere" "$SANDBOX/home/.vscode/extensions/jenerated-themes"
-  run_setup "1\nvs code\n1\n1\n\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n\n"
   assert_status 0
   assert_link "$SANDBOX/home/.vscode/extensions/jenerated-themes" "$SANDBOX/repo/app-themes/vs-code-theme"
   assert_exists "$SANDBOX/elsewhere"
@@ -591,7 +591,7 @@ test_vscode_replaces_a_link_to_another_folder() {
 test_vscode_keeps_an_old_copy_when_declined() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/jenerated-themes"
   touch "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
-  run_setup "1\nvs code\n1\n1\nn\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\nn\n"
   assert_status 1
   assert_contains "left the existing install alone"
   assert_exists "$SANDBOX/home/.vscode/extensions/jenerated-themes/keep-me"
@@ -602,7 +602,7 @@ test_vscode_keeps_an_old_copy_when_declined() {
 # THEN it warns about the packaged copy so the two don't clash
 test_vscode_warns_about_a_packaged_copy() {
   mkdir -p "$SANDBOX/home/.vscode/extensions/local.jenerated-themes-1.0.0"
-  run_setup "1\nvs code\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 0
   assert_contains "you also have a packaged copy installed (local.jenerated-themes-1.0.0)"
 }
@@ -613,7 +613,7 @@ test_vscode_warns_about_a_packaged_copy() {
 test_vscode_removes_obsolete_file_with_only_this_extension() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\nvs code\n1\n1\n\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n\n"
   assert_status 0
   assert_contains "marked as uninstalled"
   assert_missing "$SANDBOX/home/.vscode/extensions/.obsolete"
@@ -626,7 +626,7 @@ test_vscode_keeps_other_obsolete_entries() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"a.first-1.0.0":true,"local.jenerated-themes-1.0.0":true,"b.second-2.0.0":true}' \
     >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\nvs code\n1\n1\n\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" \
     '{"a.first-1.0.0":true,"b.second-2.0.0":true}'
@@ -638,7 +638,7 @@ test_vscode_keeps_other_obsolete_entries() {
 test_vscode_stops_if_input_ends_before_enter() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"local.jenerated-themes-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\nvs code\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 1
   assert_contains "stopped before changing VS Code's files"
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"local.jenerated-themes-1.0.0":true}'
@@ -650,7 +650,7 @@ test_vscode_stops_if_input_ends_before_enter() {
 test_vscode_ignores_obsolete_file_without_this_extension() {
   mkdir -p "$SANDBOX/home/.vscode/extensions"
   printf '{"a.first-1.0.0":true}' >"$SANDBOX/home/.vscode/extensions/.obsolete"
-  run_setup "1\nvs code\n1\n1\n"
+  run_setup "1\nvs code\n1\n1\ny\n1\n"
   assert_status 0
   assert_not_contains "marked as uninstalled"
   assert_file_equals "$SANDBOX/home/.vscode/extensions/.obsolete" '{"a.first-1.0.0":true}'
@@ -664,7 +664,7 @@ test_vscode_ignores_obsolete_file_without_this_extension() {
 #      palette to choose
 test_ptyxis_links_the_palette() {
   fake_os Linux
-  run_setup "1\nptyxis\n1\n1\n"
+  run_setup "1\nptyxis\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -676,8 +676,8 @@ test_ptyxis_links_the_palette() {
 # THEN it succeeds and the link is still right
 test_ptyxis_running_twice_is_fine() {
   fake_os Linux
-  run_setup "1\nptyxis\n1\n1\n"
-  run_setup "1\nptyxis\n1\n1\n"
+  run_setup "1\nptyxis\n1\n1\ny\n1\n"
+  run_setup "1\nptyxis\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.local/share/org.gnome.Ptyxis/palettes/blue-purple.palette" \
     "$SANDBOX/repo/app-themes/ptyxis-theme/blue-purple.palette"
@@ -693,7 +693,7 @@ TILIX_SCHEMES=".config/tilix/schemes"
 #      jenerated-blue-purple.json, and it says which scheme to choose
 test_tilix_links_the_scheme() {
   fake_os Linux
-  run_setup "1\ntilix\n1\n1\n"
+  run_setup "1\ntilix\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
@@ -705,7 +705,7 @@ test_tilix_links_the_scheme() {
 # THEN Sunset's scheme is generated and linked
 test_tilix_links_a_generated_palette() {
   fake_os Linux
-  run_setup "1\ntilix\n1\n2\n"
+  run_setup "1\ntilix\n1\n2\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$TILIX_SCHEMES/jenerated-sunset.json" \
     "$SANDBOX/repo/app-themes/tilix-theme/sunset.json"
@@ -719,7 +719,7 @@ test_tilix_leaves_other_schemes_alone() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo mine >"$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json"
-  run_setup "1\ntilix\n1\n1\n"
+  run_setup "1\ntilix\n1\n1\ny\n1\n"
   assert_status 0
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/blue-purple.json" "mine"
 }
@@ -729,8 +729,8 @@ test_tilix_leaves_other_schemes_alone() {
 # THEN it says it's already installed
 test_tilix_already_linked_is_left_alone() {
   fake_os Linux
-  run_setup "1\ntilix\n1\n1\n"
-  run_setup "1\ntilix\n1\n1\n"
+  run_setup "1\ntilix\n1\n1\ny\n1\n"
+  run_setup "1\ntilix\n1\n1\ny\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -742,9 +742,47 @@ test_tilix_asks_before_replacing_a_file() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/$TILIX_SCHEMES"
   echo old >"$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json"
-  run_setup "1\ntilix\n1\n1\nn\n"
+  run_setup "1\ntilix\n1\n1\ny\n1\nn\n"
   assert_status 1
   assert_file_equals "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" "old"
+}
+
+# --- Tests: showing the install commands, then running them ------------------
+
+# GIVEN a Linux system
+# WHEN choosing Tilix and answering no to running the install commands
+# THEN the link and copy commands are shown first, nothing is installed, and
+#      the steps to turn the theme on follow the commands
+test_install_commands_are_shown_and_can_be_declined() {
+  fake_os Linux
+  run_setup "1\ntilix\n1\n1\nn\n"
+  assert_status 0
+  assert_contains "==> To install the Tilix color scheme, run:
+    mkdir -p \"\$HOME/$TILIX_SCHEMES\"
+    ln -s \"$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json\" \"\$HOME/$TILIX_SCHEMES/jenerated-blue-purple.json\"
+Or, to copy the files instead of linking them:
+    cp -R \"$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json\" \"\$HOME/$TILIX_SCHEMES/jenerated-blue-purple.json\"
+
+Run these for you? [Y/n]"
+  assert_contains "==> Once you've run the commands above, to turn the color scheme on:"
+  assert_not_contains "Link or copy the files?"
+  assert_missing "$SANDBOX/home/$TILIX_SCHEMES"
+}
+
+# GIVEN a Linux system
+# WHEN choosing Tilix, running the commands, and choosing to copy
+# THEN the scheme is copied rather than linked, with a reminder to run
+#      setup.sh again after changing the palette
+test_install_can_copy_instead_of_linking() {
+  fake_os Linux
+  run_setup "1\ntilix\n1\n1\ny\n2\n"
+  assert_status 0
+  [ -f "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" ] &&
+    [ ! -L "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" ] ||
+    fail "expected a copy, not a link"
+  assert_same_file "$SANDBOX/home/$TILIX_SCHEMES/jenerated-blue-purple.json" \
+    "$SANDBOX/repo/app-themes/tilix-theme/blue-purple.json"
+  assert_contains "The files are copies, so after changing the palette"
 }
 
 # --- Tests: Vim --------------------------------------------------------------
@@ -768,7 +806,7 @@ vim_loads() {
 # THEN app-themes/vim-theme is linked as a Vim package, Vim can load the colorscheme,
 #      and it says what to add to ~/.vimrc
 test_vim_links_the_package() {
-  run_setup "1\nneovim\n1\n1\n"
+  run_setup "1\nneovim\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$VIM_PACK" "$SANDBOX/repo/app-themes/vim-theme"
   assert_contains "colorscheme jenerated-blue-purple"
@@ -782,7 +820,7 @@ test_vim_links_the_package() {
 #      to init.lua
 test_vim_links_the_package_for_neovim() {
   mkdir -p "$SANDBOX/home/.config/nvim"
-  run_setup "1\nneovim\n1\n1\n"
+  run_setup "1\nneovim\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$NVIM_PACK" "$SANDBOX/repo/app-themes/vim-theme"
   assert_contains 'vim.cmd.colorscheme("jenerated-blue-purple")'
@@ -793,8 +831,8 @@ test_vim_links_the_package_for_neovim() {
 # THEN the link is already there, and Sunset's newly generated colorscheme
 #      loads through it too
 test_vim_one_link_serves_every_palette() {
-  run_setup "1\nneovim\n1\n1\n"
-  run_setup "1\nneovim\n1\n2\n"
+  run_setup "1\nneovim\n1\n1\ny\n1\n"
+  run_setup "1\nneovim\n1\n2\ny\n1\n"
   assert_status 0
   assert_contains "Already installed"
   assert_exists "$SANDBOX/repo/app-themes/vim-theme/colors/jenerated-sunset.vim"
@@ -807,7 +845,7 @@ test_vim_one_link_serves_every_palette() {
 test_vim_asks_before_replacing_a_copy() {
   mkdir -p "$SANDBOX/home/$VIM_PACK/colors"
   touch "$SANDBOX/home/$VIM_PACK/colors/keep-me.vim"
-  run_setup "1\nneovim\n1\n1\nn\n"
+  run_setup "1\nneovim\n1\n1\ny\n1\nn\n"
   assert_status 1
   assert_exists "$SANDBOX/home/$VIM_PACK/colors/keep-me.vim"
 }
@@ -1021,7 +1059,7 @@ esac"
 #      and it explains how to turn it on
 test_gtk3_links_the_theme() {
   fake_os Linux
-  run_setup "1\ngtk3\n1\n1\n"
+  run_setup "1\ngtk3\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
   assert_exists "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple/gtk-3.0/gtk.css"
@@ -1036,7 +1074,7 @@ test_gtk3_links_the_theme() {
 test_gtk3_switches_the_theme_when_asked() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\ngtk3\n1\n2\ny\n"
+  run_setup "1\ngtk3\n1\n2\ny\n1\ny\n"
   assert_status 0
   assert_contains "Your GTK3 theme is 'Yaru-dark'."
   assert_file_equals "$SANDBOX/gsettings-set" "set org.gnome.desktop.interface gtk-theme Jenerated-sunset"
@@ -1050,7 +1088,7 @@ test_gtk3_switches_the_theme_when_asked() {
 test_gtk3_leaves_the_theme_setting_when_declined() {
   fake_os Linux
   fake_gsettings Yaru-dark
-  run_setup "1\ngtk3\n1\n1\nn\n"
+  run_setup "1\ngtk3\n1\n1\ny\n1\nn\n"
   assert_status 0
   assert_missing "$SANDBOX/gsettings-set"
   assert_link "$SANDBOX/home/$GTK3_THEMES/Jenerated-blue-purple" "$SANDBOX/repo/app-themes/gtk3-theme/blue-purple"
@@ -1160,7 +1198,7 @@ test_kde_leaves_the_color_scheme_when_declined() {
 test_decky_links_the_theme() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/homebrew/plugins"
-  run_setup "1\ndecky\n1\n1\n"
+  run_setup "1\ndecky\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/homebrew/themes/Jenerated-blue-purple" \
     "$SANDBOX/repo/app-themes/decky-theme/blue-purple"
@@ -1175,7 +1213,7 @@ test_decky_links_the_theme() {
 #      theme anyway, ready for when it is
 test_decky_explains_when_decky_is_missing() {
   fake_os Linux
-  run_setup "1\ndecky\n1\n2\n"
+  run_setup "1\ndecky\n1\n2\ny\n1\n"
   assert_status 0
   assert_contains "Decky Loader isn't installed yet"
   assert_contains "https://decky.xyz"
@@ -1519,7 +1557,7 @@ test_zen_explains_when_there_is_no_profile() {
 #      style
 test_gtksourceview_links_each_version() {
   fake_os Linux
-  run_setup "1\ngnome text editors\n1\n1\n"
+  run_setup "1\ngnome text editors\n1\n1\ny\n1\n"
   assert_status 0
   data="$SANDBOX/home/.local/share"
   folder="$SANDBOX/repo/app-themes/gtksourceview-theme/blue-purple"
@@ -1542,7 +1580,7 @@ test_gtksourceview_light_palette_says_light_style() {
   sed -e 's/^name = .*/name = "Dawn"/' -e 's/^slug = .*/slug = "dawn"/' \
     -e 's/^bg = "#[0-9a-fA-F]*"/bg = "#fbfbfd"/' "$SANDBOX/repo/palettes/sunset-palette.toml" \
     >"$SANDBOX/repo/palettes/dawn-palette.toml"
-  run_setup "1\ngnome text editors\n1\n2\n"
+  run_setup "1\ngnome text editors\n1\n2\ny\n1\n"
   assert_status 0
   assert_contains "Jenerated Dawn"
   assert_contains "choose the light style first"
@@ -1554,7 +1592,7 @@ test_gtksourceview_light_palette_says_light_style() {
 test_gtksourceview_themes_the_flatpaks() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/.var/app/org.gnome.TextEditor" "$SANDBOX/home/.var/app/org.gnome.gedit"
-  run_setup "1\ngnome text editors\n1\n1\n"
+  run_setup "1\ngnome text editors\n1\n1\ny\n1\n"
   assert_status 0
   folder="$SANDBOX/repo/app-themes/gtksourceview-theme/blue-purple"
   assert_link "$SANDBOX/home/.var/app/org.gnome.TextEditor/data/gtksourceview-5/styles/jenerated-blue-purple.xml" \
@@ -1997,7 +2035,7 @@ obsidian_theme() {
 test_obsidian_links_the_theme_into_a_known_vault() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
   assert_status 0
   assert_contains "1) $SANDBOX/Notes"
   assert_contains "2) Another folder (type its path)"
@@ -2011,7 +2049,7 @@ test_obsidian_links_the_theme_into_a_known_vault() {
 test_obsidian_theme_folder_matches_its_manifest() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n2\n1\n"
+  run_setup "1\nobsidian\n1\n2\n1\ny\n1\n"
   assert_status 0
   assert_file_contains "$(obsidian_theme "$SANDBOX/Notes" "Sunset")/manifest.json" \
     '"name": "Jenerated Sunset"'
@@ -2025,7 +2063,7 @@ test_obsidian_lists_every_known_vault_that_exists() {
   make_vault "$SANDBOX/Notes"
   make_vault "$SANDBOX/My Work"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes" "$SANDBOX/Gone" "$SANDBOX/My Work"
-  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
   assert_contains ") $SANDBOX/Notes"
   assert_contains ") $SANDBOX/My Work"
   assert_not_contains "$SANDBOX/Gone"
@@ -2038,7 +2076,7 @@ test_obsidian_lists_every_known_vault_that_exists() {
 test_obsidian_vault_with_spaces_in_its_path() {
   make_vault "$SANDBOX/My Work"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/My Work"
-  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/My Work" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -2050,7 +2088,7 @@ test_obsidian_finds_vaults_on_macos() {
   fake_os Darwin
   make_vault "$SANDBOX/Notes"
   know_vaults "Library/Application Support/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
   assert_status 0
   assert_contains "1) $SANDBOX/Notes"
 }
@@ -2062,7 +2100,7 @@ test_obsidian_finds_vaults_on_macos() {
 test_obsidian_finds_vaults_from_flatpak() {
   make_vault "$SANDBOX/Notes"
   know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
   assert_contains "1) $SANDBOX/Notes"
 }
 
@@ -2073,7 +2111,7 @@ test_obsidian_lists_a_vault_known_twice_once() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
   know_vaults ".var/app/md.obsidian.Obsidian/config/obsidian/obsidian.json" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
   assert_contains "2) Another folder"
 }
 
@@ -2082,7 +2120,7 @@ test_obsidian_lists_a_vault_known_twice_once() {
 # THEN it asks for the path directly and links the theme into that vault
 test_obsidian_asks_for_a_path_when_no_vaults_are_known() {
   make_vault "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Notes/\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Notes/\ny\n1\n"
   assert_status 0
   assert_contains "Path to your vault folder:"
   assert_not_contains "Another folder"
@@ -2096,7 +2134,7 @@ test_obsidian_another_folder_expands_the_home_folder() {
   make_vault "$SANDBOX/Notes"
   make_vault "$SANDBOX/home/Vault"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n2\n~/Vault\n"
+  run_setup "1\nobsidian\n1\n1\n2\n~/Vault\ny\n1\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/home/Vault" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -2107,7 +2145,7 @@ test_obsidian_another_folder_expands_the_home_folder() {
 test_obsidian_relative_path_is_relative_to_where_setup_ran() {
   mkdir -p "$SANDBOX/work/Notes/.obsidian"
   RUN_FROM="$SANDBOX/work"
-  run_setup "1\nobsidian\n1\n1\nNotes\n"
+  run_setup "1\nobsidian\n1\n1\nNotes\ny\n1\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/work/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -2146,7 +2184,7 @@ test_obsidian_asks_before_using_a_folder_that_isnt_a_vault() {
 # THEN the theme is linked into it
 test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
   mkdir -p "$SANDBOX/Plain"
-  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Plain\ny\n"
+  run_setup "1\nobsidian\n1\n1\n$SANDBOX/Plain\ny\ny\n1\n"
   assert_status 0
   assert_link "$(obsidian_theme "$SANDBOX/Plain" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
 }
@@ -2157,8 +2195,8 @@ test_obsidian_uses_a_folder_that_isnt_a_vault_when_told_to() {
 test_obsidian_already_linked_is_left_alone() {
   make_vault "$SANDBOX/Notes"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n1\n"
-  run_setup "1\nobsidian\n1\n1\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\n"
   assert_status 0
   assert_contains "Already installed"
 }
@@ -2170,7 +2208,7 @@ test_obsidian_replaces_an_old_copy_when_asked() {
   make_vault "$SANDBOX/Notes"
   mkdir -p "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")"
   know_vaults "$LINUX_CONFIG" "$SANDBOX/Notes"
-  run_setup "1\nobsidian\n1\n1\n1\ny\n"
+  run_setup "1\nobsidian\n1\n1\n1\ny\n1\ny\n"
   assert_status 0
   assert_contains "An older install exists"
   assert_link "$(obsidian_theme "$SANDBOX/Notes" "Blue Purple")" "$SANDBOX/repo/app-themes/obsidian-theme/blue-purple"
@@ -2516,7 +2554,7 @@ test_insomnia_themes_flatpak_snap_and_macos() {
 #      to choose the scheme and the Adaptive theme from the command palette
 test_sublime_links_the_color_scheme() {
   fake_os Linux
-  run_setup "1\nsublime\n1\n1\n"
+  run_setup "1\nsublime\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/sublime-text/Packages/User/jenerated-blue-purple.sublime-color-scheme" \
     "$SANDBOX/repo/app-themes/sublime-theme/jenerated-blue-purple.sublime-color-scheme"
@@ -2533,7 +2571,7 @@ test_sublime_themes_st3_flatpak_and_snap() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/.config/sublime-text-3" "$SANDBOX/home/.var/app/com.sublimetext.three" \
     "$SANDBOX/home/snap/sublime-text"
-  run_setup "1\nsublime\n1\n1\n"
+  run_setup "1\nsublime\n1\n1\ny\n1\n"
   assert_status 0
   for dir in "$SANDBOX/home/.config/sublime-text" "$SANDBOX/home/.config/sublime-text-3" \
     "$SANDBOX/home/.var/app/com.sublimetext.three/config/sublime-text" \
@@ -2548,7 +2586,7 @@ test_sublime_themes_st3_flatpak_and_snap() {
 # THEN the color scheme goes in Application Support
 test_sublime_on_macos_uses_application_support() {
   fake_os Darwin
-  run_setup "1\nsublime\n1\n1\n"
+  run_setup "1\nsublime\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/Library/Application Support/Sublime Text/Packages/User/jenerated-blue-purple.sublime-color-scheme" \
     "$SANDBOX/repo/app-themes/sublime-theme/jenerated-blue-purple.sublime-color-scheme"
@@ -2560,7 +2598,7 @@ test_sublime_on_macos_uses_application_support() {
 #      name (which Xcode lists it by), and it explains how to choose it
 test_xcode_links_the_theme_on_macos() {
   fake_os Darwin
-  run_setup "1\nxcode\n1\n1\n"
+  run_setup "1\nxcode\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/Library/Developer/Xcode/UserData/FontAndColorThemes/Jenerated Blue Purple.xccolortheme" \
     "$SANDBOX/repo/app-themes/xcode-theme/jenerated-blue-purple.xccolortheme"
@@ -2584,7 +2622,7 @@ test_xcode_is_only_offered_on_macos() {
 #      where to choose it
 test_rstudio_links_the_theme() {
   fake_os Linux
-  run_setup "1\nrstudio\n1\n1\n"
+  run_setup "1\nrstudio\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/rstudio/themes/jenerated-blue-purple.rstheme" \
     "$SANDBOX/repo/app-themes/rstudio-theme/jenerated-blue-purple.rstheme"
@@ -2597,7 +2635,7 @@ test_rstudio_links_the_theme() {
 # THEN the theme goes in that folder's themes folder instead
 test_rstudio_uses_rstudio_config_home() {
   fake_os Darwin
-  TEST_RSTUDIO_CONFIG_HOME="$SANDBOX/home/rs-config" run_setup "1\nrstudio\n1\n1\n"
+  TEST_RSTUDIO_CONFIG_HOME="$SANDBOX/home/rs-config" run_setup "1\nrstudio\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/rs-config/themes/jenerated-blue-purple.rstheme" \
     "$SANDBOX/repo/app-themes/rstudio-theme/jenerated-blue-purple.rstheme"
@@ -2610,7 +2648,7 @@ test_rstudio_uses_rstudio_config_home() {
 #      default), and it explains how to load it and keep it
 test_emacs_links_the_theme() {
   fake_os Linux
-  run_setup "1\nemacs\n1\n1\n"
+  run_setup "1\nemacs\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.emacs.d/jenerated-blue-purple-theme.el" \
     "$SANDBOX/repo/app-themes/emacs-theme/jenerated-blue-purple-theme.el"
@@ -2624,7 +2662,7 @@ test_emacs_links_the_theme() {
 test_emacs_uses_the_config_folder() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/.config/emacs"
-  run_setup "1\nemacs\n1\n1\n"
+  run_setup "1\nemacs\n1\n1\ny\n1\n"
   assert_status 0
   assert_exists "$SANDBOX/home/.config/emacs/jenerated-blue-purple-theme.el"
   assert_missing "$SANDBOX/home/.emacs.d"
@@ -2638,7 +2676,7 @@ test_emacs_prefers_emacs_d_when_there_is_a_dot_emacs() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/.config/emacs"
   printf ';; my settings\n' >"$SANDBOX/home/.emacs"
-  run_setup "1\nemacs\n1\n1\n"
+  run_setup "1\nemacs\n1\n1\ny\n1\n"
   assert_status 0
   assert_exists "$SANDBOX/home/.emacs.d/jenerated-blue-purple-theme.el"
   assert_missing "$SANDBOX/home/.config/emacs/jenerated-blue-purple-theme.el"
@@ -2651,7 +2689,7 @@ test_emacs_prefers_emacs_d_when_there_is_a_dot_emacs() {
 test_qtcreator_links_the_color_scheme() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/.var/app/io.qt.QtCreator"
-  run_setup "1\nqt creator\n1\n1\n"
+  run_setup "1\nqt creator\n1\n1\ny\n1\n"
   assert_status 0
   for dir in "$SANDBOX/home/.config/QtProject/qtcreator/styles" \
     "$SANDBOX/home/.var/app/io.qt.QtCreator/config/QtProject/qtcreator/styles"; do
@@ -2668,7 +2706,7 @@ test_qtcreator_links_the_color_scheme() {
 #      its settings on a Mac too
 test_qtcreator_on_macos_uses_dot_config() {
   fake_os Darwin
-  run_setup "1\nqt creator\n1\n1\n"
+  run_setup "1\nqt creator\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/QtProject/qtcreator/styles/jenerated-blue-purple.xml" \
     "$SANDBOX/repo/app-themes/qtcreator-theme/jenerated-blue-purple.xml"
@@ -2681,7 +2719,7 @@ test_qtcreator_on_macos_uses_dot_config() {
 #      before editing
 test_unreal_links_the_theme() {
   fake_os Linux
-  run_setup "1\nunreal\n1\n1\n"
+  run_setup "1\nunreal\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/.config/Epic/UnrealEngine/Slate/Themes/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/unreal-theme/jenerated-blue-purple.json"
@@ -2696,7 +2734,7 @@ test_unreal_links_the_theme() {
 #      keeps your settings on a Mac
 test_unreal_on_macos_uses_application_support() {
   fake_os Darwin
-  run_setup "1\nunreal\n1\n1\n"
+  run_setup "1\nunreal\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/Library/Application Support/Epic/UnrealEngine/Slate/Themes/jenerated-blue-purple.json" \
     "$SANDBOX/repo/app-themes/unreal-theme/jenerated-blue-purple.json"
@@ -2709,7 +2747,7 @@ test_unreal_on_macos_uses_application_support() {
 test_obs_links_the_style() {
   fake_os Linux
   mkdir -p "$SANDBOX/home/.var/app/com.obsproject.Studio"
-  run_setup "1\nobs studio\n1\n1\n"
+  run_setup "1\nobs studio\n1\n1\ny\n1\n"
   assert_status 0
   for dir in "$SANDBOX/home/.config/obs-studio/themes" \
     "$SANDBOX/home/.var/app/com.obsproject.Studio/config/obs-studio/themes"; do
@@ -2724,7 +2762,7 @@ test_obs_links_the_style() {
 # THEN the style goes in ~/Library/Application Support/obs-studio/themes
 test_obs_on_macos_uses_application_support() {
   fake_os Darwin
-  run_setup "1\nobs studio\n1\n1\n"
+  run_setup "1\nobs studio\n1\n1\ny\n1\n"
   assert_status 0
   assert_link "$SANDBOX/home/Library/Application Support/obs-studio/themes/jenerated-blue-purple.ovt" \
     "$SANDBOX/repo/app-themes/obs-theme/jenerated-blue-purple.ovt"

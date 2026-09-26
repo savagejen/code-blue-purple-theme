@@ -19,7 +19,20 @@ OS="$(uname -s)"
 # --- Helpers -----------------------------------------------------------------
 
 say() { printf '%s\n' "$*"; }
-step() { printf '\n==> %s\n' "$*"; }
+step() {
+  local text="$*" first
+  # When you chose to run the install commands yourself, nothing's done yet.
+  if [ "${INSTALL_MODE:-}" = manual ]; then
+    case "$text" in
+      "Done! "*)
+        text="${text#Done! }"
+        first="$(printf '%s' "${text%"${text#?}"}" | tr '[:upper:]' '[:lower:]')"
+        text="Once you've run the commands above, $first${text#?}"
+        ;;
+    esac
+  fi
+  printf '\n==> %s\n' "$text"
+}
 die() { printf '\nError: %s\n' "$*" >&2; exit 1; }
 
 # ask_yes "Question?" -> returns 0 for yes (the default), 1 for no.
@@ -532,8 +545,13 @@ fi
 
 # --- Install it --------------------------------------------------------------
 
-# install_link target source -> links target to source, offering to replace
-# anything already at target.
+# How the theme's files are put in place: link (to this folder, so they
+# update when the palette is regenerated), copy, or manual (you run the
+# commands yourself). See run_install_plan.
+INSTALL_MODE=link
+
+# install_link target source -> links (or, with INSTALL_MODE=copy, copies)
+# source to target, offering to replace anything already at target.
 install_link() {
   local target="$1" source="$2"
   if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then
@@ -542,11 +560,111 @@ install_link() {
   fi
   if [ -e "$target" ] || [ -L "$target" ]; then
     say "An older install exists at $target."
-    ask_yes "Replace it with a link to this folder?" || die "left the existing install alone"
+    if [ "$INSTALL_MODE" = copy ]; then
+      ask_yes "Replace it with a copy?" || die "left the existing install alone"
+    else
+      ask_yes "Replace it with a link to this folder?" || die "left the existing install alone"
+    fi
     rm -rf "$target"
   fi
-  ln -s "$source" "$target"
-  say "Linked $target -> $source"
+  if [ "$INSTALL_MODE" = copy ]; then
+    cp -R "$source" "$target"
+    say "Copied $source to $target"
+  else
+    ln -s "$source" "$target"
+    say "Linked $target -> $source"
+  fi
+}
+
+# shell_quote path -> prints the path in double quotes, ready to paste into a
+# shell, with $HOME standing for your home folder.
+shell_quote() {
+  local path="$1" home=""
+  case "$path" in
+    "$HOME"/*)
+      home='$HOME'
+      path="${path#"$HOME"}"
+      ;;
+  esac
+  printf '"%s%s"' "$home" "$(printf '%s' "$path" | sed 's/[\\"$`]/\\&/g')"
+}
+
+# plan_link target source -> adds a file to install to the plan that
+# run_install_plan shows and offers to run.
+PLAN_TARGETS=()
+PLAN_SOURCES=()
+plan_link() {
+  PLAN_TARGETS+=("$1")
+  PLAN_SOURCES+=("$2")
+}
+
+# run_install_plan what -> shows the commands that install the planned files
+# (what names them, like "the Tilix color scheme"), then offers to run them,
+# linking or copying the files. Sets INSTALL_MODE to link, copy, or manual
+# if you'd rather run them yourself. Files already linked to this folder are
+# left out, and if that's all of them, there's nothing to ask.
+run_install_plan() {
+  local what="$1" i target source dir dirs="" existing=""
+  local targets=() sources=()
+  for i in "${!PLAN_TARGETS[@]}"; do
+    target="${PLAN_TARGETS[$i]}"
+    source="${PLAN_SOURCES[$i]}"
+    if [ -L "$target" ] && [ "$(readlink "$target")" = "$source" ]; then continue; fi
+    targets+=("$target")
+    sources+=("$source")
+  done
+  PLAN_TARGETS=()
+  PLAN_SOURCES=()
+
+  if [ "${#targets[@]}" -eq 0 ]; then
+    step "Installing $what"
+    say "Already installed (linked to this folder)."
+    INSTALL_MODE=link
+    return
+  fi
+
+  step "To install $what, run:"
+  for target in "${targets[@]}"; do
+    dir="$(dirname "$target")"
+    case "$dirs" in
+      *"
+$dir
+"*) ;;
+      *)
+        dirs="$dirs
+$dir
+"
+        say "    mkdir -p $(shell_quote "$dir")"
+        ;;
+    esac
+    if [ -e "$target" ] || [ -L "$target" ]; then existing=1; fi
+  done
+  for i in "${!targets[@]}"; do
+    say "    ln -s $(shell_quote "${sources[$i]}") $(shell_quote "${targets[$i]}")"
+  done
+  say "Or, to copy the files instead of linking them:"
+  for i in "${!targets[@]}"; do
+    say "    cp -R $(shell_quote "${sources[$i]}") $(shell_quote "${targets[$i]}")"
+  done
+  if [ -n "$existing" ]; then
+    say "(An older install is in the way; move it aside first.)"
+  fi
+
+  say ""
+  if ! ask_yes "Run these for you?"; then
+    INSTALL_MODE=manual
+    return
+  fi
+  choose "Link or copy the files?" \
+    "Link (recommended): they update by themselves when you change the palette" \
+    "Copy: they don't need this folder, but run ./setup.sh again after changing the palette"
+  if [ "$CHOICE" -eq 0 ]; then INSTALL_MODE=link; else INSTALL_MODE=copy; fi
+
+  step "Installing $what"
+  for i in "${!targets[@]}"; do
+    mkdir -p "$(dirname "${targets[$i]}")"
+    install_link "${targets[$i]}" "${sources[$i]}"
+  done
 }
 
 install_vscode() {
@@ -554,9 +672,8 @@ install_vscode() {
   local target="$extensions/jenerated-themes"
   local source="$ROOT/app-themes/vs-code-theme"
 
-  step "Installing the VS Code extension"
-  mkdir -p "$extensions"
-  install_link "$target" "$source"
+  plan_link "$target" "$source"
+  run_install_plan "the VS Code extension"
 
   # A .vsix install of the same extension would clash with the link.
   for other in "$extensions"/local.jenerated-themes-*; do
@@ -570,7 +687,7 @@ install_vscode() {
   # ignores it, even after it's reinstalled. VS Code rewrites that file while
   # it runs, so it has to be closed while we remove the entry.
   local obsolete="$extensions/.obsolete"
-  if [ -f "$obsolete" ] && grep -q 'local\.jenerated-themes' "$obsolete"; then
+  if [ "$INSTALL_MODE" != manual ] && [ -f "$obsolete" ] && grep -q 'local\.jenerated-themes' "$obsolete"; then
     say ""
     say "VS Code has this extension marked as uninstalled, which hides the theme."
     say "Quit VS Code completely (all windows), then press Enter to fix it."
@@ -594,10 +711,8 @@ install_vscode() {
 install_ptyxis() {
   local palettes="$HOME/.local/share/org.gnome.Ptyxis/palettes"
 
-  step "Installing the Ptyxis palette"
-  mkdir -p "$palettes"
-  ln -sf "$ROOT/app-themes/ptyxis-theme/$SLUG.palette" "$palettes/$SLUG.palette"
-  say "Linked $palettes/$SLUG.palette"
+  plan_link "$palettes/$SLUG.palette" "$ROOT/app-themes/ptyxis-theme/$SLUG.palette"
+  run_install_plan "the Ptyxis palette"
 
   step "Done! To turn the palette on:"
   say "1. Close and reopen Ptyxis."
@@ -659,11 +774,10 @@ install_obsidian() {
   choose_obsidian_vault
   local themes="$VAULT/.obsidian/themes"
 
-  step "Installing the Obsidian theme"
-  mkdir -p "$themes"
   # Obsidian names a theme after its folder, which must match the name in
   # its manifest.json.
-  install_link "$themes/Jenerated $NAME" "$ROOT/app-themes/obsidian-theme/$SLUG"
+  plan_link "$themes/Jenerated $NAME" "$ROOT/app-themes/obsidian-theme/$SLUG"
+  run_install_plan "the Obsidian theme"
 
   step "Done! To turn the theme on:"
   say "1. In Obsidian, open Settings -> Appearance."
@@ -683,15 +797,14 @@ install_vim() {
 
   # app-themes/vim-theme is a Vim package: linked once, every generated palette's
   # colorscheme (in its colors/ folder) is available.
-  if [ -n "$has_vim" ]; then
-    step "Installing the colorschemes for Vim"
-    mkdir -p "$(dirname "$vim_pack")"
-    install_link "$vim_pack" "$ROOT/app-themes/vim-theme"
-  fi
-  if [ -n "$has_nvim" ]; then
-    step "Installing the colorschemes for Neovim"
-    mkdir -p "$(dirname "$nvim_pack")"
-    install_link "$nvim_pack" "$ROOT/app-themes/vim-theme"
+  if [ -n "$has_vim" ]; then plan_link "$vim_pack" "$ROOT/app-themes/vim-theme"; fi
+  if [ -n "$has_nvim" ]; then plan_link "$nvim_pack" "$ROOT/app-themes/vim-theme"; fi
+  if [ -n "$has_vim" ] && [ -n "$has_nvim" ]; then
+    run_install_plan "the colorschemes for Vim and Neovim"
+  elif [ -n "$has_vim" ]; then
+    run_install_plan "the colorschemes for Vim"
+  else
+    run_install_plan "the colorschemes for Neovim"
   fi
 
   step "Done! To turn the colorscheme on:"
@@ -883,12 +996,11 @@ install_gtk3() {
   local theme="Jenerated-$SLUG"
   local current
 
-  step "Installing the GTK3 theme"
-  mkdir -p "$themes"
-  install_link "$themes/$theme" "$ROOT/app-themes/gtk3-theme/$SLUG"
+  plan_link "$themes/$theme" "$ROOT/app-themes/gtk3-theme/$SLUG"
+  run_install_plan "the GTK3 theme"
 
   current="$(gtk_theme_setting || true)"
-  if [ -n "$current" ]; then
+  if [ -n "$current" ] && [ "$INSTALL_MODE" != manual ]; then
     say ""
     say "Your GTK3 theme is $current."
     if ask_yes "Switch every GTK3 app to $theme now?"; then
@@ -1214,13 +1326,12 @@ install_gtksourceview() {
     pairs+=("libgedit-gtksourceview-300 $HOME/.var/app/org.gnome.gedit/data/libgedit-gtksourceview-300/styles")
   fi
 
-  step "Installing the style schemes"
   for pair in "${pairs[@]}"; do
     version="${pair%% *}"
     dir="${pair#* }"
-    mkdir -p "$dir"
-    install_link "$dir/$file" "$folder/$version/$file"
+    plan_link "$dir/$file" "$folder/$version/$file"
   done
+  run_install_plan "the style schemes"
 
   step "Done! Choose \"Jenerated $NAME\" as the color scheme in each editor:"
   say "- gedit: Preferences -> Font & Colors."
@@ -1319,11 +1430,10 @@ install_obs() {
   # your answer from standard input, which a "while read" loop would take over.
   while IFS= read -r dir; do dirs+=("$dir"); done < <(obs_themes_dirs)
 
-  step "Installing the OBS Studio style"
   for dir in "${dirs[@]}"; do
-    mkdir -p "$dir"
-    install_link "$dir/$file" "$ROOT/app-themes/obs-theme/$file"
+    plan_link "$dir/$file" "$ROOT/app-themes/obs-theme/$file"
   done
+  run_install_plan "the OBS Studio style"
 
   step "Done! To turn the style on, restart OBS Studio, then:"
   say "1. Open Settings -> Appearance."
@@ -1606,11 +1716,10 @@ install_sublime() {
   # your answer from standard input, which a "while read" loop would take over.
   while IFS= read -r dir; do dirs+=("$dir"); done < <(sublime_data_dirs)
 
-  step "Installing the Sublime Text color scheme"
   for dir in "${dirs[@]}"; do
-    mkdir -p "$dir/Packages/User"
-    install_link "$dir/Packages/User/$file" "$ROOT/app-themes/sublime-theme/$file"
+    plan_link "$dir/Packages/User/$file" "$ROOT/app-themes/sublime-theme/$file"
   done
+  run_install_plan "the Sublime Text color scheme"
 
   step "Done! To turn the color scheme on, in Sublime Text:"
   say "1. Open the command palette (Ctrl+Shift+P, or Cmd+Shift+P on a Mac),"
@@ -1626,9 +1735,8 @@ install_xcode() {
 
   # Xcode lists a theme by its file name, so the link is named after the
   # palette rather than its slug.
-  step "Installing the Xcode theme"
-  mkdir -p "$themes"
-  install_link "$themes/Jenerated $NAME.xccolortheme" "$ROOT/app-themes/xcode-theme/jenerated-$SLUG.xccolortheme"
+  plan_link "$themes/Jenerated $NAME.xccolortheme" "$ROOT/app-themes/xcode-theme/jenerated-$SLUG.xccolortheme"
+  run_install_plan "the Xcode theme"
 
   step "Done! To turn the theme on:"
   say "1. Quit Xcode if it's open, and open it again (it finds new themes when"
@@ -1647,9 +1755,8 @@ install_rstudio() {
     themes="${XDG_CONFIG_HOME:-$HOME/.config}/rstudio/themes"
   fi
 
-  step "Installing the RStudio theme"
-  mkdir -p "$themes"
-  install_link "$themes/jenerated-$SLUG.rstheme" "$ROOT/app-themes/rstudio-theme/jenerated-$SLUG.rstheme"
+  plan_link "$themes/jenerated-$SLUG.rstheme" "$ROOT/app-themes/rstudio-theme/jenerated-$SLUG.rstheme"
+  run_install_plan "the RStudio theme"
 
   step "Done! To turn the theme on, in RStudio:"
   say "1. Open Tools -> Global Options -> Appearance."
@@ -1678,9 +1785,8 @@ install_emacs() {
   dir="$(emacs_dir)"
 
   # Emacs looks for themes in its own folder, so nothing else needs setting.
-  step "Installing the Emacs theme"
-  mkdir -p "$dir"
-  install_link "$dir/$file" "$ROOT/app-themes/emacs-theme/$file"
+  plan_link "$dir/$file" "$ROOT/app-themes/emacs-theme/$file"
+  run_install_plan "the Emacs theme"
 
   step "Done! To turn the theme on, in Emacs:"
   say "1. Run M-x load-theme RET jenerated-$SLUG RET. Emacs asks whether to"
@@ -1715,11 +1821,10 @@ install_qtcreator() {
   # your answer from standard input, which a "while read" loop would take over.
   while IFS= read -r dir; do dirs+=("$dir"); done < <(qtcreator_styles_dirs)
 
-  step "Installing the Qt Creator color scheme"
   for dir in "${dirs[@]}"; do
-    mkdir -p "$dir"
-    install_link "$dir/$file" "$ROOT/app-themes/qtcreator-theme/$file"
+    plan_link "$dir/$file" "$ROOT/app-themes/qtcreator-theme/$file"
   done
+  run_install_plan "the Qt Creator color scheme"
 
   step "Done! To turn the color scheme on, in Qt Creator:"
   say "1. Open Edit -> Preferences (Qt Creator -> Settings on a Mac, Tools ->"
@@ -1844,9 +1949,8 @@ install_unreal() {
   local dir
   dir="$(unreal_themes_dir)"
 
-  step "Installing the Unreal Engine editor theme"
-  mkdir -p "$dir"
-  install_link "$dir/$file" "$ROOT/app-themes/unreal-theme/$file"
+  plan_link "$dir/$file" "$ROOT/app-themes/unreal-theme/$file"
+  run_install_plan "the Unreal Engine editor theme"
 
   step "Done! To turn the theme on, in the Unreal Editor:"
   say "1. Open Edit -> Editor Preferences -> General -> Appearance."
@@ -1861,14 +1965,14 @@ install_unreal() {
 install_decky() {
   local themes="$HOME/homebrew/themes"
 
-  step "Installing the CSS Loader theme"
   if [ ! -d "$HOME/homebrew" ]; then
+    say ""
     say "Decky Loader isn't installed yet (there's no ~/homebrew folder), so the"
     say "theme will wait for it. Install Decky Loader from https://decky.xyz,"
     say "then CSS Loader from Decky's plugin store."
   fi
-  mkdir -p "$themes"
-  install_link "$themes/Jenerated-$SLUG" "$ROOT/app-themes/decky-theme/$SLUG"
+  plan_link "$themes/Jenerated-$SLUG" "$ROOT/app-themes/decky-theme/$SLUG"
+  run_install_plan "the CSS Loader theme"
 
   step "Done! To turn the theme on, in Gaming Mode:"
   say "1. Open the Quick Access menu (the ... button on a Steam Deck), then"
@@ -1884,10 +1988,9 @@ install_decky() {
 install_tilix() {
   local schemes="$HOME/.config/tilix/schemes"
 
-  step "Installing the Tilix color scheme"
-  mkdir -p "$schemes"
   # The jenerated- prefix keeps it from replacing a scheme of your own.
-  install_link "$schemes/jenerated-$SLUG.json" "$ROOT/app-themes/tilix-theme/$SLUG.json"
+  plan_link "$schemes/jenerated-$SLUG.json" "$ROOT/app-themes/tilix-theme/$SLUG.json"
+  run_install_plan "the Tilix color scheme"
 
   step "Done! To turn the color scheme on:"
   say "1. Close every Tilix window, then open Tilix again."
@@ -2011,5 +2114,10 @@ case "$APP" in
   libreoffice) install_libreoffice ;;
 esac
 
+if [ "$INSTALL_MODE" = copy ]; then
+  say ""
+  say "The files are copies, so after changing the palette, run ./setup.sh"
+  say "again to copy the new ones (./jenerate.py alone only updates this folder)."
+fi
 say ""
 say "Run ./setup.sh again any time to theme another app or switch palettes."

@@ -78,7 +78,9 @@ A few premade palettes are included and can be previewed in
 
 The quickest way is the setup script. Clone the repository and run it; it
 asks which app and which theme you want, then does the rest (on Linux or
-macOS). It can also start the [Palette Creator](palette-creator/), for
+macOS). For most apps it first shows the commands that install the theme,
+then offers to run them for you, linking the files (so they follow palette
+changes) or copying them. It can also start the [Palette Creator](palette-creator/), for
 designing a palette of your own:
 
 ```bash
